@@ -575,12 +575,7 @@ let priceChart = null;
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadData() {
   document.getElementById('fetch-time').textContent = 'fetching...';
-
-  // Use demo data if URL not configured
-  const data = DATA_URL === 'https://script.google.com/macros/s/AKfycbzvSMrMS_3aLyTKTcOKDNlI-ThVEsAPpWruvTfk9go6cnZ59VJmOzzZPQadQCVSCez59g/exec'
-    ? getDemoData()
-    : await fetchLiveData();
-
+  const data = await fetchLiveData();
   renderAll(data);
 }
 
@@ -601,7 +596,7 @@ async function fetchLiveData() {
   } catch(e) {
     console.error('FETCH FAILED:', e.message, e);
     document.getElementById('fetch-time').textContent = 'fetch error: ' + e.message;
-    return getDemoData();
+    return { fetchedAt: new Date().toISOString(), products: [], recentSales: [], variantAverages: [], setVariantAverages: [], sets: [], players: [], weeklySalesCount: 0, totalProducts: 0 };
   }
 }
 
@@ -863,94 +858,6 @@ function openProduct(set, player, variant) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Demo data (shown when Apps Script URL not yet configured)
-// ─────────────────────────────────────────────────────────────────────────────
-function getDemoData() {
-  const sets = ['NBA 2025 Game Face', 'WNBA 2025', 'MLB 2025'];
-  const players = {
-    'NBA 2025 Game Face': ['LeBron James','Stephen Curry','Luka Doncic','Kevin Durant','Jayson Tatum','Joel Embiid','Nikola Jokic','Devin Booker'],
-    'WNBA 2025': ['Caitlin Clark','Angel Reese','A\'ja Wilson','Breanna Stewart'],
-    'MLB 2025': ['Aaron Judge','Shohei Ohtani','Mookie Betts','Ronald Acuna Jr.'],
-  };
-  const variants = ['Base','Victory','Emerald','Gold','Chrome','Fire'];
-  const retail   = { Base:25, Victory:40, Emerald:60, Gold:90, Chrome:140, Fire:200 };
-  const multBase = { Base:1.4, Victory:1.8, Emerald:2.2, Gold:3.1, Chrome:4.5, Fire:8.0 };
-
-  const products = [];
-  sets.forEach(set => {
-    players[set].forEach(player => {
-      variants.forEach(variant => {
-        const r = retail[variant];
-        const m = multBase[variant] * (0.8 + Math.random()*0.4);
-        const avg = Math.round(r * m);
-        const n = Math.floor(Math.random()*20)+1;
-        products.push({
-          set, player, variant,
-          edition: variant==='Fire' ? '/1' : variant==='Chrome' ? '/5' : variant==='Gold' ? '/10' : variant==='Emerald' ? '/25' : variant==='Victory' ? '/50' : '/1000',
-          retail: r,
-          totalSales: n,
-          avgPrice: avg,
-          lowPrice: Math.round(avg*0.8),
-          highPrice: Math.round(avg*1.3),
-          multiplier: parseFloat(m.toFixed(2)),
-          sales30d: Math.floor(n*0.6),
-          avg30d: Math.round(avg*1.05),
-          sales90d: n,
-          avg90d: avg,
-          lastSaleDate: new Date(Date.now() - Math.random()*7*86400000).toISOString(),
-          lastSalePrice: Math.round(avg*(0.9+Math.random()*0.2)),
-        });
-      });
-    });
-  });
-
-  // Recent sales
-  const recentSales = products.slice(0,30).map(p => ({
-    title: p.set + ' ' + p.player + ' ' + p.variant,
-    price: p.lastSalePrice,
-    player: p.player,
-    variant: p.variant,
-    set: p.set,
-    date: p.lastSaleDate,
-    url: '#',
-  })).sort((a,b) => new Date(b.date)-new Date(a.date));
-
-  // Variant averages
-  const vMap = {};
-  products.forEach(p => {
-    if (!vMap[p.variant]) vMap[p.variant] = {sum:0,count:0};
-    vMap[p.variant].sum += p.avgPrice * p.totalSales;
-    vMap[p.variant].count += p.totalSales;
-  });
-  const variantAverages = Object.entries(vMap)
-    .map(([variant,d]) => ({ variant, avgPrice: Math.round(d.sum/d.count), totalSales: d.count }))
-    .sort((a,b) => b.avgPrice-a.avgPrice);
-
-  // Set+variant averages
-  const svMap = {};
-  products.forEach(p => {
-    const k = p.set+'|||'+p.variant;
-    if (!svMap[k]) svMap[k] = {set:p.set,variant:p.variant,sum:0,count:0};
-    svMap[k].sum += p.avgPrice * p.totalSales;
-    svMap[k].count += p.totalSales;
-  });
-  const setVariantAverages = Object.values(svMap)
-    .map(d => ({ set:d.set, variant:d.variant, avgPrice: Math.round(d.sum/d.count), totalSales: d.count }))
-    .sort((a,b) => b.avgPrice-a.avgPrice);
-
-  return {
-    _source: 'DEMO',
-    fetchedAt: new Date().toISOString(),
-    weeklySalesCount: 47,
-    totalProducts: products.length,
-    products,
-    recentSales,
-    variantAverages,
-    setVariantAverages,
-    sets,
-    players: [...new Set(products.map(p=>p.player))].sort(),
-  };
-}
 
 // Init
 if (document.readyState === 'loading') {
