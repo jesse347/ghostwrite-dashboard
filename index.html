@@ -559,7 +559,7 @@ header {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG — paste your Apps Script web app URL here after deploying
 // ─────────────────────────────────────────────────────────────────────────────
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec';
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbzvSMrMS_3aLyTKTcOKDNlI-ThVEsAPpWruvTfk9go6cnZ59VJmOzzZPQadQCVSCez59g/exec';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // State
@@ -577,7 +577,7 @@ async function loadData() {
   document.getElementById('fetch-time').textContent = 'fetching...';
 
   // Use demo data if URL not configured
-  const data = DATA_URL === 'https://script.google.com/macros/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec'
+  const data = DATA_URL === 'https://script.google.com/macros/s/AKfycbzvSMrMS_3aLyTKTcOKDNlI-ThVEsAPpWruvTfk9go6cnZ59VJmOzzZPQadQCVSCez59g/exec'
     ? getDemoData()
     : await fetchLiveData();
 
@@ -586,11 +586,21 @@ async function loadData() {
 
 async function fetchLiveData() {
   try {
-    const res = await fetch(DATA_URL);
+    const res = await fetch(DATA_URL, {
+      method: 'GET',
+      redirect: 'follow',
+    });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.json();
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      console.error('Failed to parse JSON:', text.substring(0, 300));
+      throw new Error('Invalid JSON response');
+    }
   } catch(e) {
-    console.error('Failed to fetch:', e);
+    console.error('FETCH FAILED:', e.message, e);
+    document.getElementById('fetch-time').textContent = 'fetch error: ' + e.message;
     return getDemoData();
   }
 }
