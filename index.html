@@ -609,6 +609,7 @@ async function fetchLiveData() {
 // Render everything
 // ─────────────────────────────────────────────────────────────────────────────
 function renderAll(data) {
+  console.log('renderAll called, products:', (data.products||[]).length, 'source:', data._source || 'unknown');
   allProducts = data.products || [];
 
   renderStats(data);
@@ -938,6 +939,7 @@ function getDemoData() {
     .sort((a,b) => b.avgPrice-a.avgPrice);
 
   return {
+    _source: 'DEMO',
     fetchedAt: new Date().toISOString(),
     weeklySalesCount: 47,
     totalProducts: products.length,
