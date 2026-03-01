@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostwrite · market intel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #080808;
+  --s1: #101010;
+  --s2: #161616;
+  --s3: #1e1e1e;
+  --border: #282828;
+  --accent: #e8ff47;
+  --accent-dim: rgba(232,255,71,0.12);
+  --red: #ff4040;
+  --green: #3ddc84;
+  --text: #f0f0f0;
+  --muted: #666;
+  --muted2: #999;
+  --mono: 'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --serif: 'Instrument Serif', serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8,8,8,0.94);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--text);
+}
+.logo em { color: var(--accent); font-style: normal; }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: blink 2s infinite;
+}
+@keyframes blink {
+  0%,100% { opacity:1; }
+  50% { opacity:0.3; }
+}
+
+.refresh-btn {
+  background: var(--s3);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+.page { max-width: 1440px; margin: 0 auto; padding: 32px; }
+
+/* ── Section titles ─────────────────────────────────────────────────────────── */
+.section-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Stat cards ─────────────────────────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--s1);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s;
+}
+.stat-card:hover { background: var(--s2); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--accent);
+  transition: width 0.5s ease;
+}
+.stat-card:hover::before { width: 100%; }
+.stat-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: var(--display);
+  font-size: 44px;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.stat-sub {
+  font-size: 10px;
+  color: var(--muted2);
+  margin-top: 5px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Filter bar ─────────────────────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.filter-group { display: flex; gap: 4px; align-items: center; }
+.filter-label-sm {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.chip {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 5px 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--muted2); color: var(--text); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+.search-wrap { position: relative; margin-left: auto; }
+.search-input {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 14px 6px 32px;
+  width: 220px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* ── Product grid ───────────────────────────────────────────────────────────── */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.product-card {
+  background: var(--s1);
+  padding: 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+.product-card:hover { background: var(--s2); }
+.product-card-set {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.product-card-player {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.product-card-variant {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1px solid;
+  margin-bottom: 14px;
+}
+.v-fire    { border-color: #ff4040; color: #ff4040; }
+.v-chrome  { border-color: #a0c4ff; color: #a0c4ff; }
+.v-gold    { border-color: #ffd700; color: #ffd700; }
+.v-emerald { border-color: #3ddc84; color: #3ddc84; }
+.v-victory { border-color: #c084fc; color: #c084fc; }
+.v-base    { border-color: var(--muted); color: var(--muted); }
+
+.product-card-price {
+  font-family: var(--display);
+  font-size: 36px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  line-height: 1;
+}
+.product-card-sub {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+}
+.product-card-meta {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+.product-card-meta span { color: var(--muted2); }
+
+.mult-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(232,255,71,0.3);
+}
+
+/* ── Two-col layout ─────────────────────────────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+/* ── Panel ───────────────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  padding: 22px;
+}
+.panel-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.chart-wrap { position: relative; height: 220px; }
+
+/* ── Variant averages ───────────────────────────────────────────────────────── */
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.variant-row:last-child { border-bottom: none; }
+.variant-name {
+  width: 70px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.variant-bar-wrap { flex: 1; height: 3px; background: var(--border); }
+.variant-bar { height: 100%; transition: width 0.8s ease; }
+.variant-price {
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  width: 60px;
+  text-align: right;
+}
+.variant-count { font-size: 9px; color: var(--muted); width: 50px; text-align: right; }
+
+/* ── Recent sales ───────────────────────────────────────────────────────────── */
+.sales-table { width: 100%; border-collapse: collapse; }
+.sales-table th {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sales-table td {
+  font-size: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted2);
+}
+.sales-table tr:last-child td { border-bottom: none; }
+.sales-table tr:hover td { color: var(--text); }
+.sale-player { color: var(--text) !important; font-size: 11px !important; }
+.sale-price {
+  font-family: var(--display);
+  font-size: 18px !important;
+  color: var(--accent) !important;
+  letter-spacing: 0.5px;
+}
+
+/* ── Set+variant table ──────────────────────────────────────────────────────── */
+.sv-table { width: 100%; border-collapse: collapse; }
+.sv-table th {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sv-table td {
+  font-size: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted2);
+}
+.sv-table tr:last-child td { border-bottom: none; }
+.sv-table tr:hover td { color: var(--text); }
+.sv-price { font-family: var(--display); font-size: 18px !important; color: var(--accent) !important; }
+
+/* ── Empty / loading states ─────────────────────────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.loading::before {
+  content: '';
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 32px;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .page { padding: 20px; }
+  header { padding: 0 20px; }
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+.panel, .stat-card, .product-card {
+  animation: fadeUp 0.35s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>write</em> <span style="font-size:11px;color:var(--muted);letter-spacing:2px;font-family:var(--mono);font-weight:300">market intel</span></div>
+  <div class="header-right">
+    <div class="live-badge"><span class="live-dot"></span> <span id="fetch-time">loading</span></div>
+    <button class="refresh-btn" onclick="loadData()">↺ refresh</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- Stats row -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="stat-label">Avg Sale (all variants)</div><div class="stat-value" id="stat-avg">—</div><div class="stat-sub">across all sets & players</div></div>
+    <div class="stat-card"><div class="stat-label">Sales this week</div><div class="stat-value" id="stat-weekly">—</div><div class="stat-sub">last 7 days</div></div>
+    <div class="stat-card"><div class="stat-label">Products tracked</div><div class="stat-value" id="stat-products">—</div><div class="stat-sub">set · player · variant combos</div></div>
+    <div class="stat-card"><div class="stat-label">Top multiplier</div><div class="stat-value" id="stat-mult">—</div><div class="stat-sub" id="stat-mult-sub">vs retail price</div></div>
+  </div>
+
+  <!-- Variant averages + Set/Variant table -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">avg price by variant <span style="color:var(--muted);font-size:8px">all sets · all players</span></div>
+      <div id="variant-avgs"><div class="loading"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">avg price by set + variant <span style="color:var(--muted);font-size:8px">all players</span></div>
+      <div id="set-variant-table"><div class="loading"></div></div>
+    </div>
+  </div>
+
+  <!-- Price over time chart + recent sales -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">avg price over time <span style="color:var(--muted);font-size:8px">all valid sales</span></div>
+      <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">recent sales <span style="color:var(--muted);font-size:8px" id="recent-count"></span></div>
+      <div id="recent-sales"><div class="loading"></div></div>
+    </div>
+  </div>
+
+  <!-- Product cards -->
+  <div class="section-label">all products</div>
+
+  <div class="filter-bar">
+    <span class="filter-label-sm">Set</span>
+    <div class="filter-group" id="set-filters"></div>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+    <span class="filter-label-sm">Variant</span>
+    <div class="filter-group" id="variant-filters">
+      <button class="chip active" data-variant="all" onclick="filterVariant(this)">All</button>
+      <button class="chip" data-variant="Fire" onclick="filterVariant(this)">Fire</button>
+      <button class="chip" data-variant="Chrome" onclick="filterVariant(this)">Chrome</button>
+      <button class="chip" data-variant="Gold" onclick="filterVariant(this)">Gold</button>
+      <button class="chip" data-variant="Emerald" onclick="filterVariant(this)">Emerald</button>
+      <button class="chip" data-variant="Victory" onclick="filterVariant(this)">Victory</button>
+      <button class="chip" data-variant="Base" onclick="filterVariant(this)">Base</button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" type="text" placeholder="Search player..." oninput="filterSearch(this.value)" id="search-input">
+    </div>
+  </div>
+
+  <div class="products-grid" id="products-grid">
+    <div style="padding:40px;color:var(--muted);font-size:10px;letter-spacing:1px;grid-column:1/-1;text-align:center">loading market data...</div>
+  </div>
+
+</div>
+
+<footer class="footer" id="footer">ghostwrite market intel · internal use only · data sourced from eBay</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG — paste your Apps Script web app URL here after deploying
+// ─────────────────────────────────────────────────────────────────────────────
+const DATA_URL = 'https://script.google.com/a/macros/ghostwrite.com/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let allProducts = [];
+let activeSet = 'all';
+let activeVariant = 'all';
+let searchQuery = '';
+let priceChart = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch data
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('fetch-time').textContent = 'fetching...';
+
+  // Use demo data if URL not configured
+  const data = DATA_URL === 'https://script.google.com/a/macros/ghostwrite.com/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec'
+    ? getDemoData()
+    : await fetchLiveData();
+
+  renderAll(data);
+}
+
+async function fetchLiveData() {
+  try {
+    const res = await fetch(DATA_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } catch(e) {
+    console.error('Failed to fetch:', e);
+    return getDemoData();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render everything
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAll(data) {
+  allProducts = data.products || [];
+
+  renderStats(data);
+  renderSetFilters(data.sets || []);
+  renderVariantAverages(data.variantAverages || []);
+  renderSetVariantTable(data.setVariantAverages || []);
+  renderRecentSales(data.recentSales || []);
+  renderPriceChart(data.recentSales || []);
+  renderProducts();
+
+  const t = new Date(data.fetchedAt);
+  document.getElementById('fetch-time').textContent =
+    'updated ' + t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stats
+// ─────────────────────────────────────────────────────────────────────────────
+function renderStats(data) {
+  const products = data.products || [];
+  const prices = products.filter(p => p.avgPrice > 0).map(p => p.avgPrice);
+  const overallAvg = prices.length
+    ? Math.round(prices.reduce((a,b) => a+b, 0) / prices.length)
+    : 0;
+
+  document.getElementById('stat-avg').textContent = overallAvg ? '$' + overallAvg : '—';
+  document.getElementById('stat-weekly').textContent = data.weeklySalesCount || '—';
+  document.getElementById('stat-products').textContent = data.totalProducts || '—';
+
+  const topMult = products
+    .filter(p => p.multiplier > 0)
+    .sort((a,b) => b.multiplier - a.multiplier)[0];
+
+  if (topMult) {
+    document.getElementById('stat-mult').textContent = topMult.multiplier.toFixed(1) + 'x';
+    document.getElementById('stat-mult-sub').textContent =
+      topMult.player + ' · ' + topMult.variant;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Set filters
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSetFilters(sets) {
+  const wrap = document.getElementById('set-filters');
+  wrap.innerHTML = '<button class="chip active" data-set="all" onclick="filterSet(this)">All</button>';
+  sets.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.dataset.set = s;
+    btn.textContent = s;
+    btn.onclick = () => filterSet(btn);
+    wrap.appendChild(btn);
+  });
+}
+
+function filterSet(btn) {
+  document.querySelectorAll('#set-filters .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeSet = btn.dataset.set;
+  renderProducts();
+}
+
+function filterVariant(btn) {
+  document.querySelectorAll('#variant-filters .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeVariant = btn.dataset.variant;
+  renderProducts();
+}
+
+function filterSearch(q) {
+  searchQuery = q.toLowerCase();
+  renderProducts();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Variant averages
+// ─────────────────────────────────────────────────────────────────────────────
+const VARIANT_COLORS = {
+  Fire: '#ff4040', Chrome: '#a0c4ff', Gold: '#ffd700',
+  Emerald: '#3ddc84', Victory: '#c084fc', Base: '#666'
+};
+
+function renderVariantAverages(avgs) {
+  const el = document.getElementById('variant-avgs');
+  if (!avgs.length) { el.innerHTML = '<div class="empty">no data yet</div>'; return; }
+  const max = Math.max(...avgs.map(a => a.avgPrice));
+  el.innerHTML = avgs.map(a => `
+    <div class="variant-row">
+      <div class="variant-name" style="color:${VARIANT_COLORS[a.variant]||'#666'}">${a.variant}</div>
+      <div class="variant-bar-wrap">
+        <div class="variant-bar" style="width:${(a.avgPrice/max*100).toFixed(1)}%;background:${VARIANT_COLORS[a.variant]||'#666'}"></div>
+      </div>
+      <div class="variant-price">$${a.avgPrice}</div>
+      <div class="variant-count">${a.totalSales} sales</div>
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Set+variant table
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSetVariantTable(svAvgs) {
+  const el = document.getElementById('set-variant-table');
+  if (!svAvgs.length) { el.innerHTML = '<div class="empty">no data yet</div>'; return; }
+  el.innerHTML = `<table class="sv-table">
+    <thead><tr>
+      <th>Set</th><th>Variant</th><th>Avg Price</th><th>Sales</th>
+    </tr></thead>
+    <tbody>${svAvgs.slice(0, 15).map(r => `
+      <tr>
+        <td>${r.set}</td>
+        <td style="color:${VARIANT_COLORS[r.variant]||'#666'}">${r.variant}</td>
+        <td class="sv-price">$${r.avgPrice}</td>
+        <td>${r.totalSales}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recent sales
+// ─────────────────────────────────────────────────────────────────────────────
+function renderRecentSales(sales) {
+  const el = document.getElementById('recent-sales');
+  document.getElementById('recent-count').textContent = sales.length + ' most recent';
+  if (!sales.length) { el.innerHTML = '<div class="empty">no sales data yet</div>'; return; }
+  el.innerHTML = `<table class="sales-table">
+    <thead><tr>
+      <th>Player</th><th>Variant</th><th>Price</th><th>Date</th>
+    </tr></thead>
+    <tbody>${sales.slice(0, 20).map(s => {
+      const d = s.date ? new Date(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+      return `<tr>
+        <td class="sale-player">${s.player}</td>
+        <td style="color:${VARIANT_COLORS[s.variant]||'#666'};font-size:9px;letter-spacing:1px;text-transform:uppercase">${s.variant}</td>
+        <td class="sale-price">$${s.price?.toFixed(0)||'—'}</td>
+        <td>${d}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Price chart
+// ─────────────────────────────────────────────────────────────────────────────
+function renderPriceChart(sales) {
+  if (priceChart) { priceChart.destroy(); priceChart = null; }
+
+  // Group by date, compute daily avg
+  const byDate = {};
+  sales.forEach(s => {
+    if (!s.date || !s.price) return;
+    const d = new Date(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(s.price);
+  });
+
+  const sorted = Object.entries(byDate)
+    .sort((a,b) => new Date(a[0]) - new Date(b[0]))
+    .slice(-30);
+
+  if (!sorted.length) return;
+
+  const labels = sorted.map(e => e[0]);
+  const avgs   = sorted.map(e => Math.round(e[1].reduce((a,b)=>a+b,0)/e[1].length));
+
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Avg Sale Price',
+        data: avgs,
+        borderColor: '#e8ff47',
+        backgroundColor: 'rgba(232,255,71,0.05)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#e8ff47',
+        tension: 0.4,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111',
+          borderColor: '#282828',
+          borderWidth: 1,
+          titleColor: '#666',
+          bodyColor: '#f0f0f0',
+          titleFont: { family: 'DM Mono', size: 10 },
+          bodyFont: { family: 'DM Mono', size: 12 },
+          callbacks: { label: ctx => '$' + ctx.parsed.y }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 } } },
+        y: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 }, callback: v => '$'+v } }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Product cards
+// ─────────────────────────────────────────────────────────────────────────────
+function renderProducts() {
+  const grid = document.getElementById('products-grid');
+  let filtered = allProducts;
+
+  if (activeSet !== 'all') filtered = filtered.filter(p => p.set === activeSet);
+  if (activeVariant !== 'all') filtered = filtered.filter(p => p.variant === activeVariant);
+  if (searchQuery) filtered = filtered.filter(p => p.player.toLowerCase().includes(searchQuery));
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">no products match these filters</div>';
+    return;
+  }
+
+  // Sort by avg price desc
+  filtered.sort((a,b) => (b.avgPrice||0) - (a.avgPrice||0));
+
+  grid.innerHTML = filtered.map(p => {
+    const vClass = 'v-' + (p.variant||'base').toLowerCase();
+    const mult = p.multiplier > 0 ? p.multiplier.toFixed(1) + 'x' : '';
+    const lastSale = p.lastSaleDate
+      ? new Date(p.lastSaleDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+      : '—';
+    return `
+    <div class="product-card" onclick="openProduct('${p.set}','${p.player}','${p.variant}')">
+      ${mult ? `<div class="mult-badge">${mult}</div>` : ''}
+      <div class="product-card-set">${p.set}</div>
+      <div class="product-card-player">${p.player}</div>
+      <span class="product-card-variant ${vClass}">${p.variant}${p.edition ? ' ' + p.edition : ''}</span>
+      <div class="product-card-price">${p.avgPrice ? '$'+p.avgPrice : '—'}</div>
+      <div class="product-card-sub">
+        <div class="product-card-meta"># sales <span>${p.totalSales||0}</span></div>
+        <div class="product-card-meta">last <span>${lastSale}</span></div>
+        ${p.retail ? `<div class="product-card-meta">retail <span>$${p.retail}</span></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openProduct(set, player, variant) {
+  // Placeholder — in v2 this opens a detail page
+  console.log('Product clicked:', set, player, variant);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo data (shown when Apps Script URL not yet configured)
+// ─────────────────────────────────────────────────────────────────────────────
+function getDemoData() {
+  const sets = ['NBA 2025 Game Face', 'WNBA 2025', 'MLB 2025'];
+  const players = {
+    'NBA 2025 Game Face': ['LeBron James','Stephen Curry','Luka Doncic','Kevin Durant','Jayson Tatum','Joel Embiid','Nikola Jokic','Devin Booker'],
+    'WNBA 2025': ['Caitlin Clark','Angel Reese','A\'ja Wilson','Breanna Stewart'],
+    'MLB 2025': ['Aaron Judge','Shohei Ohtani','Mookie Betts','Ronald Acuna Jr.'],
+  };
+  const variants = ['Base','Victory','Emerald','Gold','Chrome','Fire'];
+  const retail   = { Base:25, Victory:40, Emerald:60, Gold:90, Chrome:140, Fire:200 };
+  const multBase = { Base:1.4, Victory:1.8, Emerald:2.2, Gold:3.1, Chrome:4.5, Fire:8.0 };
+
+  const products = [];
+  sets.forEach(set => {
+    players[set].forEach(player => {
+      variants.forEach(variant => {
+        const r = retail[variant];
+        const m = multBase[variant] * (0.8 + Math.random()*0.4);
+        const avg = Math.round(r * m);
+        const n = Math.floor(Math.random()*20)+1;
+        products.push({
+          set, player, variant,
+          edition: variant==='Fire' ? '/1' : variant==='Chrome' ? '/5' : variant==='Gold' ? '/10' : variant==='Emerald' ? '/25' : variant==='Victory' ? '/50' : '/1000',
+          retail: r,
+          totalSales: n,
+          avgPrice: avg,
+          lowPrice: Math.round(avg*0.8),
+          highPrice: Math.round(avg*1.3),
+          multiplier: parseFloat(m.toFixed(2)),
+          sales30d: Math.floor(n*0.6),
+          avg30d: Math.round(avg*1.05),
+          sales90d: n,
+          avg90d: avg,
+          lastSaleDate: new Date(Date.now() - Math.random()*7*86400000).toISOString(),
+          lastSalePrice: Math.round(avg*(0.9+Math.random()*0.2)),
+        });
+      });
+    });
+  });
+
+  // Recent sales
+  const recentSales = products.slice(0,30).map(p => ({
+    title: p.set + ' ' + p.player + ' ' + p.variant,
+    price: p.lastSalePrice,
+    player: p.player,
+    variant: p.variant,
+    set: p.set,
+    date: p.lastSaleDate,
+    url: '#',
+  })).sort((a,b) => new Date(b.date)-new Date(a.date));
+
+  // Variant averages
+  const vMap = {};
+  products.forEach(p => {
+    if (!vMap[p.variant]) vMap[p.variant] = {sum:0,count:0};
+    vMap[p.variant].sum += p.avgPrice * p.totalSales;
+    vMap[p.variant].count += p.totalSales;
+  });
+  const variantAverages = Object.entries(vMap)
+    .map(([variant,d]) => ({ variant, avgPrice: Math.round(d.sum/d.count), totalSales: d.count }))
+    .sort((a,b) => b.avgPrice-a.avgPrice);
+
+  // Set+variant averages
+  const svMap = {};
+  products.forEach(p => {
+    const k = p.set+'|||'+p.variant;
+    if (!svMap[k]) svMap[k] = {set:p.set,variant:p.variant,sum:0,count:0};
+    svMap[k].sum += p.avgPrice * p.totalSales;
+    svMap[k].count += p.totalSales;
+  });
+  const setVariantAverages = Object.values(svMap)
+    .map(d => ({ set:d.set, variant:d.variant, avgPrice: Math.round(d.sum/d.count), totalSales: d.count }))
+    .sort((a,b) => b.avgPrice-a.avgPrice);
+
+  return {
+    fetchedAt: new Date().toISOString(),
+    weeklySalesCount: 47,
+    totalProducts: products.length,
+    products,
+    recentSales,
+    variantAverages,
+    setVariantAverages,
+    sets,
+    players: [...new Set(products.map(p=>p.player))].sort(),
+  };
+}
+
+// Init
+loadData();
+</script>
+</body>
+</html>
