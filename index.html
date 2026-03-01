@@ -470,6 +470,8 @@ header {
   background: var(--border);
   border: 1px solid var(--border);
   margin-bottom: 32px;
+  overflow: hidden;
+  max-height: 260px;
 }
 .sale-card {
   background: var(--s1);
@@ -605,7 +607,7 @@ header {
   </div>
 
   <!-- Recent sales feed -->
-  <div class="section-label">top sales this week <span id="recent-count" style="margin-left:8px;color:var(--muted2);font-size:9px;letter-spacing:1px;text-transform:none"></span></div>
+  <div class="section-label">top sales · last 30 days <span id="recent-count" style="margin-left:8px;color:var(--muted2);font-size:9px;letter-spacing:1px;text-transform:none"></span></div>
   <div class="sales-feed" id="recent-sales"><div class="loading" style="grid-column:1/-1"></div></div>
 
   <!-- Product cards -->
@@ -814,7 +816,7 @@ function renderRecentSales(sales) {
   const el = document.getElementById('recent-sales');
   const countEl = document.getElementById('recent-count');
   if (!sales.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1">no sales in the last 7 days</div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">no sales in the last 30 days</div>';
     countEl.textContent = '';
     return;
   }
