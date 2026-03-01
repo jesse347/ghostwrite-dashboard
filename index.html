@@ -559,7 +559,7 @@ header {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG — paste your Apps Script web app URL here after deploying
 // ─────────────────────────────────────────────────────────────────────────────
-const DATA_URL = 'https://script.google.com/a/macros/ghostwrite.com/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec';
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // State
@@ -577,7 +577,7 @@ async function loadData() {
   document.getElementById('fetch-time').textContent = 'fetching...';
 
   // Use demo data if URL not configured
-  const data = DATA_URL === 'https://script.google.com/a/macros/ghostwrite.com/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec'
+  const data = DATA_URL === 'https://script.google.com/macros/s/AKfycbwNCm6VwZOEIKVFny7d-Q3ZL9K9Bvs3_JNn4V_5ZeOQgVMgTrKBCx5ZNqoyDk13rzUbkA/exec'
     ? getDemoData()
     : await fetchLiveData();
 
