@@ -462,6 +462,86 @@ header {
   margin-top: 16px;
 }
 
+/* ── Sales feed ─────────────────────────────────────────────────────────────── */
+.sales-feed {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.sale-card {
+  background: var(--s1);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.sale-card:hover { background: var(--s2); }
+.sale-card-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--s3);
+  display: block;
+}
+.sale-card-img-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--s3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 24px;
+}
+.sale-card-body {
+  padding: 10px 12px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sale-card-player {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.sale-card-set {
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sale-card-price {
+  font-family: var(--display);
+  font-size: 24px;
+  color: var(--accent);
+  line-height: 1.1;
+  margin-top: 4px;
+}
+.sale-card-variant {
+  display: inline-block;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border: 1px solid;
+  margin-top: 2px;
+  align-self: flex-start;
+}
+.sale-card-date {
+  font-size: 8px;
+  color: var(--muted);
+  margin-top: auto;
+  padding-top: 6px;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -512,17 +592,21 @@ header {
     </div>
   </div>
 
-  <!-- Price over time chart + recent sales -->
+  <!-- Price over time chart -->
   <div class="two-col">
     <div class="panel">
       <div class="panel-title">avg price over time <span style="color:var(--muted);font-size:8px">all valid sales</span></div>
       <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
     </div>
     <div class="panel">
-      <div class="panel-title">recent sales <span style="color:var(--muted);font-size:8px" id="recent-count"></span></div>
-      <div id="recent-sales"><div class="loading"></div></div>
+      <div class="panel-title">variant averages this week <span style="color:var(--muted);font-size:8px">last 7 days only</span></div>
+      <div id="variant-avgs-week"><div class="loading"></div></div>
     </div>
   </div>
+
+  <!-- Recent sales feed -->
+  <div class="section-label">top sales this week <span id="recent-count" style="margin-left:8px;color:var(--muted2);font-size:9px;letter-spacing:1px;text-transform:none"></span></div>
+  <div class="sales-feed" id="recent-sales"><div class="loading" style="grid-column:1/-1"></div></div>
 
   <!-- Product cards -->
   <div class="section-label">all products</div>
@@ -728,22 +812,32 @@ function renderSetVariantTable(svAvgs) {
 // ─────────────────────────────────────────────────────────────────────────────
 function renderRecentSales(sales) {
   const el = document.getElementById('recent-sales');
-  document.getElementById('recent-count').textContent = sales.length + ' most recent';
-  if (!sales.length) { el.innerHTML = '<div class="empty">no sales data yet</div>'; return; }
-  el.innerHTML = `<table class="sales-table">
-    <thead><tr>
-      <th>Player</th><th>Variant</th><th>Price</th><th>Date</th>
-    </tr></thead>
-    <tbody>${sales.slice(0, 20).map(s => {
-      const d = s.date ? new Date(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
-      return `<tr>
-        <td class="sale-player">${s.player}</td>
-        <td style="color:${VARIANT_COLORS[s.variant]||'#666'};font-size:9px;letter-spacing:1px;text-transform:uppercase">${s.variant}</td>
-        <td class="sale-price">$${s.price?.toFixed(0)||'—'}</td>
-        <td>${d}</td>
-      </tr>`;
-    }).join('')}
-    </tbody></table>`;
+  const countEl = document.getElementById('recent-count');
+  if (!sales.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">no sales in the last 7 days</div>';
+    countEl.textContent = '';
+    return;
+  }
+  countEl.textContent = sales.length + ' sales · sorted highest to lowest';
+  el.innerHTML = sales.map(s => {
+    const d = s.date ? new Date(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    const vClass = 'v-' + (s.variant||'base').toLowerCase();
+    const imgEl = s.image
+      ? `<img class="sale-card-img" src="${s.image}" alt="${s.player}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        + `<div class="sale-card-img-placeholder" style="display:none">👻</div>`
+      : `<div class="sale-card-img-placeholder">👻</div>`;
+    const ebayUrl = s.url || '#';
+    return `<div class="sale-card" onclick="window.open('${ebayUrl}','_blank')">
+      ${imgEl}
+      <div class="sale-card-body">
+        <div class="sale-card-player">${s.player}</div>
+        <div class="sale-card-set">${s.set}</div>
+        <div class="sale-card-price">$${s.price?.toFixed(0)||'—'}</div>
+        <span class="sale-card-variant ${vClass}">${s.variant}</span>
+        <div class="sale-card-date">${d}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
