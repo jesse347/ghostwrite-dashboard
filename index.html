@@ -784,7 +784,7 @@ function renderVariantAverages(avgs) {
       <div class="variant-bar-wrap">
         <div class="variant-bar" style="width:${(a.avgPrice/max*100).toFixed(1)}%;background:${VARIANT_COLORS[a.variant]||'#666'}"></div>
       </div>
-      <div class="variant-price">$${a.avgPrice}</div>
+      <div class="variant-price">$${Math.round(a.avgPrice)}</div>
       <div class="variant-count">${a.totalSales} sales</div>
     </div>`).join('');
 }
@@ -803,7 +803,7 @@ function renderSetVariantTable(svAvgs) {
       <tr>
         <td>${r.set}</td>
         <td style="color:${VARIANT_COLORS[r.variant]||'#666'}">${r.variant}</td>
-        <td class="sv-price">$${r.avgPrice}</td>
+        <td class="sv-price">$${Math.round(r.avgPrice)}</td>
         <td>${r.totalSales}</td>
       </tr>`).join('')}
     </tbody></table>`;
@@ -896,12 +896,12 @@ function renderPriceChart(sales) {
           bodyColor: '#f0f0f0',
           titleFont: { family: 'DM Mono', size: 10 },
           bodyFont: { family: 'DM Mono', size: 12 },
-          callbacks: { label: ctx => '$' + ctx.parsed.y }
+          callbacks: { label: ctx => '$' + Math.round(ctx.parsed.y) }
         }
       },
       scales: {
         x: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 } } },
-        y: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 }, callback: v => '$'+v } }
+        y: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 }, callback: v => '$'+Math.round(v) } }
       }
     }
   });
@@ -938,11 +938,11 @@ function renderProducts() {
       <div class="product-card-set">${p.set}</div>
       <div class="product-card-player">${p.player}</div>
       <span class="product-card-variant ${vClass}">${p.variant}${p.edition ? ' ' + p.edition : ''}</span>
-      <div class="product-card-price">${p.avgPrice ? '$'+p.avgPrice : '—'}</div>
+      <div class="product-card-price">${p.avgPrice ? '$'+Math.round(p.avgPrice) : '—'}</div>
       <div class="product-card-sub">
         <div class="product-card-meta"># sales <span>${p.totalSales||0}</span></div>
         <div class="product-card-meta">last <span>${lastSale}</span></div>
-        ${p.retail ? `<div class="product-card-meta">retail <span>$${p.retail}</span></div>` : ''}
+        ${p.retail ? `<div class="product-card-meta">retail <span>$${Math.round(p.retail)}</span></div>` : ''}
       </div>
     </div>`;
   }).join('');
