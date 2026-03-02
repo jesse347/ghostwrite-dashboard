@@ -544,6 +544,40 @@ header {
   padding-top: 6px;
 }
 
+
+/* ── Movers + Top Players tables ──────────────────────────────────────────── */
+.movers-table, .top-players-table { width: 100%; border-collapse: collapse; }
+.movers-table th, .top-players-table th {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); text-align: left; padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.movers-table td, .top-players-table td {
+  font-size: 10px; padding: 8px 0; border-bottom: 1px solid var(--border);
+  color: var(--muted2); vertical-align: middle;
+}
+.movers-table tr:last-child td, .top-players-table tr:last-child td { border-bottom: none; }
+.movers-table tr:hover td, .top-players-table tr:hover td { color: var(--text); }
+.mover-name { color: var(--text) !important; font-size: 11px !important; }
+.mover-up { color: #3ddc84 !important; font-weight: 500; }
+.mover-down { color: #ff4040 !important; font-weight: 500; }
+.mover-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.mover-spark {
+  display: inline-flex; align-items: flex-end; gap: 1px;
+  height: 20px; vertical-align: middle;
+}
+.mover-spark span {
+  width: 4px; border-radius: 1px; display: inline-block;
+  transition: height 0.3s;
+}
+.top-rank {
+  font-family: var(--display); font-size: 18px;
+  color: var(--muted); width: 28px;
+}
+.top-player-name { color: var(--text) !important; font-size: 11px !important; }
+.top-player-price { font-family: var(--display); font-size: 20px !important; color: var(--accent) !important; }
+.top-player-bar-wrap { width: 80px; height: 3px; background: var(--border); }
+.top-player-bar { height: 100%; background: var(--accent); }
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -597,7 +631,7 @@ header {
   <!-- Price over time chart -->
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title">avg parallel price over time <span style="color:var(--muted);font-size:8px">last 6 months · non-base only</span></div>
+      <div class="panel-title">median parallel price over time <span style="color:var(--muted);font-size:8px">last 6 months · non-base only</span></div>
       <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
     </div>
     <div class="panel">
@@ -609,6 +643,19 @@ header {
   <!-- Recent sales feed -->
   <div class="section-label">top sales · last 30 days <span id="recent-count" style="margin-left:8px;color:var(--muted2);font-size:9px;letter-spacing:1px;text-transform:none"></span></div>
   <div class="sales-feed" id="recent-sales"><div class="loading" style="grid-column:1/-1"></div></div>
+
+
+  <!-- Movers + Top Players -->
+  <div class="two-col" style="margin-bottom:32px">
+    <div class="panel">
+      <div class="panel-title">biggest movers <span style="color:var(--muted);font-size:8px">last sale vs all-time avg · min 2 sales</span></div>
+      <div id="movers-table"><div class="loading"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">top 10 players <span style="color:var(--muted);font-size:8px">by avg parallel price · across all sets</span></div>
+      <div id="top-players-table"><div class="loading"></div></div>
+    </div>
+  </div>
 
   <!-- Product cards -->
   <div class="section-label">all products</div>
@@ -700,6 +747,8 @@ function renderAll(data) {
   renderSetVariantTable(data.setVariantAverages || []);
   renderRecentSales(data.recentSales || []);
   renderPriceChart(data.recentSales || []);
+  renderMovers(data.products || []);
+  renderTopPlayers(data.products || []);
   renderProducts();
 
   const t = new Date(data.fetchedAt);
@@ -970,7 +1019,11 @@ function renderPriceChart(sales) {
   if (!sorted.length) return;
 
   const labels = sorted.map(e => e[1].label);
-  const avgs   = sorted.map(e => Math.round(e[1].prices.reduce((a,b)=>a+b,0)/e[1].prices.length));
+  const avgs   = sorted.map(e => {
+    const p = [...e[1].prices].sort((a,b) => a-b);
+    const mid = Math.floor(p.length/2);
+    return Math.round(p.length % 2 !== 0 ? p[mid] : (p[mid-1]+p[mid])/2);
+  });
 
   const ctx = document.getElementById('priceChart').getContext('2d');
   priceChart = new Chart(ctx, {
@@ -1011,6 +1064,109 @@ function renderPriceChart(sales) {
       }
     }
   });
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Biggest movers
+// ─────────────────────────────────────────────────────────────────────────────
+function renderMovers(products) {
+  const el = document.getElementById('movers-table');
+
+  // Only products with 2+ sales, a last sale price, and an avg price
+  const eligible = products.filter(p =>
+    p.totalSales >= 2 && p.lastSalePrice > 0 && p.avgPrice > 0
+  );
+
+  if (!eligible.length) { el.innerHTML = '<div class="empty">not enough data yet</div>'; return; }
+
+  // Calculate change: last sale vs all-time avg
+  const withChange = eligible.map(p => ({
+    ...p,
+    change: p.lastSalePrice - p.avgPrice,
+    changePct: ((p.lastSalePrice - p.avgPrice) / p.avgPrice) * 100,
+  }));
+
+  // Sort by absolute % change, take top 10
+  withChange.sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct));
+  const top = withChange.slice(0, 10);
+
+  // Build sparkline from last/avg (simple 2-bar version)
+  function spark(avg, last) {
+    const max = Math.max(avg, last);
+    const h1 = Math.round((avg / max) * 18);
+    const h2 = Math.round((last / max) * 18);
+    const c2 = last >= avg ? '#3ddc84' : '#ff4040';
+    return `<span class="mover-spark">
+      <span style="height:${h1}px;background:var(--muted)"></span>
+      <span style="height:${h2}px;background:${c2}"></span>
+    </span>`;
+  }
+
+  el.innerHTML = `<table class="movers-table">
+    <thead><tr>
+      <th>Player</th><th>Variant</th><th>Avg → Last</th><th>Change</th><th></th>
+    </tr></thead>
+    <tbody>${top.map(p => {
+      const up = p.change >= 0;
+      const cls = up ? 'mover-up' : 'mover-down';
+      const arrow = up ? '▲' : '▼';
+      const vClass = 'v-' + (p.variant||'base').toLowerCase();
+      return `<tr>
+        <td>
+          <div class="mover-name">${p.player}</div>
+          <div style="font-size:8px;color:var(--muted);letter-spacing:1px">${p.set}</div>
+        </td>
+        <td><span class="product-card-variant ${vClass}" style="font-size:8px;padding:1px 5px">${p.variant}</span></td>
+        <td style="font-size:10px">$${Math.round(p.avgPrice)} → <span style="color:var(--text)">$${Math.round(p.lastSalePrice)}</span></td>
+        <td class="${cls}">${arrow} ${Math.abs(p.changePct).toFixed(0)}%</td>
+        <td>${spark(p.avgPrice, p.lastSalePrice)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Top 10 players by avg parallel price
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTopPlayers(products) {
+  const el = document.getElementById('top-players-table');
+
+  // Aggregate parallel (non-base) prices per player across all sets
+  const playerMap = {};
+  products.forEach(p => {
+    if (p.variant === 'Base' || !p.avgPrice || !p.totalSales) return;
+    if (!playerMap[p.player]) playerMap[p.player] = { sum: 0, salesSum: 0 };
+    playerMap[p.player].sum += p.avgPrice * p.totalSales;
+    playerMap[p.player].salesSum += p.totalSales;
+  });
+
+  const ranked = Object.entries(playerMap)
+    .map(([player, d]) => ({
+      player,
+      avgPrice: Math.round(d.sum / d.salesSum),
+      totalSales: d.salesSum,
+    }))
+    .filter(p => p.avgPrice > 0)
+    .sort((a, b) => b.avgPrice - a.avgPrice)
+    .slice(0, 10);
+
+  if (!ranked.length) { el.innerHTML = '<div class="empty">not enough data yet</div>'; return; }
+
+  const max = ranked[0].avgPrice;
+
+  el.innerHTML = `<table class="top-players-table">
+    <thead><tr>
+      <th>#</th><th>Player</th><th>Avg Parallel</th><th style="width:80px"></th><th>Sales</th>
+    </tr></thead>
+    <tbody>${ranked.map((p, i) => `<tr>
+      <td class="top-rank">${i + 1}</td>
+      <td class="top-player-name">${p.player}</td>
+      <td class="top-player-price">$${p.avgPrice}</td>
+      <td><div class="top-player-bar-wrap"><div class="top-player-bar" style="width:${Math.round(p.avgPrice/max*100)}%"></div></div></td>
+      <td>${p.totalSales}</td>
+    </tr>`).join('')}
+    </tbody></table>`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
