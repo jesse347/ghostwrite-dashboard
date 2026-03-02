@@ -578,6 +578,9 @@ header {
 .top-player-price { font-family: var(--display); font-size: 20px !important; color: var(--accent) !important; }
 .top-player-bar-wrap { width: 80px; height: 3px; background: var(--border); }
 .top-player-bar { height: 100%; background: var(--accent); }
+/* ── League tab filter bar ───────────────────────────────────────────────────── */
+.filter-bar { margin-bottom: 0; }
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -616,14 +619,22 @@ header {
     <div class="stat-card"><div class="stat-label">Products tracked</div><div class="stat-value" id="stat-products">—</div><div class="stat-sub">all-time · set · player · variant</div></div>
   </div>
 
-  <!-- Variant averages + Set/Variant table -->
+  <!-- Variant averages by league + Base price by player -->
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title">avg price by variant <span style="color:var(--muted);font-size:8px">all sets · all players</span></div>
+      <div class="panel-title">avg price by variant <span style="color:var(--muted);font-size:8px" id="league-variant-label">NBA</span></div>
+      <div class="filter-bar" style="margin-bottom:14px;margin-top:-4px">
+        <div class="filter-group" id="league-tabs">
+          <button class="chip active" data-league="NBA" onclick="switchLeagueTab(this)">NBA</button>
+          <button class="chip" data-league="WNBA" onclick="switchLeagueTab(this)">WNBA</button>
+          <button class="chip" data-league="MLB" onclick="switchLeagueTab(this)">MLB</button>
+          <button class="chip" data-league="ALL" onclick="switchLeagueTab(this)">ALL</button>
+        </div>
+      </div>
       <div id="variant-avgs"><div class="loading"></div></div>
     </div>
     <div class="panel">
-      <div class="panel-title">avg price by set + variant <span style="color:var(--muted);font-size:8px">all players</span></div>
+      <div class="panel-title">avg base price by player <span style="color:var(--muted);font-size:8px">base variant only · all sets</span></div>
       <div id="set-variant-table"><div class="loading"></div></div>
     </div>
   </div>
@@ -652,7 +663,7 @@ header {
       <div id="movers-table"><div class="loading"></div></div>
     </div>
     <div class="panel">
-      <div class="panel-title">top 10 players <span style="color:var(--muted);font-size:8px">by avg parallel price · across all sets</span></div>
+      <div class="panel-title">top 10 players (gold) <span style="color:var(--muted);font-size:8px">by avg gold price · across all sets</span></div>
       <div id="top-players-table"><div class="loading"></div></div>
     </div>
   </div>
@@ -698,10 +709,12 @@ const DATA_URL = 'https://script.google.com/macros/s/AKfycbx7BBtFvrzSkFYerOYKemF
 // State
 // ─────────────────────────────────────────────────────────────────────────────
 let allProducts = [];
+let allProductsData = []; // full unfiltered for league tabs
 let activeSet = 'all';
 let activeVariant = 'all';
 let searchQuery = '';
 let priceChart = null;
+let activeLeague = 'NBA';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fetch data
@@ -739,6 +752,7 @@ async function fetchLiveData() {
 function renderAll(data) {
   console.log('renderAll called, products:', (data.products||[]).length, 'source:', data._source || 'unknown');
   allProducts = data.products || [];
+  allProductsData = data.products || [];
 
   renderStats(data);
   renderSetFilters(data.sets || []);
@@ -833,9 +847,52 @@ const VARIANT_COLORS = {
   Emerald: '#3ddc84', Victory: '#c084fc', Base: '#666'
 };
 
+function switchLeagueTab(btn) {
+  document.querySelectorAll('#league-tabs .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeLeague = btn.dataset.league;
+  document.getElementById('league-variant-label').textContent = activeLeague === 'ALL' ? 'all leagues' : activeLeague;
+  renderVariantAveragesByLeague(allProductsData, activeLeague);
+}
+
 function renderVariantAverages(avgs) {
+  // Called on initial load — render NBA by default using products data
+  renderVariantAveragesByLeague(allProductsData, 'NBA');
+}
+
+function renderVariantAveragesByLeague(products, league) {
   const el = document.getElementById('variant-avgs');
-  if (!avgs.length) { el.innerHTML = '<div class="empty">no data yet</div>'; return; }
+
+  // Filter products by league (or all)
+  const filtered = league === 'ALL'
+    ? products
+    : products.filter(p => {
+        const s = (p.set || '').toUpperCase();
+        if (league === 'NBA') return s.includes('NBA') && !s.includes('WNBA');
+        if (league === 'WNBA') return s.includes('WNBA');
+        if (league === 'MLB') return s.includes('MLB');
+        return true;
+      });
+
+  // Aggregate by variant
+  const vMap = {};
+  filtered.forEach(p => {
+    if (!p.avgPrice || !p.totalSales) return;
+    if (!vMap[p.variant]) vMap[p.variant] = { sum: 0, salesSum: 0 };
+    vMap[p.variant].sum += p.avgPrice * p.totalSales;
+    vMap[p.variant].salesSum += p.totalSales;
+  });
+
+  const variantOrder = ['Fire','Chrome','Gold','Emerald','Victory','Base'];
+  const avgs = variantOrder
+    .filter(v => vMap[v] && vMap[v].salesSum > 0)
+    .map(v => ({
+      variant: v,
+      avgPrice: Math.round(vMap[v].sum / vMap[v].salesSum),
+      totalSales: vMap[v].salesSum,
+    }));
+
+  if (!avgs.length) { el.innerHTML = '<div class="empty">no data for this league yet</div>'; return; }
   const max = Math.max(...avgs.map(a => a.avgPrice));
   el.innerHTML = avgs.map(a => `
     <div class="variant-row">
@@ -843,7 +900,7 @@ function renderVariantAverages(avgs) {
       <div class="variant-bar-wrap">
         <div class="variant-bar" style="width:${(a.avgPrice/max*100).toFixed(1)}%;background:${VARIANT_COLORS[a.variant]||'#666'}"></div>
       </div>
-      <div class="variant-price">$${Math.round(a.avgPrice)}</div>
+      <div class="variant-price">$${a.avgPrice}</div>
       <div class="variant-count">${a.totalSales} sales</div>
     </div>`).join('');
 }
@@ -935,18 +992,52 @@ function renderMonthlySalesChart(sales, products) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Set+variant table
 // ─────────────────────────────────────────────────────────────────────────────
+let baseSortDir = 'desc'; // 'asc' or 'desc'
+
 function renderSetVariantTable(svAvgs) {
+  // Now shows base price by player — svAvgs param kept for compatibility but we use allProductsData
+  renderBasePriceByPlayer('desc');
+}
+
+function renderBasePriceByPlayer(sortDir) {
   const el = document.getElementById('set-variant-table');
-  if (!svAvgs.length) { el.innerHTML = '<div class="empty">no data yet</div>'; return; }
+  baseSortDir = sortDir;
+
+  // Aggregate base variant prices per player across all sets
+  const playerMap = {};
+  (allProductsData || []).forEach(p => {
+    if (p.variant !== 'Base' || !p.avgPrice || !p.totalSales) return;
+    if (!playerMap[p.player]) playerMap[p.player] = { sum: 0, salesSum: 0 };
+    playerMap[p.player].sum += p.avgPrice * p.totalSales;
+    playerMap[p.player].salesSum += p.totalSales;
+  });
+
+  let rows = Object.entries(playerMap)
+    .map(([player, d]) => ({
+      player,
+      avgPrice: Math.round(d.sum / d.salesSum),
+      totalSales: d.salesSum,
+    }))
+    .filter(r => r.avgPrice > 0);
+
+  rows.sort((a, b) => sortDir === 'desc'
+    ? b.totalSales - a.totalSales
+    : a.totalSales - b.totalSales
+  );
+
+  if (!rows.length) { el.innerHTML = '<div class="empty">no base sales data yet</div>'; return; }
+
+  const arrow = sortDir === 'desc' ? '▼' : '▲';
   el.innerHTML = `<table class="sv-table">
     <thead><tr>
-      <th>Set</th><th>Variant</th><th>Avg Price</th><th>Sales</th>
+      <th>Player</th>
+      <th>Avg Base Price</th>
+      <th style="cursor:pointer;user-select:none" onclick="renderBasePriceByPlayer(baseSortDir==='desc'?'asc':'desc')">Sales ${arrow}</th>
     </tr></thead>
-    <tbody>${svAvgs.slice(0, 15).map(r => `
+    <tbody>${rows.map(r => `
       <tr>
-        <td>${r.set}</td>
-        <td style="color:${VARIANT_COLORS[r.variant]||'#666'}">${r.variant}</td>
-        <td class="sv-price">$${Math.round(r.avgPrice)}</td>
+        <td style="color:var(--text)">${r.player}</td>
+        <td class="sv-price">$${r.avgPrice}</td>
         <td>${r.totalSales}</td>
       </tr>`).join('')}
     </tbody></table>`;
@@ -1132,10 +1223,10 @@ function renderMovers(products) {
 function renderTopPlayers(products) {
   const el = document.getElementById('top-players-table');
 
-  // Aggregate parallel (non-base) prices per player across all sets
+  // Gold variant only, aggregate per player across all sets
   const playerMap = {};
   products.forEach(p => {
-    if (p.variant === 'Base' || !p.avgPrice || !p.totalSales) return;
+    if (p.variant !== 'Gold' || !p.avgPrice || !p.totalSales) return;
     if (!playerMap[p.player]) playerMap[p.player] = { sum: 0, salesSum: 0 };
     playerMap[p.player].sum += p.avgPrice * p.totalSales;
     playerMap[p.player].salesSum += p.totalSales;
@@ -1157,13 +1248,13 @@ function renderTopPlayers(products) {
 
   el.innerHTML = `<table class="top-players-table">
     <thead><tr>
-      <th>#</th><th>Player</th><th>Avg Parallel</th><th style="width:80px"></th><th>Sales</th>
+      <th>#</th><th>Player</th><th>Avg Gold</th><th style="width:80px"></th><th>Sales</th>
     </tr></thead>
     <tbody>${ranked.map((p, i) => `<tr>
       <td class="top-rank">${i + 1}</td>
       <td class="top-player-name">${p.player}</td>
-      <td class="top-player-price">$${p.avgPrice}</td>
-      <td><div class="top-player-bar-wrap"><div class="top-player-bar" style="width:${Math.round(p.avgPrice/max*100)}%"></div></div></td>
+      <td class="top-player-price" style="color:#ffd700">$${p.avgPrice}</td>
+      <td><div class="top-player-bar-wrap"><div class="top-player-bar" style="width:${Math.round(p.avgPrice/max*100)}%;background:#ffd700"></div></div></td>
       <td>${p.totalSales}</td>
     </tr>`).join('')}
     </tbody></table>`;
