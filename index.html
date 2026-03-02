@@ -471,7 +471,7 @@ header {
   border: 1px solid var(--border);
   margin-bottom: 32px;
   overflow: hidden;
-  max-height: 260px;
+  max-height: 290px;
 }
 .sale-card {
   background: var(--s1);
@@ -500,11 +500,11 @@ header {
   font-size: 24px;
 }
 .sale-card-body {
-  padding: 10px 12px 12px;
+  padding: 10px 12px 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .sale-card-player {
   font-size: 11px;
@@ -576,10 +576,10 @@ header {
 
   <!-- Stats row -->
   <div class="stats-grid" id="stats-grid">
-    <div class="stat-card"><div class="stat-label">Avg Sale (all variants)</div><div class="stat-value" id="stat-avg">—</div><div class="stat-sub">across all sets & players</div></div>
-    <div class="stat-card"><div class="stat-label">Sales this week</div><div class="stat-value" id="stat-weekly">—</div><div class="stat-sub">last 7 days</div></div>
-    <div class="stat-card"><div class="stat-label">Products tracked</div><div class="stat-value" id="stat-products">—</div><div class="stat-sub">set · player · variant combos</div></div>
-    <div class="stat-card"><div class="stat-label">Top multiplier</div><div class="stat-value" id="stat-mult">—</div><div class="stat-sub" id="stat-mult-sub">vs retail price</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Sale (all variants)</div><div class="stat-value" id="stat-avg">—</div><div class="stat-sub">last 30 days · all sets & players</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Sale (parallels only)</div><div class="stat-value" id="stat-parallel">—</div><div class="stat-sub">last 30 days · non-base variants</div></div>
+    <div class="stat-card"><div class="stat-label">Total Sales</div><div class="stat-value" id="stat-weekly">—</div><div class="stat-sub">last 30 days</div></div>
+    <div class="stat-card"><div class="stat-label">Products tracked</div><div class="stat-value" id="stat-products">—</div><div class="stat-sub">all-time · set · player · variant</div></div>
   </div>
 
   <!-- Variant averages + Set/Variant table -->
@@ -597,11 +597,11 @@ header {
   <!-- Price over time chart -->
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title">avg price over time <span style="color:var(--muted);font-size:8px">all valid sales</span></div>
+      <div class="panel-title">avg parallel price over time <span style="color:var(--muted);font-size:8px">last 6 months · non-base only</span></div>
       <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
     </div>
     <div class="panel">
-      <div class="panel-title">variant averages this week <span style="color:var(--muted);font-size:8px">last 7 days only</span></div>
+      <div class="panel-title">avg sales per week <span style="color:var(--muted);font-size:8px">full weeks only</span></div>
       <div id="variant-avgs-week"><div class="loading"></div></div>
     </div>
   </div>
@@ -696,6 +696,7 @@ function renderAll(data) {
   renderStats(data);
   renderSetFilters(data.sets || []);
   renderVariantAverages(data.variantAverages || []);
+  renderMonthlySalesChart(data.recentSales || [], data.products || []);
   renderSetVariantTable(data.setVariantAverages || []);
   renderRecentSales(data.recentSales || []);
   renderPriceChart(data.recentSales || []);
@@ -711,24 +712,33 @@ function renderAll(data) {
 // ─────────────────────────────────────────────────────────────────────────────
 function renderStats(data) {
   const products = data.products || [];
-  const prices = products.filter(p => p.avgPrice > 0).map(p => p.avgPrice);
-  const overallAvg = prices.length
-    ? Math.round(prices.reduce((a,b) => a+b, 0) / prices.length)
+  const sales = data.recentSales || [];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  // Last 30 days sales from recentSales feed
+  const recentValid = sales.filter(s => s.date && new Date(s.date) >= thirtyDaysAgo && s.price > 0);
+
+  // Avg sale (all variants) — last 30 days
+  const allPrices = recentValid.map(s => s.price);
+  const overallAvg = allPrices.length
+    ? Math.round(allPrices.reduce((a,b) => a+b, 0) / allPrices.length)
     : 0;
-
   document.getElementById('stat-avg').textContent = overallAvg ? '$' + overallAvg : '—';
-  document.getElementById('stat-weekly').textContent = data.weeklySalesCount || '—';
+
+  // Avg sale (parallels only — non-base) — last 30 days
+  const parallelPrices = recentValid
+    .filter(s => s.variant && s.variant !== 'Base')
+    .map(s => s.price);
+  const parallelAvg = parallelPrices.length
+    ? Math.round(parallelPrices.reduce((a,b) => a+b, 0) / parallelPrices.length)
+    : 0;
+  document.getElementById('stat-parallel').textContent = parallelAvg ? '$' + parallelAvg : '—';
+
+  // Total sales — last 30 days
+  document.getElementById('stat-weekly').textContent = recentValid.length || '—';
+
+  // Products tracked — all time
   document.getElementById('stat-products').textContent = data.totalProducts || '—';
-
-  const topMult = products
-    .filter(p => p.multiplier > 0)
-    .sort((a,b) => b.multiplier - a.multiplier)[0];
-
-  if (topMult) {
-    document.getElementById('stat-mult').textContent = topMult.multiplier.toFixed(1) + 'x';
-    document.getElementById('stat-mult-sub').textContent =
-      topMult.player + ' · ' + topMult.variant;
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -787,6 +797,90 @@ function renderVariantAverages(avgs) {
       <div class="variant-price">$${Math.round(a.avgPrice)}</div>
       <div class="variant-count">${a.totalSales} sales</div>
     </div>`).join('');
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Monthly sales volume chart
+// ─────────────────────────────────────────────────────────────────────────────
+let monthlyChart = null;
+function renderMonthlySalesChart(sales, products) {
+  const el = document.getElementById('variant-avgs-week');
+
+  // Get Monday of the current week — we exclude this partial week
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+  const daysToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+  const thisWeekMonday = new Date(now);
+  thisWeekMonday.setHours(0,0,0,0);
+  thisWeekMonday.setDate(now.getDate() - daysToMonday);
+
+  // Group sales into full ISO weeks (Mon-Sun), excluding current partial week
+  const byWeek = {};
+  sales.forEach(s => {
+    if (!s.date) return;
+    const d = new Date(s.date);
+    if (d >= thisWeekMonday) return; // skip current partial week
+
+    // Get Monday of this sale's week
+    const day = d.getDay();
+    const diff = (day === 0 ? 6 : day - 1);
+    const monday = new Date(d);
+    monday.setHours(0,0,0,0);
+    monday.setDate(d.getDate() - diff);
+
+    const key = monday.toISOString().substring(0, 10);
+    const label = monday.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+    if (!byWeek[key]) byWeek[key] = { label, count: 0 };
+    byWeek[key].count++;
+  });
+
+  const sorted = Object.entries(byWeek).sort((a, b) => a[0].localeCompare(b[0]));
+
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty">not enough data yet</div>';
+    return;
+  }
+
+  el.innerHTML = '<div style="position:relative;height:200px"><canvas id="monthlyChart"></canvas></div>';
+  if (monthlyChart) { monthlyChart.destroy(); monthlyChart = null; }
+
+  const ctx = document.getElementById('monthlyChart').getContext('2d');
+  monthlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => e[1].label),
+      datasets: [{
+        label: 'Sales',
+        data: sorted.map(e => e[1].count),
+        backgroundColor: 'rgba(232,255,71,0.3)',
+        borderColor: '#e8ff47',
+        borderWidth: 1,
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111',
+          borderColor: '#282828',
+          borderWidth: 1,
+          titleColor: '#666',
+          bodyColor: '#f0f0f0',
+          titleFont: { family: 'DM Mono', size: 10 },
+          bodyFont: { family: 'DM Mono', size: 12 },
+          callbacks: { label: ctx => ctx.parsed.y + ' sales' }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 } } },
+        y: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 }, stepSize: 1 }, beginAtZero: true }
+      }
+    }
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -848,23 +942,35 @@ function renderRecentSales(sales) {
 function renderPriceChart(sales) {
   if (priceChart) { priceChart.destroy(); priceChart = null; }
 
-  // Group by date, compute daily avg
-  const byDate = {};
-  sales.forEach(s => {
-    if (!s.date || !s.price) return;
-    const d = new Date(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push(s.price);
+  // Filter to parallels only (non-base) and last 6 months
+  const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+  const parallelSales = sales.filter(s =>
+    s.variant && s.variant !== 'Base' &&
+    s.date && new Date(s.date) >= sixMonthsAgo &&
+    s.price > 0
+  );
+
+  // Group by week for cleaner chart over 6 months
+  const byWeek = {};
+  parallelSales.forEach(s => {
+    const d = new Date(s.date);
+    const day = d.getDay();
+    const diff = (day === 0 ? 6 : day - 1);
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - diff);
+    const key = monday.toISOString().substring(0, 10);
+    const label = monday.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    if (!byWeek[key]) byWeek[key] = { label, prices: [] };
+    byWeek[key].prices.push(s.price);
   });
 
-  const sorted = Object.entries(byDate)
-    .sort((a,b) => new Date(a[0]) - new Date(b[0]))
-    .slice(-30);
+  const sorted = Object.entries(byWeek)
+    .sort((a,b) => a[0].localeCompare(b[0]));
 
   if (!sorted.length) return;
 
-  const labels = sorted.map(e => e[0]);
-  const avgs   = sorted.map(e => Math.round(e[1].reduce((a,b)=>a+b,0)/e[1].length));
+  const labels = sorted.map(e => e[1].label);
+  const avgs   = sorted.map(e => Math.round(e[1].prices.reduce((a,b)=>a+b,0)/e[1].prices.length));
 
   const ctx = document.getElementById('priceChart').getContext('2d');
   priceChart = new Chart(ctx, {
