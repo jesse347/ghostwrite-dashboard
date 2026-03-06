@@ -704,7 +704,7 @@ header {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG — paste your Apps Script web app URL here after deploying
 // ─────────────────────────────────────────────────────────────────────────────
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbx7BBtFvrzSkFYerOYKemFB1IEtoawIgg5e66q1Dnq5Hcx7EgQ-SndMkeeig2aeuta_Og/exec';
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbzt3M__dkQ1MIxWc0GpmcGLTT-9KSa0r15MrSRVoo6q3k8NXRT8FPZgTixTZ6OWX0PCgg/exec';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // State
@@ -1025,6 +1025,7 @@ function renderBasePriceByPlayer(sortDir) {
     ? b.totalSales - a.totalSales
     : a.totalSales - b.totalSales
   );
+  rows = rows.slice(0, 10);
 
   if (!rows.length) { el.innerHTML = '<div class="empty">no base sales data yet</div>'; return; }
 
