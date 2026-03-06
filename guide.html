@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostwrite · price guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surf1: #111111;
+  --surf2: #181818;
+  --border: #242424;
+  --border2: #1a1a1a;
+  --accent: #e8ff47;
+  --text: #f0f0f0;
+  --muted: #888;
+  --muted2: #555;
+  --display: 'DM Mono', monospace;
+  --body: 'DM Sans', sans-serif;
+  --fire: #ff4d00;
+  --chrome: #a8c7fa;
+  --gold: #ffd700;
+  --emerald: #3ddc84;
+  --vides: #b47aff;
+  --victory: #ff9500;
+  --base: #888;
+  --flag-red: #ff4040;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 13px; min-height: 100vh; }
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.header {
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: var(--display); font-size: 18px; color: var(--accent); letter-spacing: -0.5px; }
+.logo span { color: var(--muted); font-size: 12px; margin-left: 10px; letter-spacing: 2px; text-transform: uppercase; }
+.nav-links { display: flex; gap: 24px; align-items: center; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; transition: color 0.15s; }
+.nav-links a:hover { color: var(--text); }
+.nav-links a.active { color: var(--accent); }
+
+/* ── Page layout ─────────────────────────────────────────────────────────────── */
+.page { display: flex; height: calc(100vh - 65px); overflow: hidden; }
+
+/* ── Left: product table ─────────────────────────────────────────────────────── */
+.product-list {
+  flex: 1; overflow-y: auto; padding: 24px 32px;
+  transition: flex 0.25s ease;
+}
+.product-list.drawer-open { flex: 0 0 55%; }
+
+/* ── Filters ─────────────────────────────────────────────────────────────────── */
+.filter-row {
+  display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-row input {
+  background: var(--surf1); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--display); font-size: 11px; padding: 7px 12px; border-radius: 3px;
+  width: 220px; outline: none;
+}
+.filter-row input::placeholder { color: var(--muted2); }
+.filter-row input:focus { border-color: var(--accent); }
+.chip {
+  background: var(--surf1); border: 1px solid var(--border); color: var(--muted);
+  font-family: var(--display); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 5px 10px; border-radius: 2px; cursor: pointer; transition: all 0.15s;
+}
+.chip:hover { color: var(--text); border-color: var(--muted); }
+.chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.result-count { color: var(--muted); font-family: var(--display); font-size: 10px; margin-left: auto; }
+
+/* ── Product table ───────────────────────────────────────────────────────────── */
+.guide-table { width: 100%; border-collapse: collapse; }
+.guide-table thead th {
+  font-family: var(--display); font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); text-align: left; padding: 0 12px 10px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+.guide-table thead th:hover { color: var(--text); }
+.guide-table thead th.sort-asc::after { content: ' ▲'; color: var(--accent); }
+.guide-table thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
+.guide-table tbody tr {
+  border-bottom: 1px solid var(--border2); cursor: pointer; transition: background 0.1s;
+}
+.guide-table tbody tr:hover { background: var(--surf1); }
+.guide-table tbody tr.selected { background: var(--surf2); border-left: 2px solid var(--accent); }
+.guide-table td {
+  padding: 10px 12px 10px 0; font-size: 12px; color: var(--muted2); vertical-align: middle;
+}
+.td-player { color: var(--text) !important; font-weight: 500; }
+.td-set { font-size: 9px; color: var(--muted) !important; letter-spacing: 0.5px; }
+.td-price { font-family: var(--display); font-size: 16px; color: var(--accent) !important; }
+.td-last { font-family: var(--display); font-size: 13px; color: var(--text) !important; }
+.td-sales { font-family: var(--display); font-size: 12px; }
+
+.v-tag {
+  display: inline-block; font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 2px 6px; border: 1px solid; border-radius: 2px;
+}
+.v-fire    { color: var(--fire);    border-color: var(--fire); }
+.v-chrome  { color: var(--chrome);  border-color: var(--chrome); }
+.v-gold    { color: var(--gold);    border-color: var(--gold); }
+.v-emerald { color: var(--emerald); border-color: var(--emerald); }
+.v-vides   { color: var(--vides);   border-color: var(--vides); }
+.v-victory { color: var(--victory); border-color: var(--victory); }
+.v-base    { color: var(--base);    border-color: var(--base); }
+
+/* ── Right: listing drawer ───────────────────────────────────────────────────── */
+.drawer {
+  width: 0; overflow: hidden; border-left: 1px solid var(--border);
+  background: var(--surf1); transition: width 0.25s ease;
+  display: flex; flex-direction: column;
+}
+.drawer.open { width: 45%; min-width: 400px; }
+
+.drawer-header {
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0;
+}
+.drawer-title { font-family: var(--display); font-size: 13px; color: var(--text); line-height: 1.4; }
+.drawer-subtitle { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.5px; }
+.drawer-close {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  width: 28px; height: 28px; border-radius: 2px; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all 0.15s;
+}
+.drawer-close:hover { border-color: var(--text); color: var(--text); }
+
+.drawer-stats {
+  display: flex; gap: 24px; padding: 14px 24px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.drawer-stat-label { font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.drawer-stat-value { font-family: var(--display); font-size: 18px; color: var(--accent); }
+
+.drawer-listings { flex: 1; overflow-y: auto; padding: 16px 24px; }
+
+/* ── Listing card ─────────────────────────────────────────────────────────────── */
+.listing-card {
+  display: flex; gap: 12px; padding: 12px; margin-bottom: 10px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+  transition: border-color 0.15s;
+}
+.listing-card:hover { border-color: var(--muted2); }
+.listing-card.flagged { border-color: var(--flag-red) !important; }
+
+.listing-img {
+  width: 64px; height: 64px; object-fit: cover; border-radius: 2px; flex-shrink: 0;
+  background: var(--surf2);
+}
+.listing-img-placeholder {
+  width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;
+  background: var(--surf2); border-radius: 2px; flex-shrink: 0; font-size: 24px;
+}
+
+.listing-body { flex: 1; min-width: 0; }
+.listing-title {
+  font-size: 11px; color: var(--text); line-height: 1.4; margin-bottom: 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.listing-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.listing-price { font-family: var(--display); font-size: 18px; color: var(--accent); }
+.listing-date { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; }
+.listing-link {
+  font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+  text-decoration: none; border: 1px solid var(--border); padding: 2px 7px; border-radius: 2px;
+  transition: all 0.15s;
+}
+.listing-link:hover { color: var(--accent); border-color: var(--accent); }
+
+.listing-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.flag-btn {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  font-family: var(--display); font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 4px 8px; border-radius: 2px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.flag-btn:hover { border-color: var(--flag-red); color: var(--flag-red); }
+.flag-btn.flagged { background: var(--flag-red); border-color: var(--flag-red); color: #fff; }
+
+/* ── Loading / empty states ──────────────────────────────────────────────────── */
+.loading-wrap { padding: 60px; text-align: center; color: var(--muted); font-family: var(--display); font-size: 11px; letter-spacing: 1px; }
+.loading-dot { display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 1.2s infinite; margin: 0 2px; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%,100%{opacity:0.2} 50%{opacity:1} }
+
+.empty { padding: 40px; text-align: center; color: var(--muted2); font-family: var(--display); font-size: 11px; letter-spacing: 1px; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">ghostwrite <span>price guide</span></div>
+  <div class="nav-links">
+    <a href="index.html">← dashboard</a>
+    <a href="guide.html" class="active">price guide</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Left: Product list -->
+  <div class="product-list" id="product-list">
+    <div class="filter-row">
+      <input type="text" id="search-input" placeholder="search player, set..." oninput="applyFilters()">
+      <div id="league-chips">
+        <button class="chip active" data-league="ALL" onclick="setLeague(this)">ALL</button>
+        <button class="chip" data-league="NBA" onclick="setLeague(this)">NBA</button>
+        <button class="chip" data-league="WNBA" onclick="setLeague(this)">WNBA</button>
+        <button class="chip" data-league="MLB" onclick="setLeague(this)">MLB</button>
+      </div>
+      <div id="variant-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <span class="result-count" id="result-count"></span>
+    </div>
+
+    <div id="table-wrap">
+      <div class="loading-wrap">
+        <div><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+        <div style="margin-top:12px">loading price guide...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Listing drawer -->
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title" id="drawer-title">—</div>
+        <div class="drawer-subtitle" id="drawer-subtitle"></div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-stats" id="drawer-stats"></div>
+    <div class="drawer-listings" id="drawer-listings">
+      <div class="empty">select a product to view listings</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbx7BBtFvrzSkFYerOYKemFB1IEtoawIgg5e66q1Dnq5Hcx7EgQ-SndMkeeig2aeuta_Og/exec';
+
+const VARIANT_COLORS = {
+  Fire: 'var(--fire)', Chrome: 'var(--chrome)', Gold: 'var(--gold)',
+  Emerald: 'var(--emerald)', Vides: 'var(--vides)', Victory: 'var(--victory)', Base: 'var(--base)'
+};
+const VARIANT_ORDER = ['Fire','Chrome','Gold','Emerald','Vides','Victory','Base'];
+
+let allProducts = [];
+let allListings = [];
+let activeLeague = 'ALL';
+let activeVariant = 'ALL';
+let sortCol = 'avgPrice';
+let sortDir = 'desc';
+let selectedProduct = null;
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const data = await fetchData();
+  allProducts = data.products || [];
+  allListings = data.allListings || [];
+  buildVariantChips();
+  applyFilters();
+});
+
+async function fetchData() {
+  try {
+    const res = await fetch(DATA_URL, { method: 'GET', redirect: 'follow' });
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch(e) {
+    document.getElementById('table-wrap').innerHTML = '<div class="empty">failed to load data</div>';
+    return { products: [], allListings: [] };
+  }
+}
+
+// ── Variant chips ────────────────────────────────────────────────────────────
+function buildVariantChips() {
+  const variants = [...new Set(allProducts.map(p => p.variant).filter(Boolean))];
+  variants.sort((a,b) => (VARIANT_ORDER.indexOf(a)||99) - (VARIANT_ORDER.indexOf(b)||99));
+  const el = document.getElementById('variant-chips');
+  el.innerHTML = ['ALL', ...variants].map(v => `
+    <button class="chip ${v==='ALL'?'active':''}" data-variant="${v}" onclick="setVariant(this)"
+      style="${v !== 'ALL' ? 'color:' + (VARIANT_COLORS[v]||'#888') + ';border-color:' + (VARIANT_COLORS[v]||'#888') : ''}"
+    >${v}</button>
+  `).join('');
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+function setLeague(btn) {
+  document.querySelectorAll('#league-chips .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeLeague = btn.dataset.league;
+  applyFilters();
+}
+
+function setVariant(btn) {
+  document.querySelectorAll('#variant-chips .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeVariant = btn.dataset.variant;
+  applyFilters();
+}
+
+function applyFilters() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+
+  let filtered = allProducts.filter(p => {
+    if (activeLeague !== 'ALL') {
+      const s = (p.set||'').toUpperCase();
+      if (activeLeague === 'NBA' && (!s.includes('NBA') || s.includes('WNBA'))) return false;
+      if (activeLeague === 'WNBA' && !s.includes('WNBA')) return false;
+      if (activeLeague === 'MLB' && !s.includes('MLB')) return false;
+    }
+    if (activeVariant !== 'ALL' && p.variant !== activeVariant) return false;
+    if (q && !`${p.player} ${p.set} ${p.variant}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    let av = a[sortCol] || 0, bv = b[sortCol] || 0;
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    return sortDir === 'desc' ? (bv > av ? 1 : -1) : (av > bv ? 1 : -1);
+  });
+
+  document.getElementById('result-count').textContent = filtered.length + ' products';
+  renderTable(filtered);
+}
+
+// ── Table ────────────────────────────────────────────────────────────────────
+function renderTable(products) {
+  const cols = [
+    { key: 'player',        label: 'Player',    },
+    { key: 'variant',       label: 'Variant',   },
+    { key: 'avgPrice',      label: 'Avg Price', },
+    { key: 'lastSalePrice', label: 'Last Sale', },
+    { key: 'totalSales',    label: 'Sales',     },
+    { key: 'sales30d',      label: '30d Sales', },
+  ];
+
+  const thead = cols.map(c => {
+    const cls = sortCol === c.key ? ('sort-' + sortDir) : '';
+    return `<th class="${cls}" onclick="sortBy('${c.key}')">${c.label}</th>`;
+  }).join('');
+
+  const tbody = products.map(p => {
+    const vClass = 'v-' + (p.variant||'base').toLowerCase();
+    const isSelected = selectedProduct &&
+      selectedProduct.set === p.set &&
+      selectedProduct.player === p.player &&
+      selectedProduct.variant === p.variant;
+
+    return `<tr class="${isSelected ? 'selected' : ''}" onclick="openDrawer(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+      <td>
+        <div class="td-player">${p.player}</div>
+        <div class="td-set">${p.set}</div>
+      </td>
+      <td><span class="v-tag ${vClass}">${p.variant}</span></td>
+      <td class="td-price">${p.avgPrice ? '$' + Math.round(p.avgPrice) : '—'}</td>
+      <td class="td-last">${p.lastSalePrice ? '$' + Math.round(p.lastSalePrice) : '—'}</td>
+      <td class="td-sales">${p.totalSales || 0}</td>
+      <td class="td-sales">${p.sales30d || 0}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-wrap').innerHTML = `
+    <table class="guide-table">
+      <thead><tr>${thead}</tr></thead>
+      <tbody>${tbody || '<tr><td colspan="6"><div class="empty">no products match</div></td></tr>'}</tbody>
+    </table>`;
+}
+
+function sortBy(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    sortCol = col;
+    sortDir = 'desc';
+  }
+  applyFilters();
+}
+
+// ── Drawer ───────────────────────────────────────────────────────────────────
+function openDrawer(product) {
+  selectedProduct = product;
+
+  // Update selected row highlight
+  applyFilters();
+
+  // Get listings for this product
+  const listings = allListings.filter(l =>
+    l.set === product.set &&
+    l.player === product.player &&
+    l.variant === product.variant
+  ).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Header
+  const vClass = 'v-' + (product.variant||'base').toLowerCase();
+  document.getElementById('drawer-title').innerHTML =
+    `${product.player} <span class="v-tag ${vClass}" style="margin-left:6px">${product.variant}</span>`;
+  document.getElementById('drawer-subtitle').textContent = product.set;
+
+  // Stats
+  document.getElementById('drawer-stats').innerHTML = `
+    <div><div class="drawer-stat-label">Avg Price</div><div class="drawer-stat-value">${product.avgPrice ? '$' + Math.round(product.avgPrice) : '—'}</div></div>
+    <div><div class="drawer-stat-label">Last Sale</div><div class="drawer-stat-value">${product.lastSalePrice ? '$' + Math.round(product.lastSalePrice) : '—'}</div></div>
+    <div><div class="drawer-stat-label">Total Sales</div><div class="drawer-stat-value">${product.totalSales || 0}</div></div>
+    <div><div class="drawer-stat-label">30d Sales</div><div class="drawer-stat-value">${product.sales30d || 0}</div></div>
+  `;
+
+  // Listings
+  if (!listings.length) {
+    document.getElementById('drawer-listings').innerHTML = '<div class="empty">no listings found</div>';
+  } else {
+    document.getElementById('drawer-listings').innerHTML = listings.map(l => renderListingCard(l)).join('');
+  }
+
+  // Open drawer
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('product-list').classList.add('drawer-open');
+}
+
+function closeDrawer() {
+  selectedProduct = null;
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('product-list').classList.remove('drawer-open');
+  applyFilters();
+}
+
+// ── Listing card ─────────────────────────────────────────────────────────────
+function renderListingCard(listing) {
+  const flagClass = listing.flagged ? 'flagged' : '';
+  const flagLabel = listing.flagged ? '⚑ flagged' : 'flag';
+  const flagBtnClass = listing.flagged ? 'flagged' : '';
+
+  const imgHtml = listing.image
+    ? `<img class="listing-img" src="${listing.image}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    + `<div class="listing-img-placeholder" style="display:none">👻</div>`
+    : `<div class="listing-img-placeholder">👻</div>`;
+
+  const dateStr = listing.date
+    ? new Date(listing.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+    : '—';
+
+  const linkHtml = listing.url
+    ? `<a class="listing-link" href="${listing.url}" target="_blank" rel="noopener">↗ view listing</a>`
+    : '';
+
+  return `<div class="listing-card ${flagClass}" id="card-${listing.rowIndex}">
+    ${imgHtml}
+    <div class="listing-body">
+      <div class="listing-title">${listing.title}</div>
+      <div class="listing-meta">
+        <span class="listing-price">$${Math.round(listing.price)}</span>
+        <span class="listing-date">${dateStr}</span>
+        ${linkHtml}
+      </div>
+    </div>
+    <div class="listing-actions">
+      <button class="flag-btn ${flagBtnClass}" onclick="toggleFlag(event, ${listing.rowIndex}, ${listing.flagged})">${flagLabel}</button>
+    </div>
+  </div>`;
+}
+
+// ── Flagging ─────────────────────────────────────────────────────────────────
+async function toggleFlag(event, rowIndex, currentlyFlagged) {
+  event.stopPropagation();
+  const newFlagged = !currentlyFlagged;
+
+  // Optimistic UI update
+  const card = document.getElementById('card-' + rowIndex);
+  const btn = card.querySelector('.flag-btn');
+  if (newFlagged) {
+    card.classList.add('flagged');
+    btn.classList.add('flagged');
+    btn.textContent = '⚑ flagged';
+  } else {
+    card.classList.remove('flagged');
+    btn.classList.remove('flagged');
+    btn.textContent = 'flag';
+  }
+
+  // Update local data
+  const listing = allListings.find(l => l.rowIndex === rowIndex);
+  if (listing) listing.flagged = newFlagged;
+
+  // Write to sheet via Apps Script
+  try {
+    await fetch(DATA_URL, {
+      method: 'POST',
+      body: JSON.stringify({ rowIndex, flagged: newFlagged }),
+    });
+  } catch(e) {
+    // Revert on error
+    if (listing) listing.flagged = currentlyFlagged;
+    if (newFlagged) {
+      card.classList.remove('flagged');
+      btn.classList.remove('flagged');
+      btn.textContent = 'flag';
+    } else {
+      card.classList.add('flagged');
+      btn.classList.add('flagged');
+      btn.textContent = '⚑ flagged';
+    }
+    console.error('Flag failed:', e);
+  }
+}
+</script>
+</body>
+</html>
