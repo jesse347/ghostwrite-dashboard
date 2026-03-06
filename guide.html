@@ -281,8 +281,8 @@ let selectedProduct = null;
 // ── Boot ────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   const data = await fetchData();
-  allProducts = data.products || [];
-  allListings = data.allListings || [];
+  allProducts = (data.products || []).filter(p => p.player && p.player !== 'Unknown');
+  allListings = (data.allListings || []).filter(l => l.player && l.player !== 'Unknown');
   buildVariantChips();
   applyFilters();
 });
