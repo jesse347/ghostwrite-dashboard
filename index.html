@@ -581,6 +581,31 @@ header {
 /* ── League tab filter bar ───────────────────────────────────────────────────── */
 .filter-bar { margin-bottom: 0; }
 
+
+/* ── Power Rankings ──────────────────────────────────────────────────────────── */
+.power-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.power-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 2px; transition: border-color 0.15s; cursor: default;
+}
+.power-row:hover { border-color: var(--muted2); }
+.power-rank {
+  font-family: var(--display); font-size: 16px; color: var(--muted2);
+  width: 22px; flex-shrink: 0; text-align: right;
+}
+.power-rank.top3 { color: var(--accent); }
+.power-info { flex: 1; min-width: 0; }
+.power-name { font-size: 11px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.power-meta { font-size: 8px; color: var(--muted); letter-spacing: 0.5px; margin-top: 1px; }
+.power-score-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.power-score { font-family: var(--display); font-size: 15px; color: var(--accent); }
+.power-bar-bg { width: 60px; height: 2px; background: var(--border); border-radius: 1px; }
+.power-bar-fill { height: 100%; background: var(--accent); border-radius: 1px; transition: width 0.4s ease; }
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -656,6 +681,19 @@ header {
   <div class="section-label">top sales · last 30 days <span id="recent-count" style="margin-left:8px;color:var(--muted2);font-size:9px;letter-spacing:1px;text-transform:none"></span></div>
   <div class="sales-feed" id="recent-sales"><div class="loading" style="grid-column:1/-1"></div></div>
 
+
+  <!-- Power Rankings -->
+  <div class="panel" style="margin-bottom:24px">
+    <div class="panel-title">power rankings <span style="color:var(--muted);font-size:8px">variant-normalized score · top 20 players · all sets</span>
+      <span style="float:right;display:flex;gap:6px" id="power-league-tabs">
+        <button class="chip active" data-league="ALL" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">ALL</button>
+        <button class="chip" data-league="NBA" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">NBA</button>
+        <button class="chip" data-league="WNBA" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">WNBA</button>
+        <button class="chip" data-league="MLB" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">MLB</button>
+      </span>
+    </div>
+    <div id="power-rankings"><div class="loading"></div></div>
+  </div>
 
   <!-- Movers + Top Players -->
   <div class="two-col" style="margin-bottom:32px">
@@ -764,6 +802,7 @@ function renderAll(data) {
   renderPriceChart(data.recentSales || []);
   renderMovers(data.products || []);
   renderTopPlayers(data.products || []);
+  renderPowerRankings(data.products || [], 'ALL');
   renderProducts();
 
   const t = new Date(data.fetchedAt);
@@ -1159,6 +1198,97 @@ function renderPriceChart(sales) {
   });
 }
 
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Power Rankings
+// ─────────────────────────────────────────────────────────────────────────────
+let activePowerLeague = 'ALL';
+
+function switchPowerLeague(btn) {
+  document.querySelectorAll('#power-league-tabs .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activePowerLeague = btn.dataset.league;
+  renderPowerRankings(allProductsData, activePowerLeague);
+}
+
+function renderPowerRankings(products, league) {
+  const el = document.getElementById('power-rankings');
+
+  // Filter by league
+  const filtered = league === 'ALL' ? products : products.filter(p => {
+    const s = (p.set || '').toUpperCase();
+    if (league === 'NBA')  return s.includes('NBA') && !s.includes('WNBA');
+    if (league === 'WNBA') return s.includes('WNBA');
+    if (league === 'MLB')  return s.includes('MLB');
+    return true;
+  });
+
+  // Step 1: compute median price per variant across all players (baseline)
+  const variantPrices = {};
+  filtered.forEach(p => {
+    if (!p.avgPrice || !p.totalSales) return;
+    if (!variantPrices[p.variant]) variantPrices[p.variant] = [];
+    variantPrices[p.variant].push(p.avgPrice);
+  });
+
+  const variantMedians = {};
+  Object.entries(variantPrices).forEach(([v, prices]) => {
+    const sorted = [...prices].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    variantMedians[v] = sorted.length % 2 !== 0
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
+  });
+
+  // Step 2: for each player, compute avg multiplier across all variants they have
+  const playerMap = {};
+  filtered.forEach(p => {
+    if (!p.avgPrice || !p.totalSales || !variantMedians[p.variant]) return;
+    const multiplier = p.avgPrice / variantMedians[p.variant];
+    if (!playerMap[p.player]) playerMap[p.player] = { multipliers: [], sets: new Set(), sales: 0 };
+    playerMap[p.player].multipliers.push(multiplier);
+    playerMap[p.player].sets.add(p.set);
+    playerMap[p.player].sales += p.totalSales;
+  });
+
+  // Step 3: score = mean of multipliers, rank top 20
+  const ranked = Object.entries(playerMap)
+    .map(([player, d]) => ({
+      player,
+      score: d.multipliers.reduce((a, b) => a + b, 0) / d.multipliers.length,
+      variants: d.multipliers.length,
+      sets: [...d.sets],
+      sales: d.sales,
+    }))
+    .filter(p => p.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 20);
+
+  if (!ranked.length) { el.innerHTML = '<div class="empty">not enough data yet</div>'; return; }
+
+  const maxScore = ranked[0].score;
+
+  el.innerHTML = `<div class="power-grid">${ranked.map((p, i) => {
+    const pct = Math.round((p.score / maxScore) * 100);
+    const isTop3 = i < 3;
+    const scoreDisplay = p.score.toFixed(2) + 'x';
+    const league = p.sets.length === 1
+      ? p.sets[0].replace('Game Face','').replace('2024-25','').replace('2025-26','').replace('2025','').trim()
+      : p.sets.length + ' sets';
+    return `<div class="power-row">
+      <div class="power-rank ${isTop3 ? 'top3' : ''}">${i + 1}</div>
+      <div class="power-info">
+        <div class="power-name">${p.player}</div>
+        <div class="power-meta">${league} · ${p.sales} sales</div>
+      </div>
+      <div class="power-score-wrap">
+        <div class="power-score">${scoreDisplay}</div>
+        <div class="power-bar-bg"><div class="power-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Biggest movers
