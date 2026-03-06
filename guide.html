@@ -194,6 +194,16 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 
 .empty { padding: 40px; text-align: center; color: var(--muted2); font-family: var(--display); font-size: 11px; letter-spacing: 1px; }
 
+
+.afa-badge {
+  font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 2px 6px; border: 1px solid #ffd700; color: #ffd700;
+  border-radius: 2px; font-family: var(--display);
+}
+.source-badge {
+  font-size: 8px; letter-spacing: 1px; color: var(--muted);
+  font-family: var(--display);
+}
 /* ── Scrollbar ───────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -468,6 +478,8 @@ function renderListingCard(listing) {
       <div class="listing-meta">
         <span class="listing-price">$${Math.round(listing.price)}</span>
         <span class="listing-date">${dateStr}</span>
+        ${listing.afa ? `<span class="afa-badge">🏆 ${listing.afa}</span>` : ''}
+        ${listing.source && listing.source !== 'eBay' ? `<span class="source-badge">${listing.source}</span>` : ''}
         ${linkHtml}
       </div>
     </div>
@@ -501,8 +513,11 @@ async function toggleFlag(event, rowIndex, currentlyFlagged) {
 
   // Write to sheet via Apps Script
   try {
+    // Google Apps Script doPost requires no-cors mode
     await fetch(DATA_URL, {
       method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ rowIndex, flagged: newFlagged }),
     });
   } catch(e) {
