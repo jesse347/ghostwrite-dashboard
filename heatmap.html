@@ -207,7 +207,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
 <div class="page-header">
   <div class="page-title">market heat map</div>
-  <div class="page-sub">30-day vs 90-day price trend · per set · projected values where no data exists</div>
+  <div class="page-sub">30-day vs 90-day price trend · all-time avg price · color = relative to peers in same variant · arrows = 30d vs 90d trend</div>
 </div>
 
 <div class="insights-banner" id="insights-banner">
@@ -232,7 +232,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
       <div class="legend-swatch" style="background:var(--hot2)"></div>
       <div class="legend-swatch" style="background:var(--hot3)"></div>
     </div>
-    <span class="legend-label">cooling ←&nbsp;&nbsp;→ heating</span>
+    <span class="legend-label">below avg ←&nbsp;&nbsp;→ above avg</span>
   </div>
   <div class="legend-proj">
     <span class="est-badge">EST</span>
@@ -255,17 +255,17 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
 <div class="summary-row" id="summary-row" style="display:none">
   <div class="summary-stat">
-    <div class="summary-label">Heating Up</div>
+    <div class="summary-label">Highest Price</div>
     <div class="summary-val" id="sum-hot">—</div>
-    <div class="summary-sub">combos: 30d avg &gt; 90d avg</div>
+    <div class="summary-sub">in this set</div>
   </div>
   <div class="summary-stat">
-    <div class="summary-label">Cooling Down</div>
+    <div class="summary-label">Players Tracked</div>
     <div class="summary-val" id="sum-cold">—</div>
-    <div class="summary-sub">combos: 30d avg &lt; 90d avg</div>
+    <div class="summary-sub">in this set</div>
   </div>
   <div class="summary-stat">
-    <div class="summary-label">Biggest Mover</div>
+    <div class="summary-label">Top Sale</div>
     <div class="summary-val" id="sum-mover">—</div>
     <div class="summary-sub" id="sum-mover-sub">—</div>
   </div>
@@ -288,10 +288,10 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 <!-- Tooltip -->
 <div class="tip" id="tip">
   <div class="tt-head" id="tip-head"></div>
-  <div class="tt-row"><span class="tt-l">30-day avg</span><span class="tt-v" id="tip-30d"></span></div>
-  <div class="tt-row"><span class="tt-l">90-day avg</span><span class="tt-v" id="tip-90d"></span></div>
-  <div class="tt-row"><span class="tt-l">Change</span><span class="tt-v" id="tip-chg"></span></div>
-  <div class="tt-row"><span class="tt-l">Sales (30d)</span><span class="tt-v" id="tip-sales"></span></div>
+  <div class="tt-row"><span class="tt-l">All-time avg</span><span class="tt-v" id="tip-30d"></span></div>
+  <div class="tt-row"><span class="tt-l">30d / 90d avg</span><span class="tt-v" id="tip-90d"></span></div>
+  <div class="tt-row"><span class="tt-l">Trend</span><span class="tt-v" id="tip-chg"></span></div>
+  <div class="tt-row"><span class="tt-l">Total sales</span><span class="tt-v" id="tip-sales"></span></div>
 </div>
 
 <script>
@@ -300,7 +300,7 @@ const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb3
 // ── State ──────────────────────────────────────────────────────────────────
 let allData = null;
 let activeSet = null;
-const VARIANT_ORDER = ['Fire','Chrome','Gold','Emerald','Vides','Victory','SP','Base'];
+const VARIANT_ORDER = ['Base','Victory','Vides','Emerald','Gold','Chrome','Fire','SP'];
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
 async function loadData() {
@@ -328,11 +328,13 @@ function initPage() {
     banner.classList.add('visible');
   }
 
-  // Build set tabs
-  const sets = [...new Set((allData.products || [])
-    .filter(p => p.player && p.player !== 'Unknown')
-    .map(p => p.set)
-  )].filter(Boolean).sort();
+  // Build set tabs — sorted by total sales descending
+  const setTotals = {};
+  (allData.products || []).filter(p => p.player && p.player !== 'Unknown').forEach(p => {
+    if (!p.set) return;
+    setTotals[p.set] = (setTotals[p.set] || 0) + (p.totalSales || 0);
+  });
+  const sets = Object.keys(setTotals).sort((a, b) => setTotals[b] - setTotals[a]);
 
   if (!sets.length) {
     document.getElementById('heatmap-container').innerHTML =
@@ -340,7 +342,7 @@ function initPage() {
     return;
   }
 
-  activeSet = sets[0];
+  activeSet = sets[0]; // default = most sales
   renderTabs(sets);
   renderHeatmap();
   document.getElementById('summary-row').style.display = 'flex';
@@ -359,7 +361,12 @@ function renderTabs(sets) {
 
 function switchSet(s) {
   activeSet = s;
-  const sets = [...new Set((allData.products || []).filter(p => p.player && p.player !== 'Unknown').map(p => p.set))].filter(Boolean).sort();
+  const setTotals = {};
+  (allData.products || []).filter(p => p.player && p.player !== 'Unknown').forEach(p => {
+    if (!p.set) return;
+    setTotals[p.set] = (setTotals[p.set] || 0) + (p.totalSales || 0);
+  });
+  const sets = Object.keys(setTotals).sort((a, b) => setTotals[b] - setTotals[a]);
   renderTabs(sets);
   renderHeatmap();
 }
@@ -502,18 +509,36 @@ function renderHeatmap() {
     return;
   }
 
-  // Determine which variants actually exist in this set
-  const variantsInSet = VARIANT_ORDER.filter(v =>
-    setProducts.some(p => p.variant === v)
-  );
-  // Also include any custom variants not in VARIANT_ORDER
+  // Variants present in this set, in VARIANT_ORDER, plus any extras before SP at end
+  const knownVariants = VARIANT_ORDER.filter(v => setProducts.some(p => p.variant === v));
   const extraVariants = [...new Set(setProducts.map(p => p.variant))]
     .filter(v => !VARIANT_ORDER.includes(v));
-  const variants = [...variantsInSet, ...extraVariants];
+  // SP goes last — already in VARIANT_ORDER at end, extras go before SP
+  const spIdx = knownVariants.indexOf('SP');
+  const variants = spIdx >= 0
+    ? [...knownVariants.slice(0, spIdx), ...extraVariants, 'SP']
+    : [...knownVariants, ...extraVariants];
 
   const { projections, byPlayer } = buildProjections(activeSet, setProducts);
 
-  // Get sorted player list (by avg base price desc)
+  // Per-variant: compute min/max avg price across all players (for color scaling)
+  const variantPriceRange = {};
+  variants.forEach(variant => {
+    const prices = setProducts
+      .filter(p => p.variant === variant && p.avgPrice > 0)
+      .map(p => p.avgPrice);
+    // Also include projected prices for range
+    Object.entries(projections).forEach(([key, proj]) => {
+      if (key.endsWith('|||' + variant)) prices.push(proj.price);
+    });
+    if (prices.length > 1) {
+      variantPriceRange[variant] = { min: Math.min(...prices), max: Math.max(...prices) };
+    } else if (prices.length === 1) {
+      variantPriceRange[variant] = { min: prices[0] * 0.7, max: prices[0] * 1.3 };
+    }
+  });
+
+  // Sort players by base avg price desc
   const players = [...new Set(setProducts.map(p => p.player))].sort((a, b) => {
     const aBase = byPlayer[a]?.['Base']?.avgPrice || 0;
     const bBase = byPlayer[b]?.['Base']?.avgPrice || 0;
@@ -528,7 +553,8 @@ function renderHeatmap() {
     ${variants.map(v => `<div class="col-header">${v}</div>`).join('')}
   </div>`;
 
-  let hotCount = 0, coldCount = 0, bigPct = 0, bigPlayer = '', bigVariant = '', projCount = 0, aiProjCount = 0;
+  let projCount = 0, aiProjCount = 0;
+  let highestPrice = 0, highestPlayer = '', highestVariant = '';
 
   players.forEach(player => {
     const cells = variants.map(variant => {
@@ -538,25 +564,28 @@ function renderHeatmap() {
 
       // Real data
       if (realData && realData.avgPrice > 0) {
+        const price = realData.avgPrice; // ALL-TIME avg — headline number
         const p30 = realData.avg30d || 0;
         const p90 = realData.avg90d || 0;
-        const pct = (p30 && p90) ? Math.round(((p30 - p90) / p90) * 100) : null;
-        const cls = heatClass(pct);
-        const sign = pct != null && pct >= 0 ? '+' : '';
-        if (pct != null && pct > 0) hotCount++;
-        if (pct != null && pct < 0) coldCount++;
-        if (pct != null && Math.abs(pct) > Math.abs(bigPct)) { bigPct = pct; bigPlayer = player; bigVariant = variant; }
 
-        const displayPct = pct != null ? `${sign}${pct}%` : '—';
-        const displayPrice = `$${Math.round(p30 || realData.avgPrice)}`;
+        // Arrow: 30d vs 90d trend (only if both exist)
+        const trendPct = (p30 && p90) ? Math.round(((p30 - p90) / p90) * 100) : null;
+        const arrow = heatArrow(trendPct);
+
+        // Heat color: how does this player's price compare to others in this variant?
+        const range = variantPriceRange[variant];
+        const cls = range ? heatClassByPrice(price, range.min, range.max) : 'heat-flat';
+
+        if (price > highestPrice) { highestPrice = price; highestPlayer = player; highestVariant = variant; }
 
         return `<div class="heat-cell ${cls}"
           data-type="real" data-player="${esc(player)}" data-variant="${variant}"
-          data-p30="${p30}" data-p90="${p90}" data-pct="${pct||''}" data-sales="${realData.sales30d||0}"
+          data-avg="${price}" data-p30="${p30}" data-p90="${p90}"
+          data-trend="${trendPct != null ? trendPct : ''}" data-sales="${realData.totalSales||0}"
           onmouseenter="showTip(event,this)" onmouseleave="hideTip()">
-          <div class="cell-arrow">${heatArrow(pct)}</div>
-          <div class="cell-pct">${displayPct}</div>
-          <div class="cell-price">${displayPrice}</div>
+          <div class="cell-arrow">${arrow}</div>
+          <div class="cell-pct">$${Math.round(price)}</div>
+          <div class="cell-price">${realData.totalSales} sales</div>
         </div>`;
       }
 
@@ -566,18 +595,18 @@ function renderHeatmap() {
         if (proj.projType === 'ai') aiProjCount++;
         const badgeCls = proj.projType === 'ai' ? 'ai' : 'est';
         const badgeLabel = proj.projType === 'ai' ? 'AI' : 'EST';
-        const cellCls = proj.projType === 'ai' ? 'heat-flat projected-ai' : 'heat-flat projected';
-        const priceColor = proj.projType === 'ai' ? '#b0f0ff' : 'var(--accent)';
-        return `<div class="heat-cell ${cellCls}"
+        const range = variantPriceRange[variant];
+        const baseCls = range ? heatClassByPrice(proj.price, range.min, range.max) : 'heat-flat';
+        const projCls = proj.projType === 'ai' ? `${baseCls} projected-ai` : `${baseCls} projected`;
+        return `<div class="heat-cell ${projCls}"
           data-type="proj" data-player="${esc(player)}" data-variant="${variant}"
           onclick="openProjectionDrawer('${esc(player)}','${variant}')">
           <div class="cell-badge ${badgeCls}">${badgeLabel}</div>
-          <div class="cell-pct" style="font-size:13px;color:${priceColor}">$${proj.price}</div>
+          <div class="cell-pct" style="font-size:13px">$${proj.price}</div>
           <div class="cell-price" style="color:var(--muted)">est.</div>
         </div>`;
       }
 
-      // No data, no projection
       return `<div class="heat-cell no-data"></div>`;
     }).join('');
 
@@ -593,11 +622,10 @@ function renderHeatmap() {
   document.getElementById('heatmap-container').innerHTML = html;
 
   // Summary
-  document.getElementById('sum-hot').textContent = hotCount;
-  document.getElementById('sum-cold').textContent = coldCount;
-  const sign = bigPct >= 0 ? '+' : '';
-  document.getElementById('sum-mover').textContent = bigPlayer ? `${sign}${bigPct}%` : '—';
-  document.getElementById('sum-mover-sub').textContent = bigPlayer ? `${bigPlayer} · ${bigVariant}` : '—';
+  document.getElementById('sum-hot').textContent = highestPrice ? '$' + Math.round(highestPrice) : '—';
+  document.getElementById('sum-cold').textContent = players.length;
+  document.getElementById('sum-mover').textContent = highestPlayer || '—';
+  document.getElementById('sum-mover-sub').textContent = highestPlayer ? `${highestPlayer} · ${highestVariant}` : '—';
   document.getElementById('sum-proj').textContent = projCount;
   document.getElementById('sum-proj-sub').textContent =
     aiProjCount > 0 ? `${aiProjCount} AI-calibrated, ${projCount - aiProjCount} statistical` : 'estimated values';
@@ -711,19 +739,20 @@ function closeDrawer() {
 
 // ── Tooltip (real cells) ───────────────────────────────────────────────────
 function showTip(e, el) {
+  const avg = Number(el.dataset.avg) || 0;
   const p30 = Number(el.dataset.p30) || 0;
   const p90 = Number(el.dataset.p90) || 0;
-  const pct = el.dataset.pct !== '' ? Number(el.dataset.pct) : null;
+  const trend = el.dataset.trend !== '' ? Number(el.dataset.trend) : null;
   const sales = el.dataset.sales;
   const tip = document.getElementById('tip');
   document.getElementById('tip-head').textContent = el.dataset.player + ' · ' + el.dataset.variant;
-  document.getElementById('tip-30d').textContent = p30 ? '$' + Math.round(p30) : '—';
-  document.getElementById('tip-90d').textContent = p90 ? '$' + Math.round(p90) : '—';
-  const sign = pct != null && pct >= 0 ? '+' : '';
+  document.getElementById('tip-30d').textContent = avg ? '$' + Math.round(avg) : '—';
+  document.getElementById('tip-90d').textContent = p30 && p90 ? `$${Math.round(p30)} / $${Math.round(p90)}` : p30 ? '$' + Math.round(p30) : '—';
+  const sign = trend != null && trend >= 0 ? '+' : '';
   const chgEl = document.getElementById('tip-chg');
-  chgEl.textContent = pct != null ? `${sign}${pct}%` : '—';
-  chgEl.className = 'tt-v ' + (pct == null ? '' : pct >= 0 ? 'up' : 'down');
-  document.getElementById('tip-sales').textContent = sales ? sales + ' sales (30d)' : '—';
+  chgEl.textContent = trend != null ? `${sign}${trend}% (30d vs 90d)` : '—';
+  chgEl.className = 'tt-v ' + (trend == null ? '' : trend >= 0 ? 'up' : 'down');
+  document.getElementById('tip-sales').textContent = sales ? sales + ' total sales' : '—';
   tip.classList.add('visible');
   posTip(e);
 }
@@ -739,6 +768,7 @@ document.addEventListener('mousemove', e => {
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 function heatClass(pct) {
+  // kept for any legacy usage
   if (pct == null) return 'heat-flat';
   if (pct >= 25)  return 'heat-up3';
   if (pct >= 10)  return 'heat-up2';
@@ -746,6 +776,19 @@ function heatClass(pct) {
   if (pct > -3)   return 'heat-flat';
   if (pct > -10)  return 'heat-down1';
   if (pct > -25)  return 'heat-down2';
+  return 'heat-down3';
+}
+
+// New: color based on where this price sits within the variant's min-max range
+function heatClassByPrice(price, min, max) {
+  if (max === min) return 'heat-flat';
+  const pct = (price - min) / (max - min); // 0 = lowest, 1 = highest
+  if (pct >= 0.85) return 'heat-up3';
+  if (pct >= 0.65) return 'heat-up2';
+  if (pct >= 0.45) return 'heat-up1';
+  if (pct >= 0.25) return 'heat-flat';
+  if (pct >= 0.12) return 'heat-down1';
+  if (pct >= 0.04) return 'heat-down2';
   return 'heat-down3';
 }
 function heatArrow(pct) {
