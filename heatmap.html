@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostwrite · market heat map</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080808;
+  --s1: #0f0f0f;
+  --s2: #161616;
+  --s3: #1e1e1e;
+  --border: #222;
+  --accent: #e8ff47;
+  --text: #efefef;
+  --muted: #666;
+  --muted2: #444;
+  --mono: 'Space Mono', monospace;
+  --display: 'Unbounded', sans-serif;
+  --hot3: #ff2d2d; --hot2: #ff6b35; --hot1: #ffb347;
+  --flat: #1e1e1e;
+  --cold1: #47a3ff; --cold2: #2d7fff; --cold3: #1a5ccc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); min-height: 100vh; }
+body { color: var(--text); font-family: var(--mono); font-size: 12px; }
+
+/* ── Nav ── */
+.nav {
+  display: flex; align-items: center;
+  padding: 14px 32px; border-bottom: 1px solid var(--border);
+  gap: 24px; position: sticky; top: 0; background: var(--bg); z-index: 50;
+}
+.nav-logo { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 2px; text-decoration: none; }
+.nav-links { display: flex; gap: 20px; margin-left: auto; }
+.nav-link { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+.nav-link:hover, .nav-link.active { color: var(--text); }
+
+/* ── Page header ── */
+.page-header { padding: 32px 32px 0; }
+.page-title { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -1px; margin-bottom: 6px; }
+.page-sub { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+/* ── AI Insights banner ── */
+.insights-banner {
+  margin: 20px 32px 0;
+  background: var(--s1); border: 1px solid rgba(232,255,71,0.2);
+  padding: 14px 20px;
+  display: none;
+}
+.insights-banner.visible { display: block; }
+.insights-header { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.insights-list { display: flex; gap: 24px; flex-wrap: wrap; }
+.insight-item { font-size: 10px; color: var(--muted); max-width: 280px; line-height: 1.5; }
+.insight-item::before { content: '→ '; color: var(--accent); }
+.insights-date { font-size: 8px; color: var(--muted2); margin-top: 8px; letter-spacing: 1px; }
+
+/* ── Controls ── */
+.controls { padding: 20px 32px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.control-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.set-tab {
+  font-family: var(--display); font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 7px 14px; cursor: pointer;
+  background: var(--s2); border: 1px solid var(--border);
+  color: var(--muted); transition: all 0.15s;
+}
+.set-tab:hover { color: var(--text); border-color: var(--muted2); }
+.set-tab.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* ── Legend ── */
+.legend-row {
+  padding: 16px 32px; display: flex; align-items: center;
+  gap: 24px; flex-wrap: wrap; border-bottom: 1px solid var(--border);
+}
+.legend-heat { display: flex; align-items: center; gap: 8px; }
+.legend-swatches { display: flex; gap: 2px; }
+.legend-swatch { width: 16px; height: 6px; border-radius: 1px; }
+.legend-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+.legend-proj { display: flex; align-items: center; gap: 8px; }
+.est-badge { font-size: 7px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px; color: var(--accent); background: rgba(232,255,71,0.12); border: 1px solid rgba(232,255,71,0.3); padding: 2px 5px; border-radius: 2px; }
+.ai-badge { font-size: 7px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px; color: #b0f0ff; background: rgba(176,240,255,0.1); border: 1px solid rgba(176,240,255,0.25); padding: 2px 5px; border-radius: 2px; margin-left: 8px; }
+
+/* ── Grid ── */
+.grid-wrap { padding: 20px 32px; overflow-x: auto; }
+.col-headers { display: grid; gap: 2px; margin-bottom: 2px; }
+.col-header { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-align: center; padding: 6px 4px; }
+.heatmap-row { display: grid; gap: 2px; margin-bottom: 2px; align-items: stretch; }
+.row-info { padding-right: 12px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.row-name { font-size: 10px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-sub { font-size: 8px; color: var(--muted); margin-top: 2px; }
+
+/* ── Cell ── */
+.heat-cell {
+  height: 52px; border-radius: 2px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  cursor: pointer; transition: all 0.12s; position: relative; overflow: hidden;
+}
+.heat-cell::after { content: ''; position: absolute; inset: 0; background: white; opacity: 0; transition: opacity 0.12s; }
+.heat-cell:hover::after { opacity: 0.07; }
+.heat-cell.no-data { background: var(--s1); border: 1px dashed var(--border); cursor: default; }
+.heat-cell.no-data::after { display: none; }
+
+.heat-cell.projected { border: 1px solid rgba(232,255,71,0.3) !important; }
+.heat-cell.projected-ai { border: 1px solid rgba(176,240,255,0.35) !important; }
+
+.cell-badge {
+  position: absolute; top: 3px; right: 3px;
+  font-size: 6px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px;
+  padding: 1px 4px; border-radius: 2px; line-height: 1.4;
+}
+.cell-badge.est { color: var(--accent); background: rgba(232,255,71,0.15); }
+.cell-badge.ai  { color: #b0f0ff; background: rgba(176,240,255,0.12); }
+
+.cell-arrow { font-size: 8px; line-height: 1; }
+.cell-pct { font-family: var(--display); font-size: 11px; font-weight: 700; line-height: 1; }
+.cell-price { font-size: 8px; opacity: 0.8; }
+
+.heat-up3   { background: var(--hot3); color: #fff; }
+.heat-up2   { background: var(--hot2); color: #fff; }
+.heat-up1   { background: var(--hot1); color: #000; }
+.heat-flat  { background: var(--flat); color: var(--muted); border: 1px solid var(--border); }
+.heat-down1 { background: #1a3a5c; color: var(--cold1); }
+.heat-down2 { background: #152d4d; color: var(--cold2); }
+.heat-down3 { background: #0f2040; color: var(--cold3); }
+
+/* ── Summary ── */
+.summary-row { display: flex; gap: 24px; padding: 20px 32px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.summary-stat { flex: 1; min-width: 120px; }
+.summary-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.summary-val { font-family: var(--display); font-size: 20px; color: var(--accent); }
+.summary-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+/* ── Loading ── */
+.loading { padding: 80px 32px; text-align: center; color: var(--muted); }
+.loading-spinner { font-size: 24px; margin-bottom: 12px; animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Drawer ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.overlay.visible { opacity: 1; pointer-events: all; }
+.drawer {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 380px;
+  background: var(--s1); border-left: 1px solid var(--border);
+  z-index: 100; transform: translateX(100%); transition: transform 0.25s ease;
+  overflow-y: auto; padding: 28px;
+}
+.drawer.open { transform: translateX(0); }
+.drawer-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px 8px; }
+.drawer-close:hover { color: var(--text); }
+.drawer-player { font-family: var(--display); font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+.drawer-variant { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+
+.d-section { margin-bottom: 20px; }
+.d-section-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.d-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.d-stat-label { font-size: 9px; color: var(--muted); }
+.d-stat-val { font-size: 11px; color: var(--text); }
+.d-stat-val.up { color: var(--hot2); }
+.d-stat-val.down { color: var(--cold1); }
+.d-stat-val.accent { color: var(--accent); font-family: var(--display); }
+
+/* Projection steps */
+.proj-steps { display: flex; flex-direction: column; gap: 8px; }
+.proj-step { background: var(--s2); border: 1px solid var(--border); padding: 12px; }
+.proj-step-num { font-size: 8px; letter-spacing: 1px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+.proj-step-eq { font-size: 11px; color: var(--text); font-family: var(--mono); }
+.proj-step-note { font-size: 9px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+.proj-arrow { text-align: center; color: var(--muted2); font-size: 12px; padding: 2px 0; }
+.proj-final { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 16px; text-align: center; }
+.proj-final-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.proj-final-val { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--accent); }
+.proj-final-note { font-size: 9px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
+.ai-override-note {
+  background: rgba(176,240,255,0.06); border: 1px solid rgba(176,240,255,0.2);
+  padding: 10px 12px; margin-top: 10px;
+  font-size: 9px; color: #b0f0ff; line-height: 1.5;
+}
+.ai-override-note strong { display: block; margin-bottom: 4px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* ── Simple tooltip ── */
+.tip {
+  position: fixed; z-index: 200; background: var(--s1); border: 1px solid var(--border);
+  padding: 12px 16px; pointer-events: none; opacity: 0; transition: opacity 0.1s; min-width: 180px;
+}
+.tip.visible { opacity: 1; }
+.tt-head { font-family: var(--display); font-size: 11px; margin-bottom: 8px; }
+.tt-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
+.tt-l { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.tt-v { font-size: 10px; }
+.tt-v.up { color: var(--hot2); }
+.tt-v.down { color: var(--cold1); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">ghostwrite</a>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html">dashboard</a>
+    <a class="nav-link" href="guide.html">price guide</a>
+    <a class="nav-link active" href="heatmap.html">heat map</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-title">market heat map</div>
+  <div class="page-sub">30-day vs 90-day price trend · per set · projected values where no data exists</div>
+</div>
+
+<div class="insights-banner" id="insights-banner">
+  <div class="insights-header">⚡ AI Market Insights <span id="insights-date"></span></div>
+  <div class="insights-list" id="insights-list"></div>
+</div>
+
+<div class="controls" id="set-tabs">
+  <div class="loading" style="padding:20px 0">
+    <div class="loading-spinner">◌</div>
+  </div>
+</div>
+
+<div class="legend-row">
+  <div class="legend-heat">
+    <div class="legend-swatches">
+      <div class="legend-swatch" style="background:var(--cold3)"></div>
+      <div class="legend-swatch" style="background:var(--cold2)"></div>
+      <div class="legend-swatch" style="background:var(--cold1)"></div>
+      <div class="legend-swatch" style="background:var(--flat);border:1px solid var(--border)"></div>
+      <div class="legend-swatch" style="background:var(--hot1)"></div>
+      <div class="legend-swatch" style="background:var(--hot2)"></div>
+      <div class="legend-swatch" style="background:var(--hot3)"></div>
+    </div>
+    <span class="legend-label">cooling ←&nbsp;&nbsp;→ heating</span>
+  </div>
+  <div class="legend-proj">
+    <span class="est-badge">EST</span>
+    <span class="legend-label">= projected (statistical model) · click for details</span>
+  </div>
+  <div class="legend-proj">
+    <span class="ai-badge">AI</span>
+    <span class="legend-label">= AI-calibrated projection · click for details</span>
+  </div>
+</div>
+
+<div class="grid-wrap">
+  <div id="heatmap-container">
+    <div class="loading">
+      <div class="loading-spinner">◌</div>
+      <div>loading market data...</div>
+    </div>
+  </div>
+</div>
+
+<div class="summary-row" id="summary-row" style="display:none">
+  <div class="summary-stat">
+    <div class="summary-label">Heating Up</div>
+    <div class="summary-val" id="sum-hot">—</div>
+    <div class="summary-sub">combos: 30d avg &gt; 90d avg</div>
+  </div>
+  <div class="summary-stat">
+    <div class="summary-label">Cooling Down</div>
+    <div class="summary-val" id="sum-cold">—</div>
+    <div class="summary-sub">combos: 30d avg &lt; 90d avg</div>
+  </div>
+  <div class="summary-stat">
+    <div class="summary-label">Biggest Mover</div>
+    <div class="summary-val" id="sum-mover">—</div>
+    <div class="summary-sub" id="sum-mover-sub">—</div>
+  </div>
+  <div class="summary-stat">
+    <div class="summary-label">Projected Cells</div>
+    <div class="summary-val" id="sum-proj">—</div>
+    <div class="summary-sub" id="sum-proj-sub">estimated values</div>
+  </div>
+</div>
+
+<!-- Drawer + Overlay -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  <div class="drawer-player" id="d-player"></div>
+  <div class="drawer-variant" id="d-variant"></div>
+  <div id="d-body"></div>
+</div>
+
+<!-- Tooltip -->
+<div class="tip" id="tip">
+  <div class="tt-head" id="tip-head"></div>
+  <div class="tt-row"><span class="tt-l">30-day avg</span><span class="tt-v" id="tip-30d"></span></div>
+  <div class="tt-row"><span class="tt-l">90-day avg</span><span class="tt-v" id="tip-90d"></span></div>
+  <div class="tt-row"><span class="tt-l">Change</span><span class="tt-v" id="tip-chg"></span></div>
+  <div class="tt-row"><span class="tt-l">Sales (30d)</span><span class="tt-v" id="tip-sales"></span></div>
+</div>
+
+<script>
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
+
+// ── State ──────────────────────────────────────────────────────────────────
+let allData = null;
+let activeSet = null;
+const VARIANT_ORDER = ['Fire','Chrome','Gold','Emerald','Vides','Victory','SP','Base'];
+
+// ── Fetch ──────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch(DATA_URL);
+    allData = await res.json();
+    initPage();
+  } catch(e) {
+    document.getElementById('heatmap-container').innerHTML =
+      `<div class="loading" style="color:#ff6b35">Failed to load data: ${e.message}</div>`;
+  }
+}
+
+function initPage() {
+  // Show AI insights if available
+  if (allData.aiModelOutput && allData.aiModelOutput.insights) {
+    const banner = document.getElementById('insights-banner');
+    const list = document.getElementById('insights-list');
+    document.getElementById('insights-date').textContent = allData.aiModelOutput.runDate
+      ? '— last calibrated ' + new Date(allData.aiModelOutput.runDate).toLocaleDateString()
+      : '';
+    list.innerHTML = allData.aiModelOutput.insights.map(i =>
+      `<div class="insight-item">${i}</div>`
+    ).join('');
+    banner.classList.add('visible');
+  }
+
+  // Build set tabs
+  const sets = [...new Set((allData.products || [])
+    .filter(p => p.player && p.player !== 'Unknown')
+    .map(p => p.set)
+  )].filter(Boolean).sort();
+
+  if (!sets.length) {
+    document.getElementById('heatmap-container').innerHTML =
+      '<div class="loading">No data available.</div>';
+    return;
+  }
+
+  activeSet = sets[0];
+  renderTabs(sets);
+  renderHeatmap();
+  document.getElementById('summary-row').style.display = 'flex';
+}
+
+function renderTabs(sets) {
+  document.getElementById('set-tabs').innerHTML =
+    `<span class="control-label">set</span>` +
+    sets.map(s =>
+      `<button class="set-tab ${s === activeSet ? 'active' : ''}"
+        onclick="switchSet('${s.replace(/'/g,"\\'")}')">
+        ${s}
+      </button>`
+    ).join('');
+}
+
+function switchSet(s) {
+  activeSet = s;
+  const sets = [...new Set((allData.products || []).filter(p => p.player && p.player !== 'Unknown').map(p => p.set))].filter(Boolean).sort();
+  renderTabs(sets);
+  renderHeatmap();
+}
+
+// ── Projection engine ──────────────────────────────────────────────────────
+function buildProjections(setName, setProducts) {
+  // Layer 1: Per-set variant multipliers from modelMultipliers (precomputed)
+  const modelMults = {};
+  if (allData.modelMultipliers) {
+    allData.modelMultipliers
+      .filter(m => m.set === setName)
+      .forEach(m => {
+        modelMults[m.variant] = {
+          mult: m.weightedMult || m.avgMult,
+          sampleSize: m.sampleSize,
+          confidence: m.confidence,
+          stdDev: m.stdDev,
+        };
+      });
+  }
+
+  // Layer 2: AI-calibrated overrides
+  const aiAdjustedMults = {}; // variant -> adjusted mult
+  const aiPlayerOverrides = {}; // player|variant -> override mult + reasoning
+  if (allData.aiModelOutput) {
+    (allData.aiModelOutput.adjustedMultipliers || [])
+      .filter(m => m.set === setName)
+      .forEach(m => { aiAdjustedMults[m.variant] = { mult: m.recommendedMultiplier, reasoning: m.reasoning }; });
+
+    (allData.aiModelOutput.playerOverrides || [])
+      .filter(o => o.set === setName)
+      .forEach(o => {
+        const key = o.player + '|||' + o.variant;
+        aiPlayerOverrides[key] = { mult: o.overrideMultiplier, standard: o.standardMultiplier, reasoning: o.reasoning };
+      });
+  }
+
+  // Fall back to computing set avg if no model multipliers
+  // Group products by player
+  const byPlayer = {};
+  setProducts.forEach(p => {
+    if (!byPlayer[p.player]) byPlayer[p.player] = {};
+    byPlayer[p.player][p.variant] = p;
+  });
+
+  // Compute set avg base (for fallback multiplier calculation)
+  const basePrices = setProducts.filter(p => p.variant === 'Base' && p.avgPrice > 0).map(p => p.avgPrice);
+  const setAvgBase = basePrices.length ? basePrices.reduce((a,b)=>a+b,0)/basePrices.length : null;
+
+  // If no model multipliers, compute locally from available data
+  if (!Object.keys(modelMults).length && setAvgBase) {
+    VARIANT_ORDER.filter(v => v !== 'Base').forEach(variant => {
+      const variantPrices = setProducts.filter(p => p.variant === variant && p.avgPrice > 0).map(p => p.avgPrice);
+      if (variantPrices.length && setAvgBase) {
+        const setAvgVariant = variantPrices.reduce((a,b)=>a+b,0)/variantPrices.length;
+        modelMults[variant] = {
+          mult: setAvgVariant / setAvgBase,
+          sampleSize: variantPrices.length,
+          confidence: variantPrices.length >= 3 ? 'Medium' : 'Low',
+        };
+      }
+    });
+  }
+
+  // For each player, compute projections for missing variants
+  const projections = {}; // player|variant -> projection object
+
+  Object.entries(byPlayer).forEach(([player, variants]) => {
+    const baseData = variants['Base'];
+    const playerBasePrice = baseData?.avgPrice || null;
+    if (!playerBasePrice) return;
+
+    VARIANT_ORDER.forEach(variant => {
+      if (variant === 'Base') return;
+      if (variants[variant]?.avgPrice > 0) return; // has real data
+
+      const overrideKey = player + '|||' + variant;
+      const aiOverride = aiPlayerOverrides[overrideKey];
+      const aiAdjusted = aiAdjustedMults[variant];
+      const layerOneMult = modelMults[variant];
+
+      if (!layerOneMult && !aiAdjusted && !aiOverride) return;
+
+      // Determine which multiplier to use and badge type
+      let mult, projType, reasoning, confidence, sampleSize;
+
+      if (aiOverride) {
+        // Highest priority: AI player-specific override
+        mult = aiOverride.mult;
+        projType = 'ai';
+        reasoning = aiOverride.reasoning;
+        confidence = 'AI Override';
+        sampleSize = null;
+      } else if (aiAdjusted) {
+        // AI-calibrated set multiplier
+        mult = aiAdjusted.mult;
+        projType = 'ai';
+        reasoning = aiAdjusted.reasoning;
+        confidence = 'AI Calibrated';
+        sampleSize = layerOneMult?.sampleSize || null;
+      } else {
+        // Layer 1 statistical
+        mult = layerOneMult.mult;
+        projType = 'est';
+        reasoning = null;
+        confidence = layerOneMult.confidence;
+        sampleSize = layerOneMult.sampleSize;
+      }
+
+      const projectedPrice = Math.round(playerBasePrice * mult);
+
+      projections[player + '|||' + variant] = {
+        price: projectedPrice,
+        mult: Math.round(mult * 100) / 100,
+        projType,
+        reasoning,
+        confidence,
+        sampleSize,
+        playerBasePrice,
+        setAvgBase: setAvgBase ? Math.round(setAvgBase) : null,
+        layerOneMult: layerOneMult ? Math.round(layerOneMult.mult * 100) / 100 : null,
+        aiOverride: aiOverride || null,
+        aiAdjusted: aiAdjusted || null,
+      };
+    });
+  });
+
+  return { projections, byPlayer };
+}
+
+// ── Render heatmap ─────────────────────────────────────────────────────────
+function renderHeatmap() {
+  const setProducts = (allData.products || []).filter(p =>
+    p.set === activeSet && p.player && p.player !== 'Unknown' && p.avgPrice > 0
+  );
+
+  if (!setProducts.length) {
+    document.getElementById('heatmap-container').innerHTML =
+      '<div class="loading">No data for this set yet.</div>';
+    return;
+  }
+
+  // Determine which variants actually exist in this set
+  const variantsInSet = VARIANT_ORDER.filter(v =>
+    setProducts.some(p => p.variant === v)
+  );
+  // Also include any custom variants not in VARIANT_ORDER
+  const extraVariants = [...new Set(setProducts.map(p => p.variant))]
+    .filter(v => !VARIANT_ORDER.includes(v));
+  const variants = [...variantsInSet, ...extraVariants];
+
+  const { projections, byPlayer } = buildProjections(activeSet, setProducts);
+
+  // Get sorted player list (by avg base price desc)
+  const players = [...new Set(setProducts.map(p => p.player))].sort((a, b) => {
+    const aBase = byPlayer[a]?.['Base']?.avgPrice || 0;
+    const bBase = byPlayer[b]?.['Base']?.avgPrice || 0;
+    return bBase - aBase;
+  });
+
+  const LABEL_W = '155px';
+  const gridCols = `${LABEL_W} ${variants.map(() => '1fr').join(' ')}`;
+
+  let html = `<div class="col-headers" style="grid-template-columns:${gridCols}">
+    <div></div>
+    ${variants.map(v => `<div class="col-header">${v}</div>`).join('')}
+  </div>`;
+
+  let hotCount = 0, coldCount = 0, bigPct = 0, bigPlayer = '', bigVariant = '', projCount = 0, aiProjCount = 0;
+
+  players.forEach(player => {
+    const cells = variants.map(variant => {
+      const realData = setProducts.find(p => p.player === player && p.variant === variant);
+      const projKey = player + '|||' + variant;
+      const proj = projections[projKey];
+
+      // Real data
+      if (realData && realData.avgPrice > 0) {
+        const p30 = realData.avg30d || 0;
+        const p90 = realData.avg90d || 0;
+        const pct = (p30 && p90) ? Math.round(((p30 - p90) / p90) * 100) : null;
+        const cls = heatClass(pct);
+        const sign = pct != null && pct >= 0 ? '+' : '';
+        if (pct != null && pct > 0) hotCount++;
+        if (pct != null && pct < 0) coldCount++;
+        if (pct != null && Math.abs(pct) > Math.abs(bigPct)) { bigPct = pct; bigPlayer = player; bigVariant = variant; }
+
+        const displayPct = pct != null ? `${sign}${pct}%` : '—';
+        const displayPrice = `$${Math.round(p30 || realData.avgPrice)}`;
+
+        return `<div class="heat-cell ${cls}"
+          data-type="real" data-player="${esc(player)}" data-variant="${variant}"
+          data-p30="${p30}" data-p90="${p90}" data-pct="${pct||''}" data-sales="${realData.sales30d||0}"
+          onmouseenter="showTip(event,this)" onmouseleave="hideTip()">
+          <div class="cell-arrow">${heatArrow(pct)}</div>
+          <div class="cell-pct">${displayPct}</div>
+          <div class="cell-price">${displayPrice}</div>
+        </div>`;
+      }
+
+      // Projected
+      if (proj) {
+        projCount++;
+        if (proj.projType === 'ai') aiProjCount++;
+        const badgeCls = proj.projType === 'ai' ? 'ai' : 'est';
+        const badgeLabel = proj.projType === 'ai' ? 'AI' : 'EST';
+        const cellCls = proj.projType === 'ai' ? 'heat-flat projected-ai' : 'heat-flat projected';
+        const priceColor = proj.projType === 'ai' ? '#b0f0ff' : 'var(--accent)';
+        return `<div class="heat-cell ${cellCls}"
+          data-type="proj" data-player="${esc(player)}" data-variant="${variant}"
+          onclick="openProjectionDrawer('${esc(player)}','${variant}')">
+          <div class="cell-badge ${badgeCls}">${badgeLabel}</div>
+          <div class="cell-pct" style="font-size:13px;color:${priceColor}">$${proj.price}</div>
+          <div class="cell-price" style="color:var(--muted)">est.</div>
+        </div>`;
+      }
+
+      // No data, no projection
+      return `<div class="heat-cell no-data"></div>`;
+    }).join('');
+
+    html += `<div class="heatmap-row" style="grid-template-columns:${gridCols}">
+      <div class="row-info" style="max-width:${LABEL_W}">
+        <div class="row-name">${player}</div>
+        <div class="row-sub">${activeSet}</div>
+      </div>
+      ${cells}
+    </div>`;
+  });
+
+  document.getElementById('heatmap-container').innerHTML = html;
+
+  // Summary
+  document.getElementById('sum-hot').textContent = hotCount;
+  document.getElementById('sum-cold').textContent = coldCount;
+  const sign = bigPct >= 0 ? '+' : '';
+  document.getElementById('sum-mover').textContent = bigPlayer ? `${sign}${bigPct}%` : '—';
+  document.getElementById('sum-mover-sub').textContent = bigPlayer ? `${bigPlayer} · ${bigVariant}` : '—';
+  document.getElementById('sum-proj').textContent = projCount;
+  document.getElementById('sum-proj-sub').textContent =
+    aiProjCount > 0 ? `${aiProjCount} AI-calibrated, ${projCount - aiProjCount} statistical` : 'estimated values';
+}
+
+// ── Projection drawer ──────────────────────────────────────────────────────
+function openProjectionDrawer(player, variant) {
+  const setProducts = (allData.products || []).filter(p => p.set === activeSet && p.player !== 'Unknown');
+  const { projections, byPlayer } = buildProjections(activeSet, setProducts);
+  const proj = projections[player + '|||' + variant];
+  if (!proj) return;
+
+  document.getElementById('d-player').textContent = player;
+  document.getElementById('d-variant').textContent = variant + ' · Projected Value';
+
+  const playerVariants = byPlayer[player] || {};
+  const knownData = Object.entries(playerVariants)
+    .filter(([, d]) => d.avgPrice > 0)
+    .map(([v, d]) => `<div class="d-stat"><span class="d-stat-label">${v} (real)</span><span class="d-stat-val accent">$${Math.round(d.avgPrice)} · ${d.totalSales} sales</span></div>`)
+    .join('');
+
+  // Model inputs for this set/variant
+  const layerOneMult = allData.modelMultipliers?.find(m => m.set === activeSet && m.variant === variant);
+
+  let stepsHtml = '';
+
+  if (proj.projType === 'ai' && proj.aiOverride) {
+    // AI player override
+    stepsHtml = `
+      <div class="proj-step">
+        <div class="proj-step-num">AI Player-Specific Override</div>
+        <div class="proj-step-eq">${player}'s ${variant} = <strong style="color:#b0f0ff">$${proj.price}</strong></div>
+        <div class="proj-step-note">${proj.reasoning}</div>
+      </div>
+      ${proj.aiOverride.standard ? `<div class="proj-step">
+        <div class="proj-step-num">vs Standard Model</div>
+        <div class="proj-step-eq">Statistical model would have said: $${Math.round(proj.playerBasePrice * proj.aiOverride.standard)}</div>
+        <div class="proj-step-note">AI adjusted this based on observed player-specific patterns.</div>
+      </div>` : ''}`;
+  } else if (proj.projType === 'ai' && proj.aiAdjusted) {
+    // AI-calibrated set multiplier
+    stepsHtml = `
+      <div class="proj-step">
+        <div class="proj-step-num">Step 1 · Player's Base Price</div>
+        <div class="proj-step-eq">${player}'s Base = <strong>$${proj.playerBasePrice}</strong></div>
+        <div class="proj-step-note">Anchor for this projection.</div>
+      </div>
+      <div class="proj-arrow">↓</div>
+      <div class="proj-step">
+        <div class="proj-step-num">Step 2 · AI-Calibrated ${variant} Multiplier</div>
+        <div class="proj-step-eq">Statistical: ${proj.layerOneMult || '—'}× → AI adjusted: <strong>${proj.mult}×</strong></div>
+        <div class="proj-step-note">${proj.reasoning}</div>
+      </div>
+      <div class="proj-arrow">↓</div>
+      <div class="proj-step">
+        <div class="proj-step-num">Calculation</div>
+        <div class="proj-step-eq">$${proj.playerBasePrice} × ${proj.mult} = <strong style="color:#b0f0ff">$${proj.price}</strong></div>
+      </div>`;
+  } else {
+    // Statistical (Layer 1)
+    const sampleNote = proj.sampleSize
+      ? `Based on ${proj.sampleSize} player${proj.sampleSize !== 1 ? 's' : ''} in ${activeSet} with real ${variant} sales.`
+      : 'Estimated from set patterns.';
+    stepsHtml = `
+      <div class="proj-step">
+        <div class="proj-step-num">Step 1 · Player's Base Price</div>
+        <div class="proj-step-eq">${player}'s Base = <strong>$${proj.playerBasePrice}</strong></div>
+        <div class="proj-step-note">The anchor. We scale up from here using the set's observed ${variant} multiplier.</div>
+      </div>
+      <div class="proj-arrow">↓</div>
+      <div class="proj-step">
+        <div class="proj-step-num">Step 2 · ${variant} Multiplier (${activeSet})</div>
+        <div class="proj-step-eq">${variant} typically sells for <strong>${proj.mult}×</strong> Base in this set</div>
+        <div class="proj-step-note">${sampleNote} Confidence: ${proj.confidence}${layerOneMult ? '. Std dev: ' + layerOneMult.stdDev + 'x — ' + (layerOneMult.stdDev > 1.5 ? 'high variance, treat with caution' : 'consistent pattern') : ''}.</div>
+      </div>
+      <div class="proj-arrow">↓</div>
+      <div class="proj-step">
+        <div class="proj-step-num">Calculation</div>
+        <div class="proj-step-eq">$${proj.playerBasePrice} × ${proj.mult} = <strong style="color:var(--accent)">$${proj.price}</strong></div>
+      </div>`;
+  }
+
+  const aiNote = proj.projType === 'ai'
+    ? `<div class="ai-override-note"><strong>AI Calibrated</strong>This projection was adjusted by the AI market model, which analyzes patterns across all sets and players. ${proj.projType === 'ai' && proj.aiOverride ? 'A player-specific override was applied.' : 'A set-level multiplier adjustment was applied.'}</div>`
+    : '';
+
+  document.getElementById('d-body').innerHTML = `
+    <div class="d-section">
+      <div class="d-section-title">How we calculated this</div>
+      <div class="proj-steps">${stepsHtml}</div>
+      ${aiNote}
+    </div>
+    <div class="proj-final">
+      <div class="proj-final-label">Projected Value</div>
+      <div class="proj-final-val">$${proj.price}</div>
+      <div class="proj-final-note">No actual sales recorded for ${player} ${variant} yet.<br>
+        ${proj.projType === 'ai' ? 'AI-calibrated estimate.' : `Confidence: ${proj.confidence}.`}
+        Actual sale price will vary.</div>
+    </div>
+    ${knownData ? `<div class="d-section" style="margin-top:16px"><div class="d-section-title">What we know for ${player}</div>${knownData}</div>` : ''}
+  `;
+
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+// ── Tooltip (real cells) ───────────────────────────────────────────────────
+function showTip(e, el) {
+  const p30 = Number(el.dataset.p30) || 0;
+  const p90 = Number(el.dataset.p90) || 0;
+  const pct = el.dataset.pct !== '' ? Number(el.dataset.pct) : null;
+  const sales = el.dataset.sales;
+  const tip = document.getElementById('tip');
+  document.getElementById('tip-head').textContent = el.dataset.player + ' · ' + el.dataset.variant;
+  document.getElementById('tip-30d').textContent = p30 ? '$' + Math.round(p30) : '—';
+  document.getElementById('tip-90d').textContent = p90 ? '$' + Math.round(p90) : '—';
+  const sign = pct != null && pct >= 0 ? '+' : '';
+  const chgEl = document.getElementById('tip-chg');
+  chgEl.textContent = pct != null ? `${sign}${pct}%` : '—';
+  chgEl.className = 'tt-v ' + (pct == null ? '' : pct >= 0 ? 'up' : 'down');
+  document.getElementById('tip-sales').textContent = sales ? sales + ' sales (30d)' : '—';
+  tip.classList.add('visible');
+  posTip(e);
+}
+function posTip(e) {
+  const t = document.getElementById('tip');
+  t.style.left = (e.clientX + 16) + 'px';
+  t.style.top  = (e.clientY - 60) + 'px';
+}
+function hideTip() { document.getElementById('tip').classList.remove('visible'); }
+document.addEventListener('mousemove', e => {
+  if (document.getElementById('tip').classList.contains('visible')) posTip(e);
+});
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function heatClass(pct) {
+  if (pct == null) return 'heat-flat';
+  if (pct >= 25)  return 'heat-up3';
+  if (pct >= 10)  return 'heat-up2';
+  if (pct >= 3)   return 'heat-up1';
+  if (pct > -3)   return 'heat-flat';
+  if (pct > -10)  return 'heat-down1';
+  if (pct > -25)  return 'heat-down2';
+  return 'heat-down3';
+}
+function heatArrow(pct) {
+  if (pct == null) return '—';
+  if (pct >= 10) return '▲▲';
+  if (pct >= 3)  return '▲';
+  if (pct > -3)  return '—';
+  if (pct > -10) return '▼';
+  return '▼▼';
+}
+function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+loadData();
+</script>
+</body>
+</html>
