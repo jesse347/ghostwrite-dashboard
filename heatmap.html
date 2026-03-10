@@ -316,10 +316,16 @@ async function loadData() {
     } catch(e) {
       throw new Error('Invalid JSON: ' + text.substring(0, 200));
     }
-    initPage();
+    try {
+      initPage();
+    } catch(e) {
+      document.getElementById('heatmap-container').innerHTML =
+        `<div class="loading" style="color:#ff6b35">initPage error: ${e.message}<br><pre style="font-size:9px;text-align:left;margin-top:8px;color:#aaa">${e.stack}</pre></div>`;
+      console.error('initPage error:', e);
+    }
   } catch(e) {
     document.getElementById('heatmap-container').innerHTML =
-      `<div class="loading" style="color:#ff6b35">Failed to load data: ${e.message}</div>`;
+      `<div class="loading" style="color:#ff6b35">Fetch error: ${e.message}</div>`;
     document.getElementById('set-tabs').innerHTML =
       `<span style="font-size:9px;color:#ff6b35;letter-spacing:1px">connection error — check console</span>`;
     console.error('Heatmap load error:', e);
