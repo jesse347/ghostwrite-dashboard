@@ -372,124 +372,197 @@ function switchSet(s) {
 }
 
 // ── Projection engine ──────────────────────────────────────────────────────
-function buildProjections(setName, setProducts) {
-  // Layer 1: Per-set variant multipliers from modelMultipliers (precomputed)
-  const modelMults = {};
-  if (allData.modelMultipliers) {
-    allData.modelMultipliers
-      .filter(m => m.set === setName)
-      .forEach(m => {
-        modelMults[m.variant] = {
-          mult: m.weightedMult || m.avgMult,
-          sampleSize: m.sampleSize,
-          confidence: m.confidence,
-          stdDev: m.stdDev,
-        };
-      });
-  }
+// ── Price hierarchy: 30d avg → 90d avg → all-time avg ─────────────────────
+function bestPrice(product) {
+  if (!product) return null;
+  if (product.avg30d  && product.sales30d  >= 1) return { price: product.avg30d,  recency: '30d',      sales: product.sales30d };
+  if (product.avg90d  && product.sales90d  >= 1) return { price: product.avg90d,  recency: '90d',      sales: product.sales90d };
+  if (product.avgPrice && product.totalSales >= 1) return { price: product.avgPrice, recency: 'all-time', sales: product.totalSales };
+  return null;
+}
 
-  // Layer 2: AI-calibrated overrides
-  const aiAdjustedMults = {}; // variant -> adjusted mult
-  const aiPlayerOverrides = {}; // player|variant -> override mult + reasoning
+// Variant proximity weights — closer variants give more reliable cross-estimates
+// (adjacent rarity levels are more correlated than Fire↔Base)
+const VARIANT_PROXIMITY = {
+  'Base':    { 'Victory': 0.9, 'Vides': 0.85, 'Emerald': 0.85, 'Gold': 0.75, 'Chrome': 0.6,  'Fire': 0.4,  'SP': 0.8  },
+  'Victory': { 'Base': 0.9,   'Vides': 0.9,   'Emerald': 0.9,  'Gold': 0.8,  'Chrome': 0.65, 'Fire': 0.45, 'SP': 0.85 },
+  'Emerald': { 'Base': 0.85,  'Victory': 0.9, 'Vides': 0.95,   'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
+  'Vides':   { 'Base': 0.85,  'Victory': 0.9, 'Emerald': 0.95, 'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
+  'Gold':    { 'Base': 0.75,  'Victory': 0.8, 'Emerald': 0.9,  'Vides': 0.9, 'Chrome': 0.85, 'Fire': 0.65, 'SP': 0.7  },
+  'Chrome':  { 'Base': 0.6,   'Victory': 0.65,'Emerald': 0.7,  'Vides': 0.7, 'Gold': 0.85,   'Fire': 0.8,  'SP': 0.6  },
+  'Fire':    { 'Base': 0.4,   'Victory': 0.45,'Emerald': 0.5,  'Vides': 0.5, 'Gold': 0.65,   'Chrome': 0.8,'SP': 0.4  },
+  'SP':      { 'Base': 0.8,   'Victory': 0.85,'Emerald': 0.8,  'Vides': 0.8, 'Gold': 0.7,    'Chrome': 0.6,'Fire': 0.4},
+};
+
+function buildProjections(setName, setProducts) {
+  // ── Layer 2: AI overrides ──────────────────────────────────────────────
+  const aiAdjustedMults = {};
+  const aiPlayerOverrides = {};
   if (allData.aiModelOutput) {
     (allData.aiModelOutput.adjustedMultipliers || [])
       .filter(m => m.set === setName)
       .forEach(m => { aiAdjustedMults[m.variant] = { mult: m.recommendedMultiplier, reasoning: m.reasoning }; });
-
     (allData.aiModelOutput.playerOverrides || [])
       .filter(o => o.set === setName)
-      .forEach(o => {
-        const key = o.player + '|||' + o.variant;
-        aiPlayerOverrides[key] = { mult: o.overrideMultiplier, standard: o.standardMultiplier, reasoning: o.reasoning };
-      });
+      .forEach(o => { aiPlayerOverrides[o.player + '|||' + o.variant] = o; });
   }
 
-  // Fall back to computing set avg if no model multipliers
-  // Group products by player
+  // ── Build per-variant set multipliers using 30d→90d→all-time hierarchy ──
+  // For each variant pair (A→B), compute ratio: B_price / A_price across all
+  // players who have real data for BOTH variants.
   const byPlayer = {};
   setProducts.forEach(p => {
     if (!byPlayer[p.player]) byPlayer[p.player] = {};
     byPlayer[p.player][p.variant] = p;
   });
 
-  // Compute set avg base (for fallback multiplier calculation)
-  const basePrices = setProducts.filter(p => p.variant === 'Base' && p.avgPrice > 0).map(p => p.avgPrice);
-  const setAvgBase = basePrices.length ? basePrices.reduce((a,b)=>a+b,0)/basePrices.length : null;
+  // Cross-variant ratios: for every pair of variants with shared player data,
+  // compute the set-level ratio. e.g. Gold/Base, Victory/Base, Gold/Victory, etc.
+  const crossRatios = {}; // 'Gold|||Base' -> [ratio, ratio, ...]
+  const allVariants = [...new Set(setProducts.map(p => p.variant))];
 
-  // If no model multipliers, compute locally from available data
-  if (!Object.keys(modelMults).length && setAvgBase) {
-    VARIANT_ORDER.filter(v => v !== 'Base').forEach(variant => {
-      const variantPrices = setProducts.filter(p => p.variant === variant && p.avgPrice > 0).map(p => p.avgPrice);
-      if (variantPrices.length && setAvgBase) {
-        const setAvgVariant = variantPrices.reduce((a,b)=>a+b,0)/variantPrices.length;
-        modelMults[variant] = {
-          mult: setAvgVariant / setAvgBase,
-          sampleSize: variantPrices.length,
-          confidence: variantPrices.length >= 3 ? 'Medium' : 'Low',
-        };
-      }
+  allVariants.forEach(vA => {
+    allVariants.forEach(vB => {
+      if (vA === vB) return;
+      const key = vA + '|||' + vB;
+      crossRatios[key] = [];
+      Object.values(byPlayer).forEach(pVariants => {
+        const dA = bestPrice(pVariants[vA]);
+        const dB = bestPrice(pVariants[vB]);
+        if (dA && dB && dA.price > 0 && dB.price > 0) {
+          crossRatios[key].push({ ratio: dA.price / dB.price, salesA: dA.sales, salesB: dB.sales });
+        }
+      });
     });
+  });
+
+  // Weighted median ratio for each pair (weight by min sales of the two)
+  function weightedMedianRatio(pairs) {
+    if (!pairs.length) return null;
+    const sorted = [...pairs].sort((a, b) => a.ratio - b.ratio);
+    const totalW = sorted.reduce((s, p) => s + Math.min(p.salesA, p.salesB), 0);
+    let cumW = 0;
+    for (const p of sorted) {
+      cumW += Math.min(p.salesA, p.salesB);
+      if (cumW >= totalW / 2) return { ratio: p.ratio, n: pairs.length };
+    }
+    return { ratio: sorted[Math.floor(sorted.length / 2)].ratio, n: pairs.length };
   }
 
-  // For each player, compute projections for missing variants
-  const projections = {}; // player|variant -> projection object
+  const setRatios = {}; // 'Gold|||Base' -> { ratio, n }
+  Object.entries(crossRatios).forEach(([key, pairs]) => {
+    const r = weightedMedianRatio(pairs);
+    if (r) setRatios[key] = r;
+  });
+
+  // ── For each player × missing variant, build multi-anchor estimate ───────
+  const projections = {};
 
   Object.entries(byPlayer).forEach(([player, variants]) => {
-    const baseData = variants['Base'];
-    const playerBasePrice = baseData?.avgPrice || null;
-    if (!playerBasePrice) return;
+    const knownVariants = Object.keys(variants).filter(v => variants[v]?.avgPrice > 0);
+    if (!knownVariants.length) return;
 
-    VARIANT_ORDER.forEach(variant => {
-      if (variant === 'Base') return;
-      if (variants[variant]?.avgPrice > 0) return; // has real data
+    allVariants.forEach(targetVariant => {
+      if (variants[targetVariant]?.avgPrice > 0) return; // has real data
+      if (!setProducts.some(p => p.variant === targetVariant)) return;
 
-      const overrideKey = player + '|||' + variant;
+      const overrideKey = player + '|||' + targetVariant;
       const aiOverride = aiPlayerOverrides[overrideKey];
-      const aiAdjusted = aiAdjustedMults[variant];
-      const layerOneMult = modelMults[variant];
+      const aiAdjusted = aiAdjustedMults[targetVariant];
 
-      if (!layerOneMult && !aiAdjusted && !aiOverride) return;
+      // ── Build anchors: one estimate per known variant ──────────────────
+      const anchors = [];
 
-      // Determine which multiplier to use and badge type
-      let mult, projType, reasoning, confidence, sampleSize;
+      knownVariants.forEach(sourceVariant => {
+        const ratioKey = targetVariant + '|||' + sourceVariant;
+        const ratioData = setRatios[ratioKey];
+        if (!ratioData) return;
+
+        const sourcePrice = bestPrice(variants[sourceVariant]);
+        if (!sourcePrice) return;
+
+        const impliedPrice = sourcePrice.price * ratioData.ratio;
+        const proximity = (VARIANT_PROXIMITY[targetVariant] || {})[sourceVariant] || 0.5;
+
+        // Weight = proximity × recency_factor × sqrt(sales)
+        const recencyFactor = sourcePrice.recency === '30d' ? 1.0 : sourcePrice.recency === '90d' ? 0.7 : 0.4;
+        const weight = proximity * recencyFactor * Math.sqrt(sourcePrice.sales);
+
+        anchors.push({
+          sourceVariant,
+          sourcePrice: Math.round(sourcePrice.price),
+          sourceRecency: sourcePrice.recency,
+          sourceSales: sourcePrice.sales,
+          ratio: Math.round(ratioData.ratio * 100) / 100,
+          ratioN: ratioData.n,
+          impliedPrice: Math.round(impliedPrice),
+          proximity,
+          recencyFactor,
+          weight,
+        });
+      });
+
+      if (!anchors.length && !aiOverride) return;
+
+      // ── Weighted average of anchors ────────────────────────────────────
+      let projectedPrice, projType, confidence, confidenceScore;
 
       if (aiOverride) {
-        // Highest priority: AI player-specific override
-        mult = aiOverride.mult;
+        projectedPrice = Math.round(aiOverride.overrideMultiplier * (bestPrice(variants['Base'])?.price || 1));
         projType = 'ai';
-        reasoning = aiOverride.reasoning;
-        confidence = 'AI Override';
-        sampleSize = null;
-      } else if (aiAdjusted) {
-        // AI-calibrated set multiplier
-        mult = aiAdjusted.mult;
-        projType = 'ai';
-        reasoning = aiAdjusted.reasoning;
-        confidence = 'AI Calibrated';
-        sampleSize = layerOneMult?.sampleSize || null;
       } else {
-        // Layer 1 statistical
-        mult = layerOneMult.mult;
-        projType = 'est';
-        reasoning = null;
-        confidence = layerOneMult.confidence;
-        sampleSize = layerOneMult.sampleSize;
+        const totalWeight = anchors.reduce((s, a) => s + a.weight, 0);
+        const weightedSum = anchors.reduce((s, a) => s + a.impliedPrice * a.weight, 0);
+        projectedPrice = Math.round(totalWeight > 0 ? weightedSum / totalWeight : anchors[0].impliedPrice);
+
+        // AI adjusted multiplier as a check — if AI says something different, note it
+        if (aiAdjusted) {
+          projType = 'ai';
+        } else {
+          projType = 'est';
+        }
       }
 
-      const projectedPrice = Math.round(playerBasePrice * mult);
+      // ── Confidence scoring ─────────────────────────────────────────────
+      const has30d = anchors.some(a => a.sourceRecency === '30d');
+      const has90d = anchors.some(a => a.sourceRecency === '90d');
+      const anchorCount = anchors.length;
+      const totalSalesAcrossAnchors = anchors.reduce((s, a) => s + a.sourceSales, 0);
+      const highProximityAnchors = anchors.filter(a => a.proximity >= 0.8).length;
 
-      projections[player + '|||' + variant] = {
+      if (anchorCount >= 3 && has30d && highProximityAnchors >= 2) {
+        confidence = 'High';
+        confidenceScore = 90;
+      } else if (anchorCount >= 2 && (has30d || has90d)) {
+        confidence = 'Medium';
+        confidenceScore = 65;
+      } else if (anchorCount >= 2) {
+        confidence = 'Medium-Low';
+        confidenceScore = 45;
+      } else if (anchorCount === 1 && totalSalesAcrossAnchors >= 10) {
+        confidence = 'Low';
+        confidenceScore = 30;
+      } else {
+        confidence = 'Very Low';
+        confidenceScore = 15;
+      }
+
+      if (aiOverride || aiAdjusted) {
+        confidence = 'AI Calibrated';
+        confidenceScore = Math.min(95, confidenceScore + 20);
+      }
+
+      projections[player + '|||' + targetVariant] = {
         price: projectedPrice,
-        mult: Math.round(mult * 100) / 100,
         projType,
-        reasoning,
         confidence,
-        sampleSize,
-        playerBasePrice,
-        setAvgBase: setAvgBase ? Math.round(setAvgBase) : null,
-        layerOneMult: layerOneMult ? Math.round(layerOneMult.mult * 100) / 100 : null,
+        confidenceScore,
+        anchors,       // full breakdown for "show your work"
         aiOverride: aiOverride || null,
         aiAdjusted: aiAdjusted || null,
+        // Legacy fields still used by drawer
+        playerBasePrice: Math.round(bestPrice(variants['Base'])?.price || 0),
+        layerOneMult: null,
       };
     });
   });
@@ -649,91 +722,125 @@ function openProjectionDrawer(player, variant) {
   document.getElementById('d-player').textContent = player;
   document.getElementById('d-variant').textContent = variant + ' · Projected Value';
 
+  // ── Known data for this player ─────────────────────────────────────────
   const playerVariants = byPlayer[player] || {};
-  const knownData = Object.entries(playerVariants)
+  const knownEntries = Object.entries(playerVariants)
     .filter(([, d]) => d.avgPrice > 0)
-    .map(([v, d]) => `<div class="d-stat"><span class="d-stat-label">${v} (real)</span><span class="d-stat-val accent">$${Math.round(d.avgPrice)} · ${d.totalSales} sales</span></div>`)
-    .join('');
+    .sort((a, b) => {
+      const order = {'Base':0,'Victory':1,'Vides':2,'Emerald':3,'Gold':4,'Chrome':5,'Fire':6,'SP':7};
+      return (order[a[0]]??99) - (order[b[0]]??99);
+    });
 
-  // Model inputs for this set/variant
-  const layerOneMult = allData.modelMultipliers?.find(m => m.set === activeSet && m.variant === variant);
+  const knownData = knownEntries.map(([v, d]) => {
+    const bp = bestPrice(d);
+    const recencyTag = bp ? `<span style="font-size:8px;color:var(--muted);margin-left:4px">(${bp.recency})</span>` : '';
+    return `<div class="d-stat">
+      <span class="d-stat-label">${v}</span>
+      <span class="d-stat-val accent">$${Math.round(d.avgPrice)} · ${d.totalSales} sales${recencyTag}</span>
+    </div>`;
+  }).join('');
 
-  let stepsHtml = '';
+  // ── Anchor breakdown table ─────────────────────────────────────────────
+  const anchors = proj.anchors || [];
+  const totalWeight = anchors.reduce((s, a) => s + a.weight, 0);
 
-  if (proj.projType === 'ai' && proj.aiOverride) {
-    // AI player override
-    stepsHtml = `
-      <div class="proj-step">
-        <div class="proj-step-num">AI Player-Specific Override</div>
-        <div class="proj-step-eq">${player}'s ${variant} = <strong style="color:#b0f0ff">$${proj.price}</strong></div>
-        <div class="proj-step-note">${proj.reasoning}</div>
-      </div>
-      ${proj.aiOverride.standard ? `<div class="proj-step">
-        <div class="proj-step-num">vs Standard Model</div>
-        <div class="proj-step-eq">Statistical model would have said: $${Math.round(proj.playerBasePrice * proj.aiOverride.standard)}</div>
-        <div class="proj-step-note">AI adjusted this based on observed player-specific patterns.</div>
-      </div>` : ''}`;
-  } else if (proj.projType === 'ai' && proj.aiAdjusted) {
-    // AI-calibrated set multiplier
-    stepsHtml = `
-      <div class="proj-step">
-        <div class="proj-step-num">Step 1 · Player's Base Price</div>
-        <div class="proj-step-eq">${player}'s Base = <strong>$${Math.round(proj.playerBasePrice)}</strong></div>
-        <div class="proj-step-note">Anchor for this projection.</div>
-      </div>
-      <div class="proj-arrow">↓</div>
-      <div class="proj-step">
-        <div class="proj-step-num">Step 2 · AI-Calibrated ${variant} Multiplier</div>
-        <div class="proj-step-eq">Statistical: ${proj.layerOneMult || '—'}× → AI adjusted: <strong>${proj.mult}×</strong></div>
-        <div class="proj-step-note">${proj.reasoning}</div>
-      </div>
-      <div class="proj-arrow">↓</div>
-      <div class="proj-step">
-        <div class="proj-step-num">Calculation</div>
-        <div class="proj-step-eq">$${Math.round(proj.playerBasePrice)} × ${proj.mult} = <strong style="color:#b0f0ff">$${proj.price}</strong></div>
+  let anchorsHtml = '';
+  if (anchors.length) {
+    const rows = anchors.map(a => {
+      const weightPct = totalWeight > 0 ? Math.round((a.weight / totalWeight) * 100) : 0;
+      const barWidth = Math.max(4, weightPct);
+      const recencyColor = a.sourceRecency === '30d' ? 'var(--accent)' : a.sourceRecency === '90d' ? '#ffb347' : 'var(--muted)';
+      return `<div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+          <span style="font-size:10px;color:var(--text)">${a.sourceVariant} → ${variant}</span>
+          <span style="font-family:var(--display);font-size:12px;color:var(--accent)">$${a.impliedPrice}</span>
+        </div>
+        <div style="font-size:9px;color:var(--muted);line-height:1.7">
+          $${a.sourcePrice} × ${a.ratio}× ratio = $${a.impliedPrice}<br>
+          <span style="color:${recencyColor}">${a.sourceRecency} avg</span>
+          · ${a.sourceSales} sale${a.sourceSales !== 1 ? 's' : ''}
+          · proximity ${Math.round(a.proximity * 100)}%
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:3px;background:var(--border);border-radius:2px">
+            <div style="width:${barWidth}%;height:100%;background:var(--accent);border-radius:2px;opacity:0.6"></div>
+          </div>
+          <span style="font-size:8px;color:var(--muted);white-space:nowrap">${weightPct}% weight</span>
+        </div>
       </div>`;
-  } else {
-    // Statistical (Layer 1)
-    const sampleNote = proj.sampleSize
-      ? `Based on ${proj.sampleSize} player${proj.sampleSize !== 1 ? 's' : ''} in ${activeSet} with real ${variant} sales.`
-      : 'Estimated from set patterns.';
-    stepsHtml = `
-      <div class="proj-step">
-        <div class="proj-step-num">Step 1 · Player's Base Price</div>
-        <div class="proj-step-eq">${player}'s Base = <strong>$${Math.round(proj.playerBasePrice)}</strong></div>
-        <div class="proj-step-note">The anchor. We scale up from here using the set's observed ${variant} multiplier.</div>
-      </div>
-      <div class="proj-arrow">↓</div>
-      <div class="proj-step">
-        <div class="proj-step-num">Step 2 · ${variant} Multiplier (${activeSet})</div>
-        <div class="proj-step-eq">${variant} typically sells for <strong>${proj.mult}×</strong> Base in this set</div>
-        <div class="proj-step-note">${sampleNote} Confidence: ${proj.confidence}${layerOneMult ? '. Std dev: ' + layerOneMult.stdDev + 'x — ' + (layerOneMult.stdDev > 1.5 ? 'high variance, treat with caution' : 'consistent pattern') : ''}.</div>
-      </div>
-      <div class="proj-arrow">↓</div>
-      <div class="proj-step">
-        <div class="proj-step-num">Calculation</div>
-        <div class="proj-step-eq">$${Math.round(proj.playerBasePrice)} × ${proj.mult} = <strong style="color:var(--accent)">$${proj.price}</strong></div>
+    }).join('');
+
+    const weightedRows = anchors.map(a => {
+      const weightPct = totalWeight > 0 ? Math.round((a.weight / totalWeight) * 100) : 0;
+      return `  $${a.impliedPrice} (${a.sourceVariant}) × ${weightPct}%`;
+    }).join('
+');
+
+    anchorsHtml = `
+      <div class="d-section-title">Anchors · ${anchors.length} source${anchors.length !== 1 ? 's' : ''}</div>
+      ${rows}
+      <div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-top:4px;font-size:9px;color:var(--muted);line-height:1.8">
+        Weighted avg:<br>
+        <span style="font-family:var(--mono)">${weightedRows}</span>
+      </div>`;
+  } else if (proj.aiOverride) {
+    anchorsHtml = `<div class="d-section-title">AI Override</div>
+      <div style="background:rgba(176,240,255,0.06);border:1px solid rgba(176,240,255,0.2);padding:12px;font-size:9px;color:#b0f0ff;line-height:1.6">
+        ${proj.aiOverride.reasoning || 'Player-specific AI adjustment applied.'}
       </div>`;
   }
 
-  const aiNote = proj.projType === 'ai'
-    ? `<div class="ai-override-note"><strong>AI Calibrated</strong>This projection was adjusted by the AI market model, which analyzes patterns across all sets and players. ${proj.projType === 'ai' && proj.aiOverride ? 'A player-specific override was applied.' : 'A set-level multiplier adjustment was applied.'}</div>`
+  // ── Confidence bar ─────────────────────────────────────────────────────
+  const score = proj.confidenceScore || 0;
+  const confColor = score >= 70 ? '#6fcf97' : score >= 40 ? '#ffb347' : '#ff6b6b';
+  const confLabel = proj.confidence || '—';
+
+  // ── Recency note ───────────────────────────────────────────────────────
+  const has30d = anchors.some(a => a.sourceRecency === '30d');
+  const has90d = anchors.some(a => a.sourceRecency === '90d');
+  const recencyNote = has30d ? 'Using 30-day prices — recent data.' :
+                      has90d ? 'Using 90-day prices — no data in last 30 days.' :
+                      anchors.length ? 'Using all-time averages — limited recent data.' : '';
+
+  // ── AI note ────────────────────────────────────────────────────────────
+  const aiNote = proj.aiAdjusted
+    ? `<div class="ai-override-note"><strong>AI Calibrated</strong>${proj.aiAdjusted.reasoning || 'Set-level multiplier adjusted by AI market model.'}</div>`
     : '';
 
   document.getElementById('d-body').innerHTML = `
     <div class="d-section">
-      <div class="d-section-title">How we calculated this</div>
-      <div class="proj-steps">${stepsHtml}</div>
+      <div class="d-section-title">Confidence</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="flex:1;height:5px;background:var(--border);border-radius:3px">
+          <div style="width:${score}%;height:100%;background:${confColor};border-radius:3px"></div>
+        </div>
+        <span style="font-family:var(--display);font-size:10px;color:${confColor};white-space:nowrap">${confLabel}</span>
+      </div>
+      ${recencyNote ? `<div style="font-size:9px;color:var(--muted)">${recencyNote}</div>` : ''}
+    </div>
+
+    <div class="d-section">
+      ${anchorsHtml}
       ${aiNote}
     </div>
+
     <div class="proj-final">
       <div class="proj-final-label">Projected Value</div>
-      <div class="proj-final-val">$$${Math.round(proj.price)}</div>
-      <div class="proj-final-note">No actual sales recorded for ${player} ${variant} yet.<br>
-        ${proj.projType === 'ai' ? 'AI-calibrated estimate.' : `Confidence: $${Math.round(proj.confidence)}.`}
-        Actual sale price will vary.</div>
+      <div class="proj-final-val">$${proj.price}</div>
+      <div class="proj-final-note">
+        ${anchors.length > 1
+          ? `Weighted average of ${anchors.length} anchors.`
+          : anchors.length === 1
+          ? `Based on ${anchors[0].sourceVariant} price only.`
+          : 'AI override.'}
+        Actual sale price will vary.
+      </div>
     </div>
-    ${knownData ? `<div class="d-section" style="margin-top:16px"><div class="d-section-title">What we know for ${player}</div>${knownData}</div>` : ''}
+
+    ${knownData ? `<div class="d-section" style="margin-top:16px">
+      <div class="d-section-title">What we know for ${player}</div>
+      ${knownData}
+    </div>` : ''}
   `;
 
   document.getElementById('overlay').classList.add('visible');
