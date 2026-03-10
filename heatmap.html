@@ -305,12 +305,24 @@ const VARIANT_ORDER = ['Base','Victory','Vides','Emerald','Gold','Chrome','Fire'
 // ── Fetch ──────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const res = await fetch(DATA_URL);
-    allData = await res.json();
+    const res = await fetch(DATA_URL, {
+      method: 'GET',
+      redirect: 'follow',
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    try {
+      allData = JSON.parse(text);
+    } catch(e) {
+      throw new Error('Invalid JSON: ' + text.substring(0, 200));
+    }
     initPage();
   } catch(e) {
     document.getElementById('heatmap-container').innerHTML =
       `<div class="loading" style="color:#ff6b35">Failed to load data: ${e.message}</div>`;
+    document.getElementById('set-tabs').innerHTML =
+      `<span style="font-size:9px;color:#ff6b35;letter-spacing:1px">connection error — check console</span>`;
+    console.error('Heatmap load error:', e);
   }
 }
 
