@@ -785,8 +785,7 @@ function openProjectionDrawer(player, variant) {
     const weightedRows = anchors.map(a => {
       const weightPct = totalWeight > 0 ? Math.round((a.weight / totalWeight) * 100) : 0;
       return `  $${a.impliedPrice} (${a.sourceVariant}) × ${weightPct}%`;
-    }).join('
-');
+    }).join('<br>');
 
     anchorsHtml = `
       <div class="d-section-title">Anchors · ${anchors.length} source${anchors.length !== 1 ? 's' : ''}</div>
