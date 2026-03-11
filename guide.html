@@ -285,7 +285,29 @@ window.addEventListener('DOMContentLoaded', async () => {
   allProducts = (data.products || []).filter(p => p.player && p.player !== 'Unknown');
   allListings = (data.allListings || []).filter(l => l.player && l.player !== 'Unknown');
   buildVariantChips();
+
+  // Check for ?player= URL param — pre-filter to that player
+  const params = new URLSearchParams(window.location.search);
+  const urlPlayer = params.get('player');
+  if (urlPlayer) {
+    // Pre-fill search box with player name
+    const searchEl = document.getElementById('search-input');
+    if (searchEl) searchEl.value = urlPlayer;
+  }
+
   applyFilters();
+
+  // After table renders, if a player was specified, open their Base drawer
+  if (urlPlayer) {
+    const match = allProducts.find(p =>
+      p.player.toLowerCase() === urlPlayer.toLowerCase() && p.variant === 'Base'
+    ) || allProducts.find(p =>
+      p.player.toLowerCase() === urlPlayer.toLowerCase()
+    );
+    if (match) {
+      setTimeout(() => openDrawer(match), 100);
+    }
+  }
 });
 
 async function fetchData() {

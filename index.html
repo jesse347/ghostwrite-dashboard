@@ -669,7 +669,7 @@ header {
   <!-- Price over time chart -->
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title">median parallel price over time <span style="color:var(--muted);font-size:8px">last 6 months · non-base only</span></div>
+      <div class="panel-title">avg parallel price over time <span style="color:var(--muted);font-size:8px">last 6 months · non-base · monthly</span></div>
       <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
     </div>
     <div class="panel">
@@ -808,9 +808,19 @@ function renderAll(data) {
   renderPowerRankings(data.products || [], 'ALL');
   renderProducts();
 
-  const t = new Date(data.fetchedAt);
-  document.getElementById('fetch-time').textContent =
-    'updated ' + t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  // Show most recent sale date from the actual data
+  const allDates = (data.allListings || data.recentSales || [])
+    .map(s => s.date ? new Date(s.date) : null)
+    .filter(Boolean);
+  if (allDates.length) {
+    const latestSale = new Date(Math.max(...allDates));
+    document.getElementById('fetch-time').textContent =
+      'last sale: ' + latestSale.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  } else {
+    const t = new Date(data.fetchedAt);
+    document.getElementById('fetch-time').textContent =
+      'updated ' + t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1049,16 +1059,20 @@ let baseSortDir = 'desc'; // 'asc' or 'desc'
 
 function renderSetVariantTable(svAvgs) {
   // Now shows base price by player — svAvgs param kept for compatibility but we use allProductsData
-  renderBasePriceByPlayer('desc');
+  renderBasePriceByPlayer('price','desc');
 }
 
-function renderBasePriceByPlayer(sortDir) {
+// baseSortCol: 'price' or 'sales', baseSortDir: 'desc' or 'asc'
+let baseSortCol = 'price';
+
+function renderBasePriceByPlayer(sortCol, sortDir) {
   const el = document.getElementById('set-variant-table');
-  baseSortDir = sortDir;
+  if (sortCol) baseSortCol = sortCol;
+  if (sortDir) baseSortDir = sortDir;
 
   // Aggregate base variant prices per player across all sets
   const playerMap = {};
-  (allProductsData || []).forEach(p => {
+  (allProductsData || []).filter(p => p.player && p.player !== 'Unknown').forEach(p => {
     if (p.variant !== 'Base' || !p.avgPrice || !p.totalSales) return;
     if (!playerMap[p.player]) playerMap[p.player] = { sum: 0, salesSum: 0 };
     playerMap[p.player].sum += p.avgPrice * p.totalSales;
@@ -1073,27 +1087,38 @@ function renderBasePriceByPlayer(sortDir) {
     }))
     .filter(r => r.avgPrice > 0);
 
-  rows.sort((a, b) => sortDir === 'desc'
-    ? b.totalSales - a.totalSales
-    : a.totalSales - b.totalSales
-  );
+  // Sort by selected column
+  rows.sort((a, b) => {
+    const aVal = baseSortCol === 'price' ? a.avgPrice : a.totalSales;
+    const bVal = baseSortCol === 'price' ? b.avgPrice : b.totalSales;
+    return baseSortDir === 'desc' ? bVal - aVal : aVal - bVal;
+  });
   rows = rows.slice(0, 10);
 
   if (!rows.length) { el.innerHTML = '<div class="empty">no base sales data yet</div>'; return; }
 
-  const arrow = sortDir === 'desc' ? '▼' : '▲';
+  function sortHeader(col, label) {
+    const isActive = baseSortCol === col;
+    const nextDir = isActive && baseSortDir === 'desc' ? 'asc' : 'desc';
+    const arrow = isActive ? (baseSortDir === 'desc' ? ' ▼' : ' ▲') : '';
+    return `<th style="cursor:pointer;user-select:none" onclick="renderBasePriceByPlayer('${col}','${nextDir}')">${label}${arrow}</th>`;
+  }
+
   el.innerHTML = `<table class="sv-table">
     <thead><tr>
       <th>Player</th>
-      <th>Avg Base Price</th>
-      <th style="cursor:pointer;user-select:none" onclick="renderBasePriceByPlayer(baseSortDir==='desc'?'asc':'desc')">Sales ${arrow}</th>
+      ${sortHeader('price', 'Avg Base Price')}
+      ${sortHeader('sales', 'Sales')}
     </tr></thead>
-    <tbody>${rows.map(r => `
+    <tbody>${rows.map(r => {
+      const guideUrl = `guide.html?player=${encodeURIComponent(r.player)}`;
+      return `
       <tr>
-        <td style="color:var(--text)">${r.player}</td>
+        <td><a href="${guideUrl}" style="color:var(--accent);text-decoration:none;cursor:pointer" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${r.player}</a></td>
         <td class="sv-price">$${r.avgPrice}</td>
         <td>${r.totalSales}</td>
-      </tr>`).join('')}
+      </tr>`;
+    }).join('')}
     </tbody></table>`;
 }
 
@@ -1140,34 +1165,30 @@ function renderPriceChart(sales) {
   const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
   const parallelSales = sales.filter(s =>
     s.variant && s.variant !== 'Base' &&
+    s.player && s.player !== 'Unknown' &&
     s.date && new Date(s.date) >= sixMonthsAgo &&
     s.price > 0
   );
 
-  // Group by week for cleaner chart over 6 months
-  const byWeek = {};
+  // Group by month
+  const byMonth = {};
   parallelSales.forEach(s => {
     const d = new Date(s.date);
-    const day = d.getDay();
-    const diff = (day === 0 ? 6 : day - 1);
-    const monday = new Date(d);
-    monday.setDate(d.getDate() - diff);
-    const key = monday.toISOString().substring(0, 10);
-    const label = monday.toLocaleDateString('en-US', {month:'short', day:'numeric'});
-    if (!byWeek[key]) byWeek[key] = { label, prices: [] };
-    byWeek[key].prices.push(s.price);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
+    if (!byMonth[key]) byMonth[key] = { label, prices: [] };
+    byMonth[key].prices.push(s.price);
   });
 
-  const sorted = Object.entries(byWeek)
+  const sorted = Object.entries(byMonth)
     .sort((a,b) => a[0].localeCompare(b[0]));
 
   if (!sorted.length) return;
 
   const labels = sorted.map(e => e[1].label);
   const avgs   = sorted.map(e => {
-    const p = [...e[1].prices].sort((a,b) => a-b);
-    const mid = Math.floor(p.length/2);
-    return Math.round(p.length % 2 !== 0 ? p[mid] : (p[mid-1]+p[mid])/2);
+    const p = e[1].prices;
+    return Math.round(p.reduce((a,b) => a+b, 0) / p.length);
   });
 
   const ctx = document.getElementById('priceChart').getContext('2d');
@@ -1228,14 +1249,15 @@ function switchPowerLeague(btn) {
 function renderPowerRankings(products, league) {
   const el = document.getElementById('power-rankings');
 
-  // Filter by league
-  const filtered = league === 'ALL' ? products : products.filter(p => {
+  // Filter by league, exclude Unknown players
+  const leagueFiltered = league === 'ALL' ? products : products.filter(p => {
     const s = (p.set || '').toUpperCase();
     if (league === 'NBA')  return s.includes('NBA') && !s.includes('WNBA');
     if (league === 'WNBA') return s.includes('WNBA');
     if (league === 'MLB')  return s.includes('MLB');
     return true;
   });
+  const filtered = leagueFiltered.filter(p => p.player && p.player !== 'Unknown');
 
   // Step 1: compute median price per variant across all players (baseline)
   const variantPrices = {};
@@ -1309,9 +1331,10 @@ function renderPowerRankings(products, league) {
 function renderMovers(products) {
   const el = document.getElementById('movers-table');
 
-  // Only products with 2+ sales, a last sale price, and an avg price
+  // Only products with 2+ sales, a last sale price, and an avg price — exclude Unknown
   const eligible = products.filter(p =>
-    p.totalSales >= 2 && p.lastSalePrice > 0 && p.avgPrice > 0
+    p.totalSales >= 2 && p.lastSalePrice > 0 && p.avgPrice > 0 &&
+    p.player && p.player !== 'Unknown'
   );
 
   if (!eligible.length) { el.innerHTML = '<div class="empty">not enough data yet</div>'; return; }
@@ -1368,9 +1391,9 @@ function renderMovers(products) {
 function renderTopPlayers(products) {
   const el = document.getElementById('top-players-table');
 
-  // Gold variant only, aggregate per player across all sets
+  // Gold variant only, aggregate per player across all sets — exclude Unknown
   const playerMap = {};
-  products.forEach(p => {
+  products.filter(p => p.player && p.player !== 'Unknown').forEach(p => {
     if (p.variant !== 'Gold' || !p.avgPrice || !p.totalSales) return;
     if (!playerMap[p.player]) playerMap[p.player] = { sum: 0, salesSum: 0 };
     playerMap[p.player].sum += p.avgPrice * p.totalSales;
