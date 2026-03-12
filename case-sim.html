@@ -279,11 +279,25 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
 
 // ── Set config ─────────────────────────────────────────────────────────────
-const SET_CONFIG = {
-  'NBA Game Face 2024-25': { casePrice: 500, casePack: 12, label: 'NBA 2024–25' },
-  'WNBA Game Face 2024':   { casePrice: 500, casePack: 12, label: 'WNBA 2024'   },
-  'MLB Game Face 2025':    { casePrice: 425, casePack: 12, label: 'MLB 2025'    },
-};
+// SET_CONFIG entries are matched fuzzily (all keywords must appear in set name,
+// case-insensitive) so minor naming differences don't break the page.
+const SET_CONFIG = [
+  { match: ['nba', 'game face', '2024'],  casePrice: 500, casePack: 12, label: 'NBA 2024–25'  },
+  { match: ['wnba', 'game face', '2024'], casePrice: 500, casePack: 12, label: 'WNBA 2024'    },
+  { match: ['mlb', 'game face', '2025'],  casePrice: 425, casePack: 12, label: 'MLB 2025'     },
+];
+
+function getSetConfig(setName) {
+  const lower = (setName || '').toLowerCase();
+  // WNBA must be checked before NBA (NBA matches inside "WNBA")
+  const ordered = [...SET_CONFIG].sort((a, b) =>
+    b.match.join('').length - a.match.join('').length
+  );
+  for (const cfg of ordered) {
+    if (cfg.match.every(kw => lower.includes(kw))) return cfg;
+  }
+  return null;
+}
 
 const VARIANT_ORDER = ['Base','Victory','Vides','Emerald','Gold','Chrome','Fire','SP'];
 const VARIANT_COLORS = {
@@ -324,14 +338,18 @@ async function loadData() {
 }
 
 function initPage() {
-  // Find which configured sets actually have data
-  const availableSets = Object.keys(SET_CONFIG).filter(setName =>
-    (allData.products || []).some(p => p.set === setName && p.player && p.player !== 'Unknown')
-  );
+  // Find which sets in the data match our fuzzy SET_CONFIG
+  const allSetNames = [...new Set((allData.products || [])
+    .filter(p => p.player && p.player !== 'Unknown' && p.set)
+    .map(p => p.set)
+  )];
+  const availableSets = allSetNames.filter(s => getSetConfig(s) !== null);
 
   if (!availableSets.length) {
+    const known = allSetNames.slice(0, 8).join(', ') || 'none found';
     document.getElementById('main-content').innerHTML =
-      '<div class="loading-state">no case data available yet</div>';
+      '<div class="loading-state" style="color:#ff4455">no matching sets found<br>' +
+      '<span style="font-size:9px;color:#666;margin-top:8px;display:block">sets in data: ' + known + '</span></div>';
     return;
   }
 
@@ -378,7 +396,7 @@ function renderSetSelector(sets) {
   document.getElementById('set-selector').innerHTML = sets.map(s =>
     `<button class="set-btn ${s === activeSet ? 'active' : ''}"
       onclick="switchSet('${s.replace(/'/g,"\\'")}')">
-      ${SET_CONFIG[s].label}
+      ${(getSetConfig(s) || {label: s}).label}
     </button>`
   ).join('');
 }
@@ -386,9 +404,11 @@ function renderSetSelector(sets) {
 function switchSet(s) {
   activeSet = s;
   simHistory = [];
-  const sets = Object.keys(SET_CONFIG).filter(setName =>
-    (allData.products || []).some(p => p.set === setName && p.player && p.player !== 'Unknown')
-  );
+  const allSetNames = [...new Set((allData.products || [])
+    .filter(p => p.player && p.player !== 'Unknown' && p.set)
+    .map(p => p.set)
+  )];
+  const sets = allSetNames.filter(s => getSetConfig(s) !== null);
   renderSetSelector(sets);
   renderStats();
   renderEmptyGrid();
@@ -399,7 +419,7 @@ function switchSet(s) {
 
 // ── Stats cards ────────────────────────────────────────────────────────────
 function renderStats() {
-  const cfg = SET_CONFIG[activeSet];
+  const cfg = getSetConfig(activeSet) || { casePrice: 500, casePack: 12 };
   const products = (allData.products || []).filter(p =>
     p.set === activeSet && p.player && p.player !== 'Unknown'
   );
@@ -452,7 +472,7 @@ function renderStats() {
 
 // ── Empty grid ─────────────────────────────────────────────────────────────
 function renderEmptyGrid() {
-  const cfg = SET_CONFIG[activeSet];
+  const cfg = getSetConfig(activeSet) || { casePrice: 500, casePack: 12, label: activeSet };
   let html = '';
   for (let i = 0; i < cfg.casePack; i++) {
     html += `<div class="box-slot" id="slot-${i}">
@@ -478,7 +498,7 @@ function renderProbabilities() {
       ${chaseVariants.map(v => {
         const count = poolByVariant[v] || 0;
         const pct = (count / totalPop * 100);
-        const perCase = (count / totalPop * SET_CONFIG[activeSet].casePack);
+        const perCase = (count / totalPop * (getSetConfig(activeSet) || {casePack:12}).casePack);
         const odds = count > 0 ? Math.round(totalPop / count) : 0;
         const displayPct = pct < 0.1 ? pct.toFixed(3) : pct < 1 ? pct.toFixed(2) : pct.toFixed(1);
         const barPct = Math.min(100, pct / 100 * 100 * 20); // scale so base doesn't eat the bar
@@ -716,7 +736,7 @@ function runSimulation() {
   if (isAnimating) return;
   isAnimating = true;
 
-  const cfg = SET_CONFIG[activeSet];
+  const cfg = getSetConfig(activeSet) || { casePrice: 500, casePack: 12, label: activeSet };
   const { pool, totalPop } = buildPool(activeSet);
 
   if (!pool.length) {
@@ -804,7 +824,7 @@ function showResults(pulls, cfg) {
 
   // Add to history
   simHistory.unshift({
-    set: SET_CONFIG[activeSet].label,
+    set: (getSetConfig(activeSet) || {label:activeSet}).label,
     casePrice: cfg.casePrice,
     hit: hits.length ? hits.map(h => h.player + ' ' + h.variant).join(', ') : 'none',
     hitVariant: hits.length ? hits[0].variant : null,
