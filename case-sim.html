@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostwrite · case simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080808;
+  --s1: #0f0f0f;
+  --s2: #161616;
+  --s3: #1e1e1e;
+  --border: #222;
+  --accent: #e8ff47;
+  --text: #efefef;
+  --muted: #666;
+  --muted2: #444;
+  --mono: 'Space Mono', monospace;
+  --display: 'Unbounded', sans-serif;
+  --green: #3ddc84;
+  --red: #ff4455;
+  --orange: #ff9f43;
+  --fire: #ff2d2d;
+  --chrome: #a8c8ff;
+  --gold: #ffd700;
+  --emerald: #2ecc71;
+  --victory: #e8ff47;
+  --base: #888;
+  --sp: #c084fc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); min-height: 100vh; }
+body { color: var(--text); font-family: var(--mono); font-size: 12px; }
+
+/* ── Nav ── */
+.nav {
+  display: flex; align-items: center;
+  padding: 14px 32px; border-bottom: 1px solid var(--border);
+  gap: 24px; position: sticky; top: 0; background: var(--bg); z-index: 50;
+}
+.nav-logo { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 2px; text-decoration: none; }
+.nav-links { display: flex; gap: 20px; margin-left: auto; }
+.nav-link { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+.nav-link:hover { color: var(--text); }
+.nav-link.active { color: var(--text); }
+
+/* ── Page ── */
+.page { max-width: 1100px; margin: 0 auto; padding: 32px; }
+
+.page-header { margin-bottom: 28px; }
+.page-title { font-family: var(--display); font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; }
+.page-title em { color: var(--accent); font-style: normal; }
+.page-sub { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+/* ── Set selector ── */
+.set-selector { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
+.set-btn {
+  font-family: var(--display); font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 8px 16px; cursor: pointer;
+  background: var(--s2); border: 1px solid var(--border);
+  color: var(--muted); transition: all 0.15s;
+}
+.set-btn:hover { color: var(--text); border-color: var(--muted2); }
+.set-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* ── Stats row ── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--s1); border: 1px solid var(--border);
+  padding: 18px 20px;
+}
+.stat-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.stat-value { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -1px; }
+.stat-value.green { color: var(--green); }
+.stat-value.red { color: var(--red); }
+.stat-value.accent { color: var(--accent); }
+.stat-sub { font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+/* ── Sim area ── */
+.sim-area {
+  background: var(--s1); border: 1px solid var(--border);
+  padding: 24px;
+}
+.sim-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.sim-title { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+.sim-controls { display: flex; gap: 8px; align-items: center; }
+
+.pull-btn {
+  font-family: var(--display); font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 10px 24px; cursor: pointer;
+  background: var(--accent); color: #000; border: none;
+  transition: all 0.15s; position: relative; overflow: hidden;
+}
+.pull-btn:hover { background: #fff; transform: translateY(-1px); }
+.pull-btn:active { transform: translateY(0); }
+.pull-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; transform: none; }
+
+.reset-btn {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 10px 16px; cursor: pointer;
+  background: transparent; color: var(--muted); border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.reset-btn:hover { color: var(--text); border-color: var(--muted2); }
+
+/* ── Case grid ── */
+.case-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 8px; margin-bottom: 20px;
+}
+
+.box-slot {
+  aspect-ratio: 1;
+  background: var(--s2); border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 8px; position: relative;
+  transition: all 0.3s;
+  cursor: default;
+}
+
+.box-slot.revealed {
+  animation: reveal 0.4s ease forwards;
+}
+
+@keyframes reveal {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.box-slot.is-hit { border-color: var(--accent); }
+.box-slot.is-fire { border-color: var(--fire); background: rgba(255,45,45,0.06); }
+.box-slot.is-chrome { border-color: var(--chrome); background: rgba(168,200,255,0.05); }
+.box-slot.is-gold { border-color: var(--gold); background: rgba(255,215,0,0.05); }
+.box-slot.is-emerald { border-color: var(--emerald); background: rgba(46,204,113,0.05); }
+.box-slot.is-victory { border-color: var(--victory); background: rgba(232,255,71,0.04); }
+.box-slot.is-sp { border-color: var(--sp); background: rgba(192,132,252,0.05); }
+.box-slot.is-vides { border-color: #ff9f43; background: rgba(255,159,67,0.05); }
+
+.box-num {
+  position: absolute; top: 6px; left: 8px;
+  font-size: 8px; color: var(--muted2); letter-spacing: 1px;
+}
+
+.box-empty-icon {
+  font-size: 18px; opacity: 0.15;
+}
+
+.box-variant-badge {
+  font-family: var(--display); font-size: 8px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 2px 6px; margin-bottom: 6px;
+}
+.box-variant-badge.v-base    { color: var(--base); }
+.box-variant-badge.v-victory { color: var(--victory); }
+.box-variant-badge.v-vides   { color: var(--orange); }
+.box-variant-badge.v-emerald { color: var(--emerald); }
+.box-variant-badge.v-gold    { color: var(--gold); }
+.box-variant-badge.v-chrome  { color: var(--chrome); }
+.box-variant-badge.v-fire    { color: var(--fire); }
+.box-variant-badge.v-sp      { color: var(--sp); }
+
+.box-player {
+  font-size: 8px; color: var(--text); text-align: center;
+  line-height: 1.3; max-width: 100%; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.box-price {
+  font-family: var(--display); font-size: 13px; font-weight: 700;
+  margin-top: 4px; color: var(--text);
+}
+.box-price.estimated { color: var(--muted); }
+.box-est-tag {
+  font-size: 7px; color: var(--muted); letter-spacing: 1px;
+  text-transform: uppercase; margin-top: 2px;
+}
+
+/* ── Result bar ── */
+.result-bar {
+  display: none;
+  border-top: 1px solid var(--border); padding-top: 20px;
+  align-items: center; gap: 32px; flex-wrap: wrap;
+}
+.result-bar.visible { display: flex; }
+
+.result-item { }
+.result-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.result-big { font-family: var(--display); font-size: 28px; font-weight: 700; letter-spacing: -1px; }
+.result-big.green { color: var(--green); }
+.result-big.red { color: var(--red); }
+.result-breakdown {
+  margin-left: auto;
+  font-size: 9px; color: var(--muted);
+  line-height: 1.8; text-align: right;
+}
+
+/* ── Hit probability row ── */
+.prob-row {
+  margin-top: 24px; padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.prob-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.prob-bars { display: flex; flex-direction: column; gap: 6px; }
+.prob-item { display: flex; align-items: center; gap: 10px; }
+.prob-variant {
+  font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  width: 64px; text-align: right; flex-shrink: 0;
+}
+.prob-bar-wrap { flex: 1; background: var(--s3); height: 4px; }
+.prob-bar { height: 100%; transition: width 0.5s ease; }
+.prob-pct { font-size: 9px; color: var(--muted); width: 60px; flex-shrink: 0; }
+.prob-odds { font-size: 8px; color: var(--muted2); flex-shrink: 0; }
+
+/* ── History ── */
+.history-section { margin-top: 28px; }
+.history-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.history-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.history-table { width: 100%; border-collapse: collapse; }
+.history-table th { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.history-table td { font-size: 10px; padding: 8px 10px; border-bottom: 1px solid rgba(34,34,34,0.5); color: var(--muted); }
+.history-table td:first-child { color: var(--muted2); font-size: 9px; }
+.history-table td.hit-col { font-weight: 700; }
+.history-table td.green { color: var(--green); }
+.history-table td.red { color: var(--red); }
+.history-empty { font-size: 9px; color: var(--muted2); letter-spacing: 1px; padding: 12px 0; }
+
+/* ── Loading ── */
+.loading-state { padding: 60px; text-align: center; color: var(--muted); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+.loading-dot { display: inline-block; animation: blink 1.2s infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .page { padding: 16px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .case-grid { grid-template-columns: repeat(4, 1fr); }
+  .nav { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">ghostwrite</a>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">dashboard</a>
+    <a href="guide.html" class="nav-link">price guide</a>
+    <a href="heatmap.html" class="nav-link">heat map</a>
+    <a href="case-sim.html" class="nav-link active">case sim</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-title">case <em>simulator</em></div>
+    <div class="page-sub">blind box ROI calculator · population-weighted randomization</div>
+  </div>
+
+  <div id="main-content">
+    <div class="loading-state">
+      loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
+
+// ── Set config ─────────────────────────────────────────────────────────────
+const SET_CONFIG = {
+  'NBA Game Face 2024-25': { casePrice: 500, casePack: 12, label: 'NBA 2024–25' },
+  'WNBA Game Face 2024':   { casePrice: 500, casePack: 12, label: 'WNBA 2024'   },
+  'MLB Game Face 2025':    { casePrice: 425, casePack: 12, label: 'MLB 2025'    },
+};
+
+const VARIANT_ORDER = ['Base','Victory','Vides','Emerald','Gold','Chrome','Fire','SP'];
+const VARIANT_COLORS = {
+  Base: 'var(--base)', Victory: 'var(--victory)', Vides: 'var(--orange)',
+  Emerald: 'var(--emerald)', Gold: 'var(--gold)', Chrome: 'var(--chrome)',
+  Fire: 'var(--fire)', SP: 'var(--sp)',
+};
+
+// Variant proximity — shared with heatmap
+const VARIANT_PROXIMITY = {
+  'Base':    { 'Victory': 0.9, 'Vides': 0.85, 'Emerald': 0.85, 'Gold': 0.75, 'Chrome': 0.6,  'Fire': 0.4,  'SP': 0.8  },
+  'Victory': { 'Base': 0.9,   'Vides': 0.9,   'Emerald': 0.9,  'Gold': 0.8,  'Chrome': 0.65, 'Fire': 0.45, 'SP': 0.85 },
+  'Emerald': { 'Base': 0.85,  'Victory': 0.9, 'Vides': 0.95,   'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
+  'Vides':   { 'Base': 0.85,  'Victory': 0.9, 'Emerald': 0.95, 'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
+  'Gold':    { 'Base': 0.75,  'Victory': 0.8, 'Emerald': 0.9,  'Vides': 0.9, 'Chrome': 0.85, 'Fire': 0.65, 'SP': 0.7  },
+  'Chrome':  { 'Base': 0.6,   'Victory': 0.65,'Emerald': 0.7,  'Vides': 0.7, 'Gold': 0.85,   'Fire': 0.8,  'SP': 0.6  },
+  'Fire':    { 'Base': 0.4,   'Victory': 0.45,'Emerald': 0.5,  'Vides': 0.5, 'Gold': 0.65,   'Chrome': 0.8,'SP': 0.4  },
+  'SP':      { 'Base': 0.8,   'Victory': 0.85,'Emerald': 0.8,  'Vides': 0.8, 'Gold': 0.7,    'Chrome': 0.6,'Fire': 0.4},
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let allData = null;
+let activeSet = null;
+let simHistory = [];
+let isAnimating = false;
+
+// ── Data loading ───────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch(DATA_URL, { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    allData = JSON.parse(await res.text());
+    initPage();
+  } catch(e) {
+    document.getElementById('main-content').innerHTML =
+      `<div class="loading-state" style="color:#ff4455">failed to load data: ${e.message}</div>`;
+  }
+}
+
+function initPage() {
+  // Find which configured sets actually have data
+  const availableSets = Object.keys(SET_CONFIG).filter(setName =>
+    (allData.products || []).some(p => p.set === setName && p.player && p.player !== 'Unknown')
+  );
+
+  if (!availableSets.length) {
+    document.getElementById('main-content').innerHTML =
+      '<div class="loading-state">no case data available yet</div>';
+    return;
+  }
+
+  activeSet = availableSets[0];
+  renderPage(availableSets);
+}
+
+function renderPage(availableSets) {
+  document.getElementById('main-content').innerHTML = `
+    <div class="set-selector" id="set-selector"></div>
+    <div class="stats-row" id="stats-row"></div>
+    <div class="sim-area">
+      <div class="sim-header">
+        <div class="sim-title">open a case</div>
+        <div class="sim-controls">
+          <button class="reset-btn" onclick="resetSim()">reset</button>
+          <button class="pull-btn" id="pull-btn" onclick="runSimulation()">▶ open case</button>
+        </div>
+      </div>
+      <div class="case-grid" id="case-grid"></div>
+      <div class="result-bar" id="result-bar"></div>
+      <div class="prob-row" id="prob-row"></div>
+    </div>
+    <div class="history-section" id="history-section" style="display:none">
+      <div class="history-label">simulation history</div>
+      <table class="history-table">
+        <thead><tr>
+          <th>#</th><th>set</th><th>case cost</th><th>hit pulled</th>
+          <th>case value</th><th>roi</th>
+        </tr></thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  `;
+
+  renderSetSelector(availableSets);
+  renderStats();
+  renderEmptyGrid();
+  renderProbabilities();
+}
+
+// ── Set selector ───────────────────────────────────────────────────────────
+function renderSetSelector(sets) {
+  document.getElementById('set-selector').innerHTML = sets.map(s =>
+    `<button class="set-btn ${s === activeSet ? 'active' : ''}"
+      onclick="switchSet('${s.replace(/'/g,"\\'")}')">
+      ${SET_CONFIG[s].label}
+    </button>`
+  ).join('');
+}
+
+function switchSet(s) {
+  activeSet = s;
+  simHistory = [];
+  const sets = Object.keys(SET_CONFIG).filter(setName =>
+    (allData.products || []).some(p => p.set === setName && p.player && p.player !== 'Unknown')
+  );
+  renderSetSelector(sets);
+  renderStats();
+  renderEmptyGrid();
+  renderProbabilities();
+  document.getElementById('result-bar').classList.remove('visible');
+  document.getElementById('history-section').style.display = 'none';
+}
+
+// ── Stats cards ────────────────────────────────────────────────────────────
+function renderStats() {
+  const cfg = SET_CONFIG[activeSet];
+  const products = (allData.products || []).filter(p =>
+    p.set === activeSet && p.player && p.player !== 'Unknown'
+  );
+
+  // Avg base price
+  const basePrices = products.filter(p => p.variant === 'Base' && p.avgPrice > 0).map(p => p.avgPrice);
+  const avgBase = basePrices.length
+    ? Math.round(basePrices.reduce((a,b) => a+b, 0) / basePrices.length)
+    : 0;
+
+  // Avg "chase" (non-base) price
+  const chasePrices = products.filter(p => p.variant !== 'Base' && p.avgPrice > 0).map(p => p.avgPrice);
+  const avgChase = chasePrices.length
+    ? Math.round(chasePrices.reduce((a,b) => a+b, 0) / chasePrices.length)
+    : 0;
+
+  // Expected case value using population math
+  const { pool } = buildPool(activeSet);
+  const totalPop = pool.reduce((s, f) => s + 1, 0);
+  const expectedValue = totalPop > 0
+    ? Math.round(pool.reduce((s, f) => s + f.price, 0) / totalPop * cfg.casePack)
+    : 0;
+  const avgRoi = expectedValue > 0
+    ? Math.round(((expectedValue - cfg.casePrice) / cfg.casePrice) * 100)
+    : 0;
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">case retail</div>
+      <div class="stat-value">$${cfg.casePrice}</div>
+      <div class="stat-sub">${cfg.casePack} figures per case</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">avg base value</div>
+      <div class="stat-value accent">$${avgBase || '—'}</div>
+      <div class="stat-sub">${basePrices.length} players w/ data</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">avg chase value</div>
+      <div class="stat-value" style="color:var(--gold)">$${avgChase || '—'}</div>
+      <div class="stat-sub">all parallels</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">expected case ROI</div>
+      <div class="stat-value ${avgRoi >= 0 ? 'green' : 'red'}">${avgRoi >= 0 ? '+' : ''}${avgRoi}%</div>
+      <div class="stat-sub">est. value $${expectedValue}</div>
+    </div>
+  `;
+}
+
+// ── Empty grid ─────────────────────────────────────────────────────────────
+function renderEmptyGrid() {
+  const cfg = SET_CONFIG[activeSet];
+  let html = '';
+  for (let i = 0; i < cfg.casePack; i++) {
+    html += `<div class="box-slot" id="slot-${i}">
+      <span class="box-num">${i + 1}</span>
+      <span class="box-empty-icon">◻</span>
+    </div>`;
+  }
+  document.getElementById('case-grid').innerHTML = html;
+}
+
+// ── Probability bars ───────────────────────────────────────────────────────
+function renderProbabilities() {
+  const { poolByVariant, totalPop } = buildPool(activeSet);
+  if (!totalPop) return;
+
+  // Only show non-base variants for the "hit" probability section
+  const chaseVariants = VARIANT_ORDER.filter(v => v !== 'Base' && poolByVariant[v]);
+
+  const probEl = document.getElementById('prob-row');
+  probEl.innerHTML = `
+    <div class="prob-title">hit probability per box (population-weighted)</div>
+    <div class="prob-bars">
+      ${chaseVariants.map(v => {
+        const count = poolByVariant[v] || 0;
+        const pct = (count / totalPop * 100);
+        const perCase = (count / totalPop * SET_CONFIG[activeSet].casePack);
+        const odds = count > 0 ? Math.round(totalPop / count) : 0;
+        const displayPct = pct < 0.1 ? pct.toFixed(3) : pct < 1 ? pct.toFixed(2) : pct.toFixed(1);
+        const barPct = Math.min(100, pct / 100 * 100 * 20); // scale so base doesn't eat the bar
+        return `<div class="prob-item">
+          <span class="prob-variant" style="color:${VARIANT_COLORS[v] || 'var(--muted)'}">${v}</span>
+          <div class="prob-bar-wrap">
+            <div class="prob-bar" style="width:${Math.max(0.5, pct)}%;background:${VARIANT_COLORS[v] || 'var(--muted)'}"></div>
+          </div>
+          <span class="prob-pct">${displayPct}%</span>
+          <span class="prob-odds">1:${odds.toLocaleString()} per box</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POOL BUILDER — the core simulation engine
+// Builds a weighted pool of every figure in the set
+// Each figure appears once in the pool, weighted by its population
+// ═══════════════════════════════════════════════════════════════════════════
+
+function buildPool(setName) {
+  const products = (allData.products || []).filter(p =>
+    p.set === setName && p.player && p.player !== 'Unknown'
+  );
+
+  // Build projection map (same logic as heatmap)
+  const { projections, byPlayer } = buildProjections(setName, products);
+
+  // Build the full population pool
+  // Each figure = { player, variant, pop, price, isEstimated }
+  const pool = [];
+  const poolByVariant = {};
+
+  // Get all variants present in this set
+  const allVariants = [...new Set(products.map(p => p.variant))];
+
+  // For each player, for each variant they have (in the set), add pop entries
+  const allPlayers = [...new Set(products.map(p => p.player))];
+
+  allPlayers.forEach(player => {
+    const playerVariants = products.filter(p => p.player === player);
+
+    playerVariants.forEach(pv => {
+      const pop = getVariantPop(pv.variant, pv);
+      if (!pop) return;
+
+      const price = getPrice(player, pv.variant, products, projections);
+      if (!price) return;
+
+      // Add `pop` entries to the pool (one per unit)
+      for (let i = 0; i < pop; i++) {
+        pool.push({
+          player,
+          variant: pv.variant,
+          price: price.value,
+          isEstimated: price.estimated,
+          confidence: price.confidence,
+        });
+      }
+      poolByVariant[pv.variant] = (poolByVariant[pv.variant] || 0) + pop;
+    });
+  });
+
+  return { pool, poolByVariant, totalPop: pool.length };
+}
+
+// Get population number for a variant
+function getVariantPop(variant, product) {
+  // Use the product's totalSales-adjacent data — but we actually need pop from
+  // the set math. We infer it from the variant name since we know the standard pops.
+  // For non-standard sets, the product row itself may have retail/edition hints.
+  const POP_DEFAULTS = {
+    Fire: 1, Chrome: 5, Gold: 10, Emerald: 25, Vides: 25,
+    Victory: 50, SP: 50, Base: 1000,
+  };
+  return POP_DEFAULTS[variant] || null;
+}
+
+// Get best price for a player+variant combo (real data or projection)
+function getPrice(player, variant, products, projections) {
+  // Try real data first
+  const real = products.find(p => p.player === player && p.variant === variant);
+  if (real) {
+    const p = bestPriceSim(real);
+    if (p) return { value: p, estimated: false, confidence: 'real' };
+  }
+
+  // Try projection
+  const projKey = player + '|||' + variant;
+  const proj = projections[projKey];
+  if (proj && proj.price > 0) {
+    return { value: proj.price, estimated: true, confidence: proj.confidence };
+  }
+
+  // Fall back to set-level average for this variant
+  const variantAvg = products
+    .filter(p => p.variant === variant && p.avgPrice > 0)
+    .map(p => p.avgPrice);
+  if (variantAvg.length) {
+    const avg = Math.round(variantAvg.reduce((a,b) => a+b, 0) / variantAvg.length);
+    return { value: avg, estimated: true, confidence: 'set-avg' };
+  }
+
+  return null;
+}
+
+function bestPriceSim(product) {
+  if (!product) return null;
+  if (product.avg30d  && product.sales30d  >= 1) return product.avg30d;
+  if (product.avg90d  && product.sales90d  >= 1) return product.avg90d;
+  if (product.avgPrice && product.totalSales >= 1) return product.avgPrice;
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROJECTION ENGINE — reused from heatmap.html
+// ═══════════════════════════════════════════════════════════════════════════
+
+function buildProjections(setName, setProducts) {
+  const aiAdjustedMults = {};
+  const aiPlayerOverrides = {};
+  if (allData.aiModelOutput) {
+    (allData.aiModelOutput.adjustedMultipliers || [])
+      .filter(m => m.set === setName)
+      .forEach(m => { aiAdjustedMults[m.variant] = { mult: m.recommendedMultiplier }; });
+    (allData.aiModelOutput.playerOverrides || [])
+      .filter(o => o.set === setName)
+      .forEach(o => { aiPlayerOverrides[o.player + '|||' + o.variant] = o; });
+  }
+
+  const byPlayer = {};
+  setProducts.forEach(p => {
+    if (!byPlayer[p.player]) byPlayer[p.player] = {};
+    byPlayer[p.player][p.variant] = p;
+  });
+
+  const crossRatios = {};
+  const allVariants = [...new Set(setProducts.map(p => p.variant))];
+
+  allVariants.forEach(vA => {
+    allVariants.forEach(vB => {
+      if (vA === vB) return;
+      const key = vA + '|||' + vB;
+      crossRatios[key] = [];
+      Object.values(byPlayer).forEach(pVariants => {
+        const dA = bestPriceSim(pVariants[vA]);
+        const dB = bestPriceSim(pVariants[vB]);
+        const sA = pVariants[vA] ? (pVariants[vA].totalSales || 0) : 0;
+        const sB = pVariants[vB] ? (pVariants[vB].totalSales || 0) : 0;
+        if (dA && dB && dA > 0 && dB > 0) {
+          crossRatios[key].push({ ratio: dA / dB, salesA: sA, salesB: sB });
+        }
+      });
+    });
+  });
+
+  function weightedMedianRatio(pairs) {
+    if (!pairs.length) return null;
+    const sorted = [...pairs].sort((a, b) => a.ratio - b.ratio);
+    const totalW = sorted.reduce((s, p) => s + Math.min(p.salesA || 1, p.salesB || 1), 0);
+    let cumW = 0;
+    for (const p of sorted) {
+      cumW += Math.min(p.salesA || 1, p.salesB || 1);
+      if (cumW >= totalW / 2) return { ratio: p.ratio, n: pairs.length };
+    }
+    return { ratio: sorted[Math.floor(sorted.length / 2)].ratio, n: pairs.length };
+  }
+
+  const setRatios = {};
+  Object.entries(crossRatios).forEach(([key, pairs]) => {
+    const r = weightedMedianRatio(pairs);
+    if (r) setRatios[key] = r;
+  });
+
+  const projections = {};
+
+  Object.entries(byPlayer).forEach(([player, variants]) => {
+    const knownVariants = Object.keys(variants).filter(v => bestPriceSim(variants[v]) > 0);
+    if (!knownVariants.length) return;
+
+    allVariants.forEach(targetVariant => {
+      if (bestPriceSim(variants[targetVariant]) > 0) return;
+      if (!setProducts.some(p => p.variant === targetVariant)) return;
+
+      const overrideKey = player + '|||' + targetVariant;
+      const aiOverride  = aiPlayerOverrides[overrideKey];
+      const aiAdjusted  = aiAdjustedMults[targetVariant];
+
+      const anchors = [];
+      knownVariants.forEach(sourceVariant => {
+        const ratioData = setRatios[targetVariant + '|||' + sourceVariant];
+        if (!ratioData) return;
+        const sourcePrice = bestPriceSim(variants[sourceVariant]);
+        if (!sourcePrice) return;
+        const impliedPrice = sourcePrice * ratioData.ratio;
+        const proximity    = (VARIANT_PROXIMITY[targetVariant] || {})[sourceVariant] || 0.5;
+        const sourceSales  = variants[sourceVariant]?.totalSales || 1;
+        anchors.push({ impliedPrice, weight: proximity * Math.sqrt(sourceSales) });
+      });
+
+      if (!anchors.length && !aiOverride) return;
+
+      let projectedPrice;
+      if (aiOverride) {
+        const basePrice = bestPriceSim(variants['Base']) || 0;
+        projectedPrice = Math.round(aiOverride.overrideMultiplier * basePrice);
+      } else {
+        const totalWeight = anchors.reduce((s, a) => s + a.weight, 0);
+        projectedPrice = totalWeight > 0
+          ? Math.round(anchors.reduce((s, a) => s + a.impliedPrice * a.weight, 0) / totalWeight)
+          : Math.round(anchors[0].impliedPrice);
+      }
+
+      const confidence = anchors.length >= 3 ? 'High'
+        : anchors.length >= 2 ? 'Medium'
+        : 'Low';
+
+      projections[player + '|||' + targetVariant] = {
+        price: projectedPrice,
+        confidence: aiOverride ? 'AI Calibrated' : confidence,
+      };
+    });
+  });
+
+  return { projections, byPlayer };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIMULATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+function runSimulation() {
+  if (isAnimating) return;
+  isAnimating = true;
+
+  const cfg = SET_CONFIG[activeSet];
+  const { pool, totalPop } = buildPool(activeSet);
+
+  if (!pool.length) {
+    alert('Not enough data to simulate this set yet.');
+    isAnimating = false;
+    return;
+  }
+
+  // Draw 12 figures from the pool (with replacement — each box is independent)
+  const pulls = [];
+  for (let i = 0; i < cfg.casePack; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    pulls.push({ ...pool[idx] });
+  }
+
+  // Animate reveals with staggered delays
+  const grid = document.getElementById('case-grid');
+  pulls.forEach((pull, i) => {
+    setTimeout(() => {
+      const slot = document.getElementById('slot-' + i);
+      const vLower = pull.variant.toLowerCase();
+      const isHit = pull.variant !== 'Base';
+      const hitClass = isHit ? 'is-hit is-' + vLower : '';
+
+      slot.className = 'box-slot revealed ' + hitClass;
+      slot.innerHTML = `
+        <span class="box-num">${i + 1}</span>
+        <span class="box-variant-badge v-${vLower}" style="color:${VARIANT_COLORS[pull.variant] || 'var(--muted)'}">
+          ${pull.variant}
+        </span>
+        <span class="box-player">${pull.player}</span>
+        <span class="box-price ${pull.isEstimated ? 'estimated' : ''}">
+          $${Math.round(pull.price).toLocaleString()}
+        </span>
+        ${pull.isEstimated ? '<span class="box-est-tag">est</span>' : ''}
+      `;
+
+      // Show results after last card
+      if (i === cfg.casePack - 1) {
+        setTimeout(() => {
+          showResults(pulls, cfg);
+          isAnimating = false;
+        }, 300);
+      }
+    }, i * 120);
+  });
+}
+
+function showResults(pulls, cfg) {
+  const totalValue = pulls.reduce((s, p) => s + p.price, 0);
+  const roi = ((totalValue - cfg.casePrice) / cfg.casePrice * 100);
+  const profit = totalValue - cfg.casePrice;
+
+  // Find the best pull (highest price)
+  const best = pulls.reduce((a, b) => a.price > b.price ? a : b);
+  const hits  = pulls.filter(p => p.variant !== 'Base');
+
+  const resultBar = document.getElementById('result-bar');
+  resultBar.className = 'result-bar visible';
+  resultBar.innerHTML = `
+    <div class="result-item">
+      <div class="result-label">case value</div>
+      <div class="result-big">$${Math.round(totalValue).toLocaleString()}</div>
+    </div>
+    <div class="result-item">
+      <div class="result-label">vs retail ($${cfg.casePrice})</div>
+      <div class="result-big ${profit >= 0 ? 'green' : 'red'}">
+        ${profit >= 0 ? '+' : ''}$${Math.round(Math.abs(profit)).toLocaleString()}
+      </div>
+    </div>
+    <div class="result-item">
+      <div class="result-label">ROI</div>
+      <div class="result-big ${roi >= 0 ? 'green' : 'red'}">${roi >= 0 ? '+' : ''}${Math.round(roi)}%</div>
+    </div>
+    <div class="result-breakdown">
+      <div>best pull: <strong style="color:${VARIANT_COLORS[best.variant] || 'var(--text)'}">
+        ${best.player} ${best.variant}</strong> · $${Math.round(best.price).toLocaleString()}</div>
+      <div>parallels pulled: <strong>${hits.length}</strong> of ${cfg.casePack}</div>
+      <div>base figures: <strong>${pulls.length - hits.length}</strong></div>
+      ${hits.length > 0 ? `<div>hit: ${hits.map(h =>
+        `<span style="color:${VARIANT_COLORS[h.variant]}">${h.player} ${h.variant}</span>`
+      ).join(', ')}</div>` : '<div style="color:var(--muted)">no hit this case</div>'}
+    </div>
+  `;
+
+  // Add to history
+  simHistory.unshift({
+    set: SET_CONFIG[activeSet].label,
+    casePrice: cfg.casePrice,
+    hit: hits.length ? hits.map(h => h.player + ' ' + h.variant).join(', ') : 'none',
+    hitVariant: hits.length ? hits[0].variant : null,
+    totalValue: Math.round(totalValue),
+    roi: Math.round(roi),
+  });
+  renderHistory();
+}
+
+function renderHistory() {
+  if (!simHistory.length) return;
+  const section = document.getElementById('history-section');
+  section.style.display = 'block';
+
+  document.getElementById('history-body').innerHTML = simHistory.map((h, i) => `
+    <tr>
+      <td>${simHistory.length - i}</td>
+      <td>${h.set}</td>
+      <td>$${h.casePrice}</td>
+      <td class="hit-col" style="color:${h.hitVariant ? VARIANT_COLORS[h.hitVariant] || 'var(--muted)' : 'var(--muted2)'}">
+        ${h.hit}
+      </td>
+      <td>$${h.totalValue.toLocaleString()}</td>
+      <td class="${h.roi >= 0 ? 'green' : 'red'}">${h.roi >= 0 ? '+' : ''}${h.roi}%</td>
+    </tr>
+  `).join('');
+}
+
+function resetSim() {
+  simHistory = [];
+  renderEmptyGrid();
+  document.getElementById('result-bar').classList.remove('visible');
+  document.getElementById('history-section').style.display = 'none';
+  isAnimating = false;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>

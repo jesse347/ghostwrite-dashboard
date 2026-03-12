@@ -631,6 +631,7 @@ header {
   <div class="header-right">
     <a href="guide.html" style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border:1px solid var(--border);padding:5px 10px;border-radius:2px;transition:all 0.15s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">price guide →</a>
     <a href="heatmap.html" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none">heat map →</a>
+    <a href="case-sim.html" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none">case sim →</a>
     <div class="live-badge"><span class="live-dot"></span> <span id="fetch-time">loading</span></div>
     <button class="refresh-btn" onclick="loadData()">↺ refresh</button>
   </div>
@@ -1128,13 +1129,14 @@ function renderBasePriceByPlayer(sortCol, sortDir) {
 function renderRecentSales(sales) {
   const el = document.getElementById('recent-sales');
   const countEl = document.getElementById('recent-count');
-  if (!sales.length) {
+  const filtered = sales.filter(s => s.player && s.player !== 'Unknown');
+  if (!filtered.length) {
     el.innerHTML = '<div class="empty" style="grid-column:1/-1">no sales in the last 30 days</div>';
     countEl.textContent = '';
     return;
   }
-  countEl.textContent = sales.length + ' sales · sorted highest to lowest';
-  el.innerHTML = sales.map(s => {
+  countEl.textContent = filtered.length + ' sales · sorted highest to lowest';
+  el.innerHTML = filtered.map(s => {
     const d = s.date ? new Date(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
     const vClass = 'v-' + (s.variant||'base').toLowerCase();
     const imgEl = s.image
