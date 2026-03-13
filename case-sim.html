@@ -469,27 +469,35 @@ function renderEmptyGrid() {
 
 // ── Probabilities ─────────────────────────────────────────────────────────────
 function renderProbabilities() {
-  const { hitPool } = buildSplitPools(activeSet);
+  const { hitPool, fullPool } = buildSplitPools(activeSet);
   if (!hitPool.length) return;
+  const cfg = getSetConfig(activeSet) || { casePack: 12 };
+
+  // Total cases = total population / figures per case
+  const totalCases = fullPool.length / cfg.casePack;
+
   const byV = {};
   hitPool.forEach(f => { byV[f.variant] = (byV[f.variant]||0)+1; });
-  const total = hitPool.length;
   const variants = VARIANT_ORDER.filter(v => v!=='Base' && byV[v]);
+
   document.getElementById('prob-row').innerHTML = `
-    <div class="prob-title">guaranteed hit · variant distribution</div>
+    <div class="prob-title">guaranteed hit · variant distribution per case</div>
     <div class="prob-bars">
       ${variants.map(v => {
         const n = byV[v]||0;
-        const pct = n/total*100;
+        // pct = how many of these variants exist per 100 cases
+        const pct = n / totalCases * 100;
         const dp = pct<0.1 ? pct.toFixed(3) : pct<1 ? pct.toFixed(2) : pct.toFixed(1);
-        const odds = n>0 ? Math.round(total/n) : 0;
+        // odds = 1 in X cases contains this variant
+        const oddsN = n>0 ? (totalCases/n) : 0;
+        const oddsStr = oddsN >= 10 ? '1:' + Math.round(oddsN).toLocaleString() + ' cases' : oddsN.toFixed(1) + ' per case';
         return `<div class="prob-item">
           <span class="prob-variant" style="color:${VARIANT_COLORS[v]||'var(--muted)'}">${v}</span>
           <div class="prob-bar-wrap">
-            <div class="prob-bar" style="width:${Math.min(100,pct*3)}%;background:${VARIANT_COLORS[v]||'var(--muted)'}"></div>
+            <div class="prob-bar" style="width:${Math.min(100,pct)}%;background:${VARIANT_COLORS[v]||'var(--muted)'}"></div>
           </div>
           <span class="prob-pct">${dp}%</span>
-          <span class="prob-odds">1:${odds.toLocaleString()}</span>
+          <span class="prob-odds">${oddsStr}</span>
         </div>`;
       }).join('')}
     </div>`;
@@ -501,7 +509,26 @@ function renderProbabilities() {
 
 function buildSplitPools(setName) {
   const { pool } = buildPool(setName);
-  return { hitPool: pool.filter(f=>f.variant!=='Base'), fullPool: pool };
+  const cfg = getSetConfig(setName) || { casePack: 12 };
+
+  const hitPool  = pool.filter(f => f.variant !== 'Base');
+  const basePool = pool.filter(f => f.variant === 'Base');
+
+  // Total cases = total population / figures per case
+  const totalCases = Math.round(pool.length / cfg.casePack);
+
+  // One parallel is guaranteed per case, so the parallels left floating
+  // in the remaining 11 slots = totalParallels - totalCases
+  const remainingParallelCount = Math.max(0, hitPool.length - totalCases);
+
+  // Shuffle so truncation is random across variants, not always the same ones
+  const shuffledHitPool = [...hitPool].sort(() => Math.random() - 0.5);
+  const remainingParallels = shuffledHitPool.slice(0, remainingParallelCount);
+
+  // remainingPool = all base cards + leftover parallels
+  const remainingPool = [...basePool, ...remainingParallels];
+
+  return { hitPool, fullPool: pool, remainingPool, totalCases };
 }
 
 function buildPool(setName) {
@@ -649,7 +676,7 @@ function runSimulation() {
   document.getElementById('pull-btn').disabled = true;
 
   const cfg = getSetConfig(activeSet)||{casePrice:500,casePack:12,hitRatio:1.02};
-  const { hitPool, fullPool } = buildSplitPools(activeSet);
+  const { hitPool, remainingPool } = buildSplitPools(activeSet);
 
   if (!hitPool.length) {
     alert('Not enough parallel data to simulate this set yet.');
@@ -663,9 +690,10 @@ function runSimulation() {
   // Slot 0 — GUARANTEED HIT from parallel-only pool
   pulls.push({ ...hitPool[Math.floor(Math.random()*hitPool.length)], slotIndex:0, isGuaranteed:true });
 
-  // Slots 1–(n-1) — full population pool (almost always base)
+  // Slots 1–(n-1) — remaining pool after 1 parallel allocated per case
+  // Base cards dominate; leftover parallels make second hits correctly rare (~2%)
   for (let i=1; i<cfg.casePack; i++) {
-    pulls.push({ ...fullPool[Math.floor(Math.random()*fullPool.length)], slotIndex:i, isGuaranteed:false });
+    pulls.push({ ...remainingPool[Math.floor(Math.random()*remainingPool.length)], slotIndex:i, isGuaranteed:false });
   }
 
   lastPulls = pulls;
