@@ -26,14 +26,14 @@
   --gold: #ffd700;
   --emerald: #2ecc71;
   --victory: #e8ff47;
-  --base: #888;
+  --base: #555;
   --sp: #c084fc;
+  --vides: #ff9f43;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { background: var(--bg); min-height: 100vh; }
 body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
-/* ── Nav ── */
 .nav {
   display: flex; align-items: center;
   padding: 14px 32px; border-bottom: 1px solid var(--border);
@@ -45,15 +45,12 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .nav-link:hover { color: var(--text); }
 .nav-link.active { color: var(--text); }
 
-/* ── Page ── */
 .page { max-width: 1100px; margin: 0 auto; padding: 32px; }
-
 .page-header { margin-bottom: 28px; }
 .page-title { font-family: var(--display); font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; }
 .page-title em { color: var(--accent); font-style: normal; }
 .page-sub { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 
-/* ── Set selector ── */
 .set-selector { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
 .set-btn {
   font-family: var(--display); font-size: 9px; font-weight: 700;
@@ -65,31 +62,17 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .set-btn:hover { color: var(--text); border-color: var(--muted2); }
 .set-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
-/* ── Stats row ── */
-.stats-row {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 12px; margin-bottom: 32px;
-}
-.stat-card {
-  background: var(--s1); border: 1px solid var(--border);
-  padding: 18px 20px;
-}
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
+.stat-card { background: var(--s1); border: 1px solid var(--border); padding: 18px 20px; }
 .stat-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.stat-value { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -1px; }
+.stat-value { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -1px; }
 .stat-value.green { color: var(--green); }
 .stat-value.red { color: var(--red); }
 .stat-value.accent { color: var(--accent); }
 .stat-sub { font-size: 9px; color: var(--muted); margin-top: 4px; }
 
-/* ── Sim area ── */
-.sim-area {
-  background: var(--s1); border: 1px solid var(--border);
-  padding: 24px;
-}
-.sim-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
-}
+.sim-area { background: var(--s1); border: 1px solid var(--border); padding: 24px; }
+.sim-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
 .sim-title { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: 1px; }
 .sim-controls { display: flex; gap: 8px; align-items: center; }
 
@@ -97,26 +80,19 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   font-family: var(--display); font-size: 11px; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase;
   padding: 10px 24px; cursor: pointer;
-  background: var(--accent); color: #000; border: none;
-  transition: all 0.15s; position: relative; overflow: hidden;
+  background: var(--accent); color: #000; border: none; transition: all 0.15s;
 }
-.pull-btn:hover { background: #fff; transform: translateY(-1px); }
-.pull-btn:active { transform: translateY(0); }
-.pull-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; transform: none; }
+.pull-btn:hover { background: #fff; }
+.pull-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
 
 .reset-btn {
   font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
   padding: 10px 16px; cursor: pointer;
-  background: transparent; color: var(--muted); border: 1px solid var(--border);
-  transition: all 0.15s;
+  background: transparent; color: var(--muted); border: 1px solid var(--border); transition: all 0.15s;
 }
 .reset-btn:hover { color: var(--text); border-color: var(--muted2); }
 
-/* ── Case grid ── */
-.case-grid {
-  display: grid; grid-template-columns: repeat(6, 1fr);
-  gap: 8px; margin-bottom: 20px;
-}
+.case-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 20px; }
 
 .box-slot {
   aspect-ratio: 1;
@@ -124,104 +100,77 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: 8px; position: relative;
-  transition: all 0.3s;
+  transition: border-color 0.2s, background 0.2s;
   cursor: default;
 }
+.box-slot.is-hit { cursor: pointer; }
+.box-slot.is-hit:hover { filter: brightness(1.12); }
 
-.box-slot.revealed {
-  animation: reveal 0.4s ease forwards;
-}
-
+.box-slot.revealed { animation: reveal 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 @keyframes reveal {
-  0% { transform: scale(0.85); opacity: 0; }
-  60% { transform: scale(1.05); }
+  0%   { transform: scale(0.8) rotateY(90deg); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-.box-slot.is-hit { border-color: var(--accent); }
-.box-slot.is-fire { border-color: var(--fire); background: rgba(255,45,45,0.06); }
-.box-slot.is-chrome { border-color: var(--chrome); background: rgba(168,200,255,0.05); }
-.box-slot.is-gold { border-color: var(--gold); background: rgba(255,215,0,0.05); }
+.box-slot.is-fire    { border-color: var(--fire);    background: rgba(255,45,45,0.07); }
+.box-slot.is-chrome  { border-color: var(--chrome);  background: rgba(168,200,255,0.05); }
+.box-slot.is-gold    { border-color: var(--gold);    background: rgba(255,215,0,0.06); }
 .box-slot.is-emerald { border-color: var(--emerald); background: rgba(46,204,113,0.05); }
 .box-slot.is-victory { border-color: var(--victory); background: rgba(232,255,71,0.04); }
-.box-slot.is-sp { border-color: var(--sp); background: rgba(192,132,252,0.05); }
-.box-slot.is-vides { border-color: #ff9f43; background: rgba(255,159,67,0.05); }
+.box-slot.is-sp      { border-color: var(--sp);      background: rgba(192,132,252,0.05); }
+.box-slot.is-vides   { border-color: var(--vides);   background: rgba(255,159,67,0.05); }
 
-.box-num {
-  position: absolute; top: 6px; left: 8px;
-  font-size: 8px; color: var(--muted2); letter-spacing: 1px;
-}
+.box-slot.guaranteed-slot:not(.revealed) { border-color: var(--muted2); border-style: dashed; }
 
-.box-empty-icon {
-  font-size: 18px; opacity: 0.15;
-}
+.box-num { position: absolute; top: 5px; left: 7px; font-size: 7px; color: var(--muted2); letter-spacing: 1px; }
+.box-empty-icon { font-size: 18px; opacity: 0.12; }
 
 .box-variant-badge {
-  font-family: var(--display); font-size: 8px; font-weight: 700;
+  font-family: var(--display); font-size: 7px; font-weight: 700;
   letter-spacing: 1px; text-transform: uppercase;
-  padding: 2px 6px; margin-bottom: 6px;
+  padding: 2px 5px; margin-bottom: 4px;
 }
-.box-variant-badge.v-base    { color: var(--base); }
-.box-variant-badge.v-victory { color: var(--victory); }
-.box-variant-badge.v-vides   { color: var(--orange); }
-.box-variant-badge.v-emerald { color: var(--emerald); }
-.box-variant-badge.v-gold    { color: var(--gold); }
-.box-variant-badge.v-chrome  { color: var(--chrome); }
-.box-variant-badge.v-fire    { color: var(--fire); }
-.box-variant-badge.v-sp      { color: var(--sp); }
-
 .box-player {
-  font-size: 8px; color: var(--text); text-align: center;
-  line-height: 1.3; max-width: 100%; overflow: hidden;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  font-size: 7px; color: var(--text); text-align: center;
+  line-height: 1.3; max-width: 100%;
+  overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
-.box-price {
-  font-family: var(--display); font-size: 13px; font-weight: 700;
-  margin-top: 4px; color: var(--text);
-}
+.box-price { font-family: var(--display); font-size: 12px; font-weight: 700; margin-top: 3px; }
 .box-price.estimated { color: var(--muted); }
-.box-est-tag {
-  font-size: 7px; color: var(--muted); letter-spacing: 1px;
-  text-transform: uppercase; margin-top: 2px;
-}
 
-/* ── Result bar ── */
-.result-bar {
-  display: none;
-  border-top: 1px solid var(--border); padding-top: 20px;
-  align-items: center; gap: 32px; flex-wrap: wrap;
+.box-est-badge {
+  position: absolute; top: 4px; right: 4px;
+  font-size: 6px; font-family: var(--display); font-weight: 700;
+  letter-spacing: 0.5px; padding: 1px 4px;
+  color: var(--accent); background: rgba(232,255,71,0.12);
+  border: 1px solid rgba(232,255,71,0.3);
 }
+.box-click-hint {
+  position: absolute; bottom: 4px; right: 5px;
+  font-size: 6px; color: var(--muted2); opacity: 0; transition: opacity 0.15s;
+}
+.box-slot.is-hit:hover .box-click-hint { opacity: 1; }
+
+.result-bar { display: none; border-top: 1px solid var(--border); padding-top: 20px; align-items: center; gap: 32px; flex-wrap: wrap; }
 .result-bar.visible { display: flex; }
-
-.result-item { }
 .result-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .result-big { font-family: var(--display); font-size: 28px; font-weight: 700; letter-spacing: -1px; }
 .result-big.green { color: var(--green); }
 .result-big.red { color: var(--red); }
-.result-breakdown {
-  margin-left: auto;
-  font-size: 9px; color: var(--muted);
-  line-height: 1.8; text-align: right;
-}
+.result-breakdown { margin-left: auto; font-size: 9px; color: var(--muted); line-height: 1.8; text-align: right; }
 
-/* ── Hit probability row ── */
-.prob-row {
-  margin-top: 24px; padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
+.prob-row { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
 .prob-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 .prob-bars { display: flex; flex-direction: column; gap: 6px; }
 .prob-item { display: flex; align-items: center; gap: 10px; }
-.prob-variant {
-  font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-  width: 64px; text-align: right; flex-shrink: 0;
-}
-.prob-bar-wrap { flex: 1; background: var(--s3); height: 4px; }
+.prob-variant { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; width: 64px; text-align: right; flex-shrink: 0; }
+.prob-bar-wrap { flex: 1; background: var(--s3); height: 3px; }
 .prob-bar { height: 100%; transition: width 0.5s ease; }
 .prob-pct { font-size: 9px; color: var(--muted); width: 60px; flex-shrink: 0; }
 .prob-odds { font-size: 8px; color: var(--muted2); flex-shrink: 0; }
 
-/* ── History ── */
 .history-section { margin-top: 28px; }
 .history-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
 .history-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
@@ -232,21 +181,66 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .history-table td.hit-col { font-weight: 700; }
 .history-table td.green { color: var(--green); }
 .history-table td.red { color: var(--red); }
-.history-empty { font-size: 9px; color: var(--muted2); letter-spacing: 1px; padding: 12px 0; }
 
-/* ── Loading ── */
 .loading-state { padding: 60px; text-align: center; color: var(--muted); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
 .loading-dot { display: inline-block; animation: blink 1.2s infinite; }
 .loading-dot:nth-child(2) { animation-delay: 0.2s; }
 .loading-dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
 
-/* ── Responsive ── */
+/* ── Overlay + Drawer ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 90; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.overlay.visible { opacity: 1; pointer-events: all; }
+.drawer {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 390px;
+  background: var(--s1); border-left: 1px solid var(--border);
+  z-index: 100; transform: translateX(100%); transition: transform 0.25s ease;
+  overflow-y: auto; padding: 28px;
+}
+.drawer.open { transform: translateX(0); }
+.drawer-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px 8px; }
+.drawer-close:hover { color: var(--text); }
+.d-player { font-family: var(--display); font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+.d-variant { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+
+.d-section { margin-bottom: 20px; }
+.d-section-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.d-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.d-stat-label { font-size: 9px; color: var(--muted); }
+.d-stat-val { font-size: 11px; color: var(--text); }
+.d-stat-val.accent { color: var(--accent); font-family: var(--display); }
+
+.proj-final { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 16px; text-align: center; }
+.proj-final-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.proj-final-val { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--accent); }
+.proj-final-note { font-size: 9px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+.ai-override-note { background: rgba(176,240,255,0.06); border: 1px solid rgba(176,240,255,0.2); padding: 10px 12px; margin-top: 10px; font-size: 9px; color: #b0f0ff; line-height: 1.5; }
+.ai-override-note strong { display: block; margin-bottom: 4px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
+
+.sales-hero { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 16px; text-align: center; margin-bottom: 20px; }
+.sales-hero-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.sales-hero-val { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--accent); }
+.sales-hero-sub { font-size: 9px; color: var(--muted); margin-top: 6px; }
+
+.listing-card { display: flex; gap: 10px; align-items: flex-start; padding: 10px; margin-bottom: 6px; background: var(--s2); border: 1px solid var(--border); }
+.listing-img { width: 44px; height: 44px; object-fit: cover; flex-shrink: 0; background: var(--s3); }
+.listing-img-ph { width: 44px; height: 44px; flex-shrink: 0; background: var(--s3); display: flex; align-items: center; justify-content: center; font-size: 18px; opacity: 0.3; }
+.listing-body { flex: 1; min-width: 0; }
+.listing-title { font-size: 9px; color: var(--muted); line-height: 1.4; margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.listing-meta { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.listing-price { font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--accent); }
+.listing-date { font-size: 9px; color: var(--muted2); }
+.listing-link { font-size: 8px; color: var(--muted); text-decoration: none; }
+.listing-link:hover { color: var(--text); }
+.afa-badge { font-size: 8px; color: #ffd700; }
+.no-listings { font-size: 9px; color: var(--muted2); letter-spacing: 1px; padding: 16px 0; text-align: center; }
+
 @media (max-width: 700px) {
   .page { padding: 16px; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .case-grid { grid-template-columns: repeat(4, 1fr); }
   .nav { padding: 12px 16px; }
+  .drawer { width: 100%; }
 }
 </style>
 </head>
@@ -265,9 +259,8 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 <div class="page">
   <div class="page-header">
     <div class="page-title">case <em>simulator</em></div>
-    <div class="page-sub">blind box ROI calculator · population-weighted randomization</div>
+    <div class="page-sub">guaranteed hit mechanic · real + projected values · click any hit to inspect</div>
   </div>
-
   <div id="main-content">
     <div class="loading-state">
       loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
@@ -275,24 +268,26 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   </div>
 </div>
 
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  <div class="d-player" id="d-player"></div>
+  <div class="d-variant" id="d-variant"></div>
+  <div id="d-body"></div>
+</div>
+
 <script>
 const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
 
-// ── Set config ─────────────────────────────────────────────────────────────
-// SET_CONFIG entries are matched fuzzily (all keywords must appear in set name,
-// case-insensitive) so minor naming differences don't break the page.
 const SET_CONFIG = [
-  { match: ['nba', 'game face', '2024'],  casePrice: 500, casePack: 12, label: 'NBA 2024–25'  },
-  { match: ['wnba', 'game face', '2024'], casePrice: 500, casePack: 12, label: 'WNBA 2024'    },
-  { match: ['mlb', 'game face', '2025'],  casePrice: 425, casePack: 12, label: 'MLB 2025'     },
+  { match: ['nba', 'game face', '2024'],  casePrice: 500, casePack: 12, hitRatio: 1.02, label: 'NBA 2024–25'  },
+  { match: ['wnba', 'game face', '2024'], casePrice: 500, casePack: 12, hitRatio: 1.02, label: 'WNBA 2024'    },
+  { match: ['mlb', 'game face', '2025'],  casePrice: 425, casePack: 12, hitRatio: 1.02, label: 'MLB 2025'     },
 ];
 
 function getSetConfig(setName) {
   const lower = (setName || '').toLowerCase();
-  // WNBA must be checked before NBA (NBA matches inside "WNBA")
-  const ordered = [...SET_CONFIG].sort((a, b) =>
-    b.match.join('').length - a.match.join('').length
-  );
+  const ordered = [...SET_CONFIG].sort((a, b) => b.match.join('').length - a.match.join('').length);
   for (const cfg of ordered) {
     if (cfg.match.every(kw => lower.includes(kw))) return cfg;
   }
@@ -301,30 +296,29 @@ function getSetConfig(setName) {
 
 const VARIANT_ORDER = ['Base','Victory','Vides','Emerald','Gold','Chrome','Fire','SP'];
 const VARIANT_COLORS = {
-  Base: 'var(--base)', Victory: 'var(--victory)', Vides: 'var(--orange)',
+  Base: 'var(--base)', Victory: 'var(--victory)', Vides: 'var(--vides)',
   Emerald: 'var(--emerald)', Gold: 'var(--gold)', Chrome: 'var(--chrome)',
   Fire: 'var(--fire)', SP: 'var(--sp)',
 };
-
-// Variant proximity — shared with heatmap
 const VARIANT_PROXIMITY = {
-  'Base':    { 'Victory': 0.9, 'Vides': 0.85, 'Emerald': 0.85, 'Gold': 0.75, 'Chrome': 0.6,  'Fire': 0.4,  'SP': 0.8  },
-  'Victory': { 'Base': 0.9,   'Vides': 0.9,   'Emerald': 0.9,  'Gold': 0.8,  'Chrome': 0.65, 'Fire': 0.45, 'SP': 0.85 },
-  'Emerald': { 'Base': 0.85,  'Victory': 0.9, 'Vides': 0.95,   'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
-  'Vides':   { 'Base': 0.85,  'Victory': 0.9, 'Emerald': 0.95, 'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
-  'Gold':    { 'Base': 0.75,  'Victory': 0.8, 'Emerald': 0.9,  'Vides': 0.9, 'Chrome': 0.85, 'Fire': 0.65, 'SP': 0.7  },
-  'Chrome':  { 'Base': 0.6,   'Victory': 0.65,'Emerald': 0.7,  'Vides': 0.7, 'Gold': 0.85,   'Fire': 0.8,  'SP': 0.6  },
-  'Fire':    { 'Base': 0.4,   'Victory': 0.45,'Emerald': 0.5,  'Vides': 0.5, 'Gold': 0.65,   'Chrome': 0.8,'SP': 0.4  },
-  'SP':      { 'Base': 0.8,   'Victory': 0.85,'Emerald': 0.8,  'Vides': 0.8, 'Gold': 0.7,    'Chrome': 0.6,'Fire': 0.4},
+  'Base':    {'Victory':0.9,'Vides':0.85,'Emerald':0.85,'Gold':0.75,'Chrome':0.6,'Fire':0.4,'SP':0.8},
+  'Victory': {'Base':0.9,'Vides':0.9,'Emerald':0.9,'Gold':0.8,'Chrome':0.65,'Fire':0.45,'SP':0.85},
+  'Emerald': {'Base':0.85,'Victory':0.9,'Vides':0.95,'Gold':0.9,'Chrome':0.7,'Fire':0.5,'SP':0.8},
+  'Vides':   {'Base':0.85,'Victory':0.9,'Emerald':0.95,'Gold':0.9,'Chrome':0.7,'Fire':0.5,'SP':0.8},
+  'Gold':    {'Base':0.75,'Victory':0.8,'Emerald':0.9,'Vides':0.9,'Chrome':0.85,'Fire':0.65,'SP':0.7},
+  'Chrome':  {'Base':0.6,'Victory':0.65,'Emerald':0.7,'Vides':0.7,'Gold':0.85,'Fire':0.8,'SP':0.6},
+  'Fire':    {'Base':0.4,'Victory':0.45,'Emerald':0.5,'Vides':0.5,'Gold':0.65,'Chrome':0.8,'SP':0.4},
+  'SP':      {'Base':0.8,'Victory':0.85,'Emerald':0.8,'Vides':0.8,'Gold':0.7,'Chrome':0.6,'Fire':0.4},
 };
+const POP_DEFAULTS = { Fire:1, Chrome:5, Gold:10, Emerald:25, Vides:25, Victory:50, SP:50, Base:1000 };
 
-// ── State ──────────────────────────────────────────────────────────────────
 let allData = null;
 let activeSet = null;
 let simHistory = [];
 let isAnimating = false;
+let lastPulls = [];
 
-// ── Data loading ───────────────────────────────────────────────────────────
+// ── Load ─────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
     const res = await fetch(DATA_URL, { method: 'GET', redirect: 'follow' });
@@ -333,31 +327,25 @@ async function loadData() {
     initPage();
   } catch(e) {
     document.getElementById('main-content').innerHTML =
-      `<div class="loading-state" style="color:#ff4455">failed to load data: ${e.message}</div>`;
+      `<div class="loading-state" style="color:#ff4455">failed to load: ${e.message}</div>`;
   }
 }
 
 function initPage() {
-  // Find which sets in the data match our fuzzy SET_CONFIG
-  const allSetNames = [...new Set((allData.products || [])
-    .filter(p => p.player && p.player !== 'Unknown' && p.set)
-    .map(p => p.set)
-  )];
+  const allSetNames = [...new Set((allData.products||[])
+    .filter(p => p.player && p.player !== 'Unknown' && p.set).map(p => p.set))];
   const availableSets = allSetNames.filter(s => getSetConfig(s) !== null);
-
   if (!availableSets.length) {
-    const known = allSetNames.slice(0, 8).join(', ') || 'none found';
     document.getElementById('main-content').innerHTML =
       '<div class="loading-state" style="color:#ff4455">no matching sets found<br>' +
-      '<span style="font-size:9px;color:#666;margin-top:8px;display:block">sets in data: ' + known + '</span></div>';
+      '<span style="font-size:9px;color:#666;margin-top:8px;display:block">sets: ' + allSetNames.slice(0,8).join(', ') + '</span></div>';
     return;
   }
-
   activeSet = availableSets[0];
   renderPage(availableSets);
 }
 
-function renderPage(availableSets) {
+function renderPage(sets) {
   document.getElementById('main-content').innerHTML = `
     <div class="set-selector" id="set-selector"></div>
     <div class="stats-row" id="stats-row"></div>
@@ -376,492 +364,545 @@ function renderPage(availableSets) {
     <div class="history-section" id="history-section" style="display:none">
       <div class="history-label">simulation history</div>
       <table class="history-table">
-        <thead><tr>
-          <th>#</th><th>set</th><th>case cost</th><th>hit pulled</th>
-          <th>case value</th><th>roi</th>
-        </tr></thead>
+        <thead><tr><th>#</th><th>set</th><th>cost</th><th>hit</th><th>value</th><th>roi</th></tr></thead>
         <tbody id="history-body"></tbody>
       </table>
-    </div>
-  `;
-
-  renderSetSelector(availableSets);
-  renderStats();
-  renderEmptyGrid();
-  renderProbabilities();
-}
-
-// ── Set selector ───────────────────────────────────────────────────────────
-function renderSetSelector(sets) {
-  document.getElementById('set-selector').innerHTML = sets.map(s =>
-    `<button class="set-btn ${s === activeSet ? 'active' : ''}"
-      onclick="switchSet('${s.replace(/'/g,"\\'")}')">
-      ${(getSetConfig(s) || {label: s}).label}
-    </button>`
-  ).join('');
-}
-
-function switchSet(s) {
-  activeSet = s;
-  simHistory = [];
-  const allSetNames = [...new Set((allData.products || [])
-    .filter(p => p.player && p.player !== 'Unknown' && p.set)
-    .map(p => p.set)
-  )];
-  const sets = allSetNames.filter(s => getSetConfig(s) !== null);
+    </div>`;
   renderSetSelector(sets);
   renderStats();
   renderEmptyGrid();
   renderProbabilities();
+}
+
+function renderSetSelector(sets) {
+  document.getElementById('set-selector').innerHTML = sets.map(s =>
+    `<button class="set-btn ${s===activeSet?'active':''}" onclick="switchSet('${s.replace(/'/g,"\\'")}')">
+      ${(getSetConfig(s)||{label:s}).label}
+    </button>`).join('');
+}
+
+function switchSet(s) {
+  activeSet = s; simHistory = []; lastPulls = [];
+  const allSetNames = [...new Set((allData.products||[])
+    .filter(p => p.player && p.player!=='Unknown' && p.set).map(p=>p.set))];
+  renderSetSelector(allSetNames.filter(s=>getSetConfig(s)!==null));
+  renderStats(); renderEmptyGrid(); renderProbabilities();
   document.getElementById('result-bar').classList.remove('visible');
   document.getElementById('history-section').style.display = 'none';
 }
 
-// ── Stats cards ────────────────────────────────────────────────────────────
+// ── Stats ────────────────────────────────────────────────────────────────────
 function renderStats() {
-  const cfg = getSetConfig(activeSet) || { casePrice: 500, casePack: 12 };
-  const products = (allData.products || []).filter(p =>
-    p.set === activeSet && p.player && p.player !== 'Unknown'
-  );
+  const cfg = getSetConfig(activeSet) || { casePrice:500, casePack:12, hitRatio:1.02 };
+  const products = (allData.products||[]).filter(p => p.set===activeSet && p.player && p.player!=='Unknown');
 
-  // Avg base price
-  const basePrices = products.filter(p => p.variant === 'Base' && p.avgPrice > 0).map(p => p.avgPrice);
-  const avgBase = basePrices.length
-    ? Math.round(basePrices.reduce((a,b) => a+b, 0) / basePrices.length)
-    : 0;
+  const basePrices = products.filter(p => p.variant==='Base' && p.avgPrice>0).map(p => p.avgPrice);
+  const avgBase = basePrices.length ? Math.round(basePrices.reduce((a,b)=>a+b,0)/basePrices.length) : 0;
 
-  // Avg "chase" (non-base) price
-  const chasePrices = products.filter(p => p.variant !== 'Base' && p.avgPrice > 0).map(p => p.avgPrice);
-  const avgChase = chasePrices.length
-    ? Math.round(chasePrices.reduce((a,b) => a+b, 0) / chasePrices.length)
-    : 0;
+  // Population-weighted avg hit value across all parallels (real + projected)
+  const { projections } = buildProjections(activeSet, products);
+  let wSum = 0, wTotal = 0;
+  VARIANT_ORDER.filter(v => v!=='Base').forEach(variant => {
+    const pop = POP_DEFAULTS[variant]; if (!pop) return;
+    const seen = new Set();
+    const prices = [];
+    products.filter(p => p.variant===variant && p.avgPrice>0).forEach(p => { seen.add(p.player); prices.push(p.avgPrice); });
+    products.forEach(p => {
+      if (seen.has(p.player)) return;
+      const proj = projections[p.player+'|||'+variant];
+      if (proj && proj.price>0) { seen.add(p.player); prices.push(proj.price); }
+    });
+    if (!prices.length) return;
+    const avg = prices.reduce((a,b)=>a+b,0)/prices.length;
+    wSum += avg * pop; wTotal += pop;
+  });
+  const avgHit = wTotal>0 ? Math.round(wSum/wTotal) : 0;
 
-  // Expected case value using population math
-  const { pool } = buildPool(activeSet);
-  const totalPop = pool.reduce((s, f) => s + 1, 0);
-  const expectedValue = totalPop > 0
-    ? Math.round(pool.reduce((s, f) => s + f.price, 0) / totalPop * cfg.casePack)
-    : 0;
-  const avgRoi = expectedValue > 0
-    ? Math.round(((expectedValue - cfg.casePrice) / cfg.casePrice) * 100)
-    : 0;
+  // Expected value using guaranteed-hit pool math
+  const { hitPool, fullPool } = buildSplitPools(activeSet);
+  let expectedValue = 0;
+  if (hitPool.length && fullPool.length) {
+    const hitAvg = hitPool.reduce((s,f)=>s+f.price,0)/hitPool.length;
+    const fullAvg = fullPool.reduce((s,f)=>s+f.price,0)/fullPool.length;
+    expectedValue = Math.round(hitAvg + fullAvg*(cfg.casePack-1));
+  }
+  const avgRoi = expectedValue>0 ? Math.round(((expectedValue-cfg.casePrice)/cfg.casePrice)*100) : 0;
 
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">case retail</div>
       <div class="stat-value">$${cfg.casePrice}</div>
-      <div class="stat-sub">${cfg.casePack} figures per case</div>
+      <div class="stat-sub">${cfg.casePack} figures · 1 guaranteed hit</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">avg base value</div>
-      <div class="stat-value accent">$${avgBase || '—'}</div>
+      <div class="stat-value accent">$${avgBase||'—'}</div>
       <div class="stat-sub">${basePrices.length} players w/ data</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">avg chase value</div>
-      <div class="stat-value" style="color:var(--gold)">$${avgChase || '—'}</div>
-      <div class="stat-sub">all parallels</div>
+      <div class="stat-label">avg hit value</div>
+      <div class="stat-value" style="color:var(--gold)">$${avgHit||'—'}</div>
+      <div class="stat-sub">population-weighted</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">expected case ROI</div>
-      <div class="stat-value ${avgRoi >= 0 ? 'green' : 'red'}">${avgRoi >= 0 ? '+' : ''}${avgRoi}%</div>
+      <div class="stat-value ${avgRoi>=0?'green':'red'}">${avgRoi>=0?'+':''}${avgRoi}%</div>
       <div class="stat-sub">est. value $${expectedValue}</div>
-    </div>
-  `;
+    </div>`;
 }
 
-// ── Empty grid ─────────────────────────────────────────────────────────────
+// ── Empty grid ────────────────────────────────────────────────────────────────
 function renderEmptyGrid() {
-  const cfg = getSetConfig(activeSet) || { casePrice: 500, casePack: 12, label: activeSet };
+  const cfg = getSetConfig(activeSet)||{casePack:12};
   let html = '';
-  for (let i = 0; i < cfg.casePack; i++) {
-    html += `<div class="box-slot" id="slot-${i}">
-      <span class="box-num">${i + 1}</span>
-      <span class="box-empty-icon">◻</span>
+  for (let i=0; i<cfg.casePack; i++) {
+    const g = i===0 ? 'guaranteed-slot' : '';
+    html += `<div class="box-slot ${g}" id="slot-${i}">
+      <span class="box-num">${i+1}</span>
+      ${i===0
+        ? '<span class="box-empty-icon" style="color:var(--accent);opacity:0.25">★</span>'
+        : '<span class="box-empty-icon">◻</span>'}
     </div>`;
   }
   document.getElementById('case-grid').innerHTML = html;
 }
 
-// ── Probability bars ───────────────────────────────────────────────────────
+// ── Probabilities ─────────────────────────────────────────────────────────────
 function renderProbabilities() {
-  const { poolByVariant, totalPop } = buildPool(activeSet);
-  if (!totalPop) return;
-
-  // Only show non-base variants for the "hit" probability section
-  const chaseVariants = VARIANT_ORDER.filter(v => v !== 'Base' && poolByVariant[v]);
-
-  const probEl = document.getElementById('prob-row');
-  probEl.innerHTML = `
-    <div class="prob-title">hit probability per box (population-weighted)</div>
+  const { hitPool } = buildSplitPools(activeSet);
+  if (!hitPool.length) return;
+  const byV = {};
+  hitPool.forEach(f => { byV[f.variant] = (byV[f.variant]||0)+1; });
+  const total = hitPool.length;
+  const variants = VARIANT_ORDER.filter(v => v!=='Base' && byV[v]);
+  document.getElementById('prob-row').innerHTML = `
+    <div class="prob-title">guaranteed hit · variant distribution</div>
     <div class="prob-bars">
-      ${chaseVariants.map(v => {
-        const count = poolByVariant[v] || 0;
-        const pct = (count / totalPop * 100);
-        const perCase = (count / totalPop * (getSetConfig(activeSet) || {casePack:12}).casePack);
-        const odds = count > 0 ? Math.round(totalPop / count) : 0;
-        const displayPct = pct < 0.1 ? pct.toFixed(3) : pct < 1 ? pct.toFixed(2) : pct.toFixed(1);
-        const barPct = Math.min(100, pct / 100 * 100 * 20); // scale so base doesn't eat the bar
+      ${variants.map(v => {
+        const n = byV[v]||0;
+        const pct = n/total*100;
+        const dp = pct<0.1 ? pct.toFixed(3) : pct<1 ? pct.toFixed(2) : pct.toFixed(1);
+        const odds = n>0 ? Math.round(total/n) : 0;
         return `<div class="prob-item">
-          <span class="prob-variant" style="color:${VARIANT_COLORS[v] || 'var(--muted)'}">${v}</span>
+          <span class="prob-variant" style="color:${VARIANT_COLORS[v]||'var(--muted)'}">${v}</span>
           <div class="prob-bar-wrap">
-            <div class="prob-bar" style="width:${Math.max(0.5, pct)}%;background:${VARIANT_COLORS[v] || 'var(--muted)'}"></div>
+            <div class="prob-bar" style="width:${Math.min(100,pct*3)}%;background:${VARIANT_COLORS[v]||'var(--muted)'}"></div>
           </div>
-          <span class="prob-pct">${displayPct}%</span>
-          <span class="prob-odds">1:${odds.toLocaleString()} per box</span>
+          <span class="prob-pct">${dp}%</span>
+          <span class="prob-odds">1:${odds.toLocaleString()}</span>
         </div>`;
       }).join('')}
-    </div>
-  `;
+    </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// POOL BUILDER — the core simulation engine
-// Builds a weighted pool of every figure in the set
-// Each figure appears once in the pool, weighted by its population
+// POOL BUILDER
 // ═══════════════════════════════════════════════════════════════════════════
 
+function buildSplitPools(setName) {
+  const { pool } = buildPool(setName);
+  return { hitPool: pool.filter(f=>f.variant!=='Base'), fullPool: pool };
+}
+
 function buildPool(setName) {
-  const products = (allData.products || []).filter(p =>
-    p.set === setName && p.player && p.player !== 'Unknown'
-  );
-
-  // Build projection map (same logic as heatmap)
-  const { projections, byPlayer } = buildProjections(setName, products);
-
-  // Build the full population pool
-  // Each figure = { player, variant, pop, price, isEstimated }
-  const pool = [];
-  const poolByVariant = {};
-
-  // Get all variants present in this set
-  const allVariants = [...new Set(products.map(p => p.variant))];
-
-  // For each player, for each variant they have (in the set), add pop entries
-  const allPlayers = [...new Set(products.map(p => p.player))];
-
-  allPlayers.forEach(player => {
-    const playerVariants = products.filter(p => p.player === player);
-
-    playerVariants.forEach(pv => {
-      const pop = getVariantPop(pv.variant, pv);
-      if (!pop) return;
-
-      const price = getPrice(player, pv.variant, products, projections);
-      if (!price) return;
-
-      // Add `pop` entries to the pool (one per unit)
-      for (let i = 0; i < pop; i++) {
-        pool.push({
-          player,
-          variant: pv.variant,
-          price: price.value,
-          isEstimated: price.estimated,
-          confidence: price.confidence,
-        });
+  const products = (allData.products||[]).filter(p => p.set===setName && p.player && p.player!=='Unknown');
+  const { projections } = buildProjections(setName, products);
+  const pool = []; const poolByVariant = {};
+  [...new Set(products.map(p=>p.player))].forEach(player => {
+    products.filter(p=>p.player===player).forEach(pv => {
+      const pop = POP_DEFAULTS[pv.variant]; if (!pop) return;
+      const price = getPrice(player, pv.variant, products, projections); if (!price) return;
+      for (let i=0; i<pop; i++) {
+        pool.push({ player, variant: pv.variant, price: price.value,
+          isEstimated: price.estimated, confidence: price.confidence,
+          projData: price.projData||null, realData: price.realData||null });
       }
-      poolByVariant[pv.variant] = (poolByVariant[pv.variant] || 0) + pop;
+      poolByVariant[pv.variant] = (poolByVariant[pv.variant]||0)+pop;
     });
   });
-
   return { pool, poolByVariant, totalPop: pool.length };
 }
 
-// Get population number for a variant
-function getVariantPop(variant, product) {
-  // Use the product's totalSales-adjacent data — but we actually need pop from
-  // the set math. We infer it from the variant name since we know the standard pops.
-  // For non-standard sets, the product row itself may have retail/edition hints.
-  const POP_DEFAULTS = {
-    Fire: 1, Chrome: 5, Gold: 10, Emerald: 25, Vides: 25,
-    Victory: 50, SP: 50, Base: 1000,
-  };
-  return POP_DEFAULTS[variant] || null;
-}
-
-// Get best price for a player+variant combo (real data or projection)
 function getPrice(player, variant, products, projections) {
-  // Try real data first
-  const real = products.find(p => p.player === player && p.variant === variant);
-  if (real) {
-    const p = bestPriceSim(real);
-    if (p) return { value: p, estimated: false, confidence: 'real' };
-  }
-
-  // Try projection
-  const projKey = player + '|||' + variant;
-  const proj = projections[projKey];
-  if (proj && proj.price > 0) {
-    return { value: proj.price, estimated: true, confidence: proj.confidence };
-  }
-
-  // Fall back to set-level average for this variant
-  const variantAvg = products
-    .filter(p => p.variant === variant && p.avgPrice > 0)
-    .map(p => p.avgPrice);
-  if (variantAvg.length) {
-    const avg = Math.round(variantAvg.reduce((a,b) => a+b, 0) / variantAvg.length);
-    return { value: avg, estimated: true, confidence: 'set-avg' };
-  }
-
+  const real = products.find(p => p.player===player && p.variant===variant);
+  if (real) { const p=bestPriceSim(real); if (p) return {value:p,estimated:false,confidence:'real',realData:real}; }
+  const proj = projections[player+'|||'+variant];
+  if (proj && proj.price>0) return {value:proj.price,estimated:true,confidence:proj.confidence,projData:proj};
+  const vp = products.filter(p=>p.variant===variant&&p.avgPrice>0).map(p=>p.avgPrice);
+  if (vp.length) return {value:Math.round(vp.reduce((a,b)=>a+b,0)/vp.length),estimated:true,confidence:'set-avg'};
   return null;
 }
 
-function bestPriceSim(product) {
-  if (!product) return null;
-  if (product.avg30d  && product.sales30d  >= 1) return product.avg30d;
-  if (product.avg90d  && product.sales90d  >= 1) return product.avg90d;
-  if (product.avgPrice && product.totalSales >= 1) return product.avgPrice;
+function bestPriceSim(p) {
+  if (!p) return null;
+  if (p.avg30d  && p.sales30d  >= 1) return p.avg30d;
+  if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
+  if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
   return null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PROJECTION ENGINE — reused from heatmap.html
+// PROJECTION ENGINE (full, with anchors for drawer)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function buildProjections(setName, setProducts) {
-  const aiAdjustedMults = {};
-  const aiPlayerOverrides = {};
+  const aiMults = {}, aiOverrides = {};
   if (allData.aiModelOutput) {
-    (allData.aiModelOutput.adjustedMultipliers || [])
-      .filter(m => m.set === setName)
-      .forEach(m => { aiAdjustedMults[m.variant] = { mult: m.recommendedMultiplier }; });
-    (allData.aiModelOutput.playerOverrides || [])
-      .filter(o => o.set === setName)
-      .forEach(o => { aiPlayerOverrides[o.player + '|||' + o.variant] = o; });
+    (allData.aiModelOutput.adjustedMultipliers||[]).filter(m=>m.set===setName)
+      .forEach(m => { aiMults[m.variant] = {mult:m.recommendedMultiplier,reasoning:m.reasoning}; });
+    (allData.aiModelOutput.playerOverrides||[]).filter(o=>o.set===setName)
+      .forEach(o => { aiOverrides[o.player+'|||'+o.variant] = o; });
   }
 
   const byPlayer = {};
-  setProducts.forEach(p => {
-    if (!byPlayer[p.player]) byPlayer[p.player] = {};
-    byPlayer[p.player][p.variant] = p;
-  });
+  setProducts.forEach(p => { if (!byPlayer[p.player]) byPlayer[p.player]={}; byPlayer[p.player][p.variant]=p; });
 
+  const allVariants = [...new Set(setProducts.map(p=>p.variant))];
   const crossRatios = {};
-  const allVariants = [...new Set(setProducts.map(p => p.variant))];
-
-  allVariants.forEach(vA => {
-    allVariants.forEach(vB => {
-      if (vA === vB) return;
-      const key = vA + '|||' + vB;
-      crossRatios[key] = [];
-      Object.values(byPlayer).forEach(pVariants => {
-        const dA = bestPriceSim(pVariants[vA]);
-        const dB = bestPriceSim(pVariants[vB]);
-        const sA = pVariants[vA] ? (pVariants[vA].totalSales || 0) : 0;
-        const sB = pVariants[vB] ? (pVariants[vB].totalSales || 0) : 0;
-        if (dA && dB && dA > 0 && dB > 0) {
-          crossRatios[key].push({ ratio: dA / dB, salesA: sA, salesB: sB });
-        }
-      });
+  allVariants.forEach(vA => allVariants.forEach(vB => {
+    if (vA===vB) return;
+    crossRatios[vA+'|||'+vB] = [];
+    Object.values(byPlayer).forEach(pv => {
+      const dA = bestPriceFull(pv[vA]), dB = bestPriceFull(pv[vB]);
+      if (dA && dB && dA.price>0 && dB.price>0)
+        crossRatios[vA+'|||'+vB].push({ratio:dA.price/dB.price,salesA:dA.sales,salesB:dB.sales});
     });
-  });
+  }));
 
   function weightedMedianRatio(pairs) {
     if (!pairs.length) return null;
-    const sorted = [...pairs].sort((a, b) => a.ratio - b.ratio);
-    const totalW = sorted.reduce((s, p) => s + Math.min(p.salesA || 1, p.salesB || 1), 0);
-    let cumW = 0;
-    for (const p of sorted) {
-      cumW += Math.min(p.salesA || 1, p.salesB || 1);
-      if (cumW >= totalW / 2) return { ratio: p.ratio, n: pairs.length };
-    }
-    return { ratio: sorted[Math.floor(sorted.length / 2)].ratio, n: pairs.length };
+    const s = [...pairs].sort((a,b)=>a.ratio-b.ratio);
+    const tw = s.reduce((t,p)=>t+Math.min(p.salesA||1,p.salesB||1),0);
+    let cw=0;
+    for (const p of s) { cw+=Math.min(p.salesA||1,p.salesB||1); if (cw>=tw/2) return {ratio:p.ratio,n:pairs.length}; }
+    return {ratio:s[Math.floor(s.length/2)].ratio,n:pairs.length};
   }
 
   const setRatios = {};
-  Object.entries(crossRatios).forEach(([key, pairs]) => {
-    const r = weightedMedianRatio(pairs);
-    if (r) setRatios[key] = r;
-  });
+  Object.entries(crossRatios).forEach(([k,p]) => { const r=weightedMedianRatio(p); if(r) setRatios[k]=r; });
 
   const projections = {};
-
-  Object.entries(byPlayer).forEach(([player, variants]) => {
-    const knownVariants = Object.keys(variants).filter(v => bestPriceSim(variants[v]) > 0);
-    if (!knownVariants.length) return;
-
-    allVariants.forEach(targetVariant => {
-      if (bestPriceSim(variants[targetVariant]) > 0) return;
-      if (!setProducts.some(p => p.variant === targetVariant)) return;
-
-      const overrideKey = player + '|||' + targetVariant;
-      const aiOverride  = aiPlayerOverrides[overrideKey];
-      const aiAdjusted  = aiAdjustedMults[targetVariant];
-
+  Object.entries(byPlayer).forEach(([player,variants]) => {
+    const known = Object.keys(variants).filter(v=>variants[v]?.avgPrice>0);
+    if (!known.length) return;
+    allVariants.forEach(tv => {
+      if (variants[tv]?.avgPrice>0) return;
+      if (!setProducts.some(p=>p.variant===tv)) return;
+      const ov = aiOverrides[player+'|||'+tv];
+      const am = aiMults[tv];
       const anchors = [];
-      knownVariants.forEach(sourceVariant => {
-        const ratioData = setRatios[targetVariant + '|||' + sourceVariant];
-        if (!ratioData) return;
-        const sourcePrice = bestPriceSim(variants[sourceVariant]);
-        if (!sourcePrice) return;
-        const impliedPrice = sourcePrice * ratioData.ratio;
-        const proximity    = (VARIANT_PROXIMITY[targetVariant] || {})[sourceVariant] || 0.5;
-        const sourceSales  = variants[sourceVariant]?.totalSales || 1;
-        anchors.push({ impliedPrice, weight: proximity * Math.sqrt(sourceSales) });
+      known.forEach(sv => {
+        const rd = setRatios[tv+'|||'+sv]; if (!rd) return;
+        const sp = bestPriceFull(variants[sv]); if (!sp) return;
+        const prox = (VARIANT_PROXIMITY[tv]||{})[sv]||0.5;
+        const rf = sp.recency==='30d'?1.0:sp.recency==='90d'?0.7:0.4;
+        anchors.push({
+          sourceVariant:sv, sourcePrice:Math.round(sp.price), sourceRecency:sp.recency,
+          sourceSales:sp.sales, ratio:Math.round(rd.ratio*100)/100, ratioN:rd.n,
+          impliedPrice:Math.round(sp.price*rd.ratio), proximity:prox, recencyFactor:rf,
+          weight:prox*rf*Math.sqrt(sp.sales),
+        });
       });
-
-      if (!anchors.length && !aiOverride) return;
-
-      let projectedPrice;
-      if (aiOverride) {
-        const basePrice = bestPriceSim(variants['Base']) || 0;
-        projectedPrice = Math.round(aiOverride.overrideMultiplier * basePrice);
+      if (!anchors.length && !ov) return;
+      let pp, pt;
+      if (ov) {
+        pp = Math.round(ov.overrideMultiplier*(bestPriceFull(variants['Base'])?.price||1)); pt='ai';
       } else {
-        const totalWeight = anchors.reduce((s, a) => s + a.weight, 0);
-        projectedPrice = totalWeight > 0
-          ? Math.round(anchors.reduce((s, a) => s + a.impliedPrice * a.weight, 0) / totalWeight)
-          : Math.round(anchors[0].impliedPrice);
+        const tw=anchors.reduce((s,a)=>s+a.weight,0);
+        pp = tw>0 ? Math.round(anchors.reduce((s,a)=>s+a.impliedPrice*a.weight,0)/tw) : Math.round(anchors[0].impliedPrice);
+        pt = am?'ai':'est';
       }
-
-      const confidence = anchors.length >= 3 ? 'High'
-        : anchors.length >= 2 ? 'Medium'
-        : 'Low';
-
-      projections[player + '|||' + targetVariant] = {
-        price: projectedPrice,
-        confidence: aiOverride ? 'AI Calibrated' : confidence,
+      const h30=anchors.some(a=>a.sourceRecency==='30d'), h90=anchors.some(a=>a.sourceRecency==='90d');
+      const hp=anchors.filter(a=>a.proximity>=0.8).length;
+      let conf,cs;
+      if (anchors.length>=3&&h30&&hp>=2)          {conf='High';cs=90;}
+      else if (anchors.length>=2&&(h30||h90))      {conf='Medium';cs=65;}
+      else if (anchors.length>=2)                  {conf='Medium-Low';cs=45;}
+      else if (anchors.length===1&&anchors[0].sourceSales>=10) {conf='Low';cs=30;}
+      else                                         {conf='Very Low';cs=15;}
+      if (ov||am) {conf='AI Calibrated';cs=Math.min(95,cs+20);}
+      projections[player+'|||'+tv] = {
+        price:pp, projType:pt, confidence:conf, confidenceScore:cs,
+        anchors, aiOverride:ov||null, aiAdjusted:am||null,
+        playerBasePrice:Math.round(bestPriceFull(variants['Base'])?.price||0),
       };
     });
   });
-
   return { projections, byPlayer };
 }
 
+function bestPriceFull(p) {
+  if (!p) return null;
+  if (p.avg30d  && p.sales30d  >= 1) return {price:p.avg30d,  recency:'30d',      sales:p.sales30d};
+  if (p.avg90d  && p.sales90d  >= 1) return {price:p.avg90d,  recency:'90d',      sales:p.sales90d};
+  if (p.avgPrice && p.totalSales >= 1) return {price:p.avgPrice,recency:'all-time',sales:p.totalSales};
+  return null;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
-// SIMULATION
+// SIMULATION — guaranteed hit mechanic
 // ═══════════════════════════════════════════════════════════════════════════
 
 function runSimulation() {
   if (isAnimating) return;
   isAnimating = true;
+  document.getElementById('pull-btn').disabled = true;
 
-  const cfg = getSetConfig(activeSet) || { casePrice: 500, casePack: 12, label: activeSet };
-  const { pool, totalPop } = buildPool(activeSet);
+  const cfg = getSetConfig(activeSet)||{casePrice:500,casePack:12,hitRatio:1.02};
+  const { hitPool, fullPool } = buildSplitPools(activeSet);
 
-  if (!pool.length) {
-    alert('Not enough data to simulate this set yet.');
+  if (!hitPool.length) {
+    alert('Not enough parallel data to simulate this set yet.');
     isAnimating = false;
+    document.getElementById('pull-btn').disabled = false;
     return;
   }
 
-  // Draw 12 figures from the pool (with replacement — each box is independent)
   const pulls = [];
-  for (let i = 0; i < cfg.casePack; i++) {
-    const idx = Math.floor(Math.random() * pool.length);
-    pulls.push({ ...pool[idx] });
+
+  // Slot 0 — GUARANTEED HIT from parallel-only pool
+  pulls.push({ ...hitPool[Math.floor(Math.random()*hitPool.length)], slotIndex:0, isGuaranteed:true });
+
+  // Slots 1–(n-1) — full population pool (almost always base)
+  for (let i=1; i<cfg.casePack; i++) {
+    pulls.push({ ...fullPool[Math.floor(Math.random()*fullPool.length)], slotIndex:i, isGuaranteed:false });
   }
 
-  // Animate reveals with staggered delays
-  const grid = document.getElementById('case-grid');
+  lastPulls = pulls;
+
   pulls.forEach((pull, i) => {
     setTimeout(() => {
-      const slot = document.getElementById('slot-' + i);
-      const vLower = pull.variant.toLowerCase();
-      const isHit = pull.variant !== 'Base';
-      const hitClass = isHit ? 'is-hit is-' + vLower : '';
-
-      slot.className = 'box-slot revealed ' + hitClass;
-      slot.innerHTML = `
-        <span class="box-num">${i + 1}</span>
-        <span class="box-variant-badge v-${vLower}" style="color:${VARIANT_COLORS[pull.variant] || 'var(--muted)'}">
-          ${pull.variant}
-        </span>
-        <span class="box-player">${pull.player}</span>
-        <span class="box-price ${pull.isEstimated ? 'estimated' : ''}">
-          $${Math.round(pull.price).toLocaleString()}
-        </span>
-        ${pull.isEstimated ? '<span class="box-est-tag">est</span>' : ''}
-      `;
-
-      // Show results after last card
-      if (i === cfg.casePack - 1) {
+      revealSlot(i, pull);
+      if (i===cfg.casePack-1) {
         setTimeout(() => {
           showResults(pulls, cfg);
           isAnimating = false;
+          document.getElementById('pull-btn').disabled = false;
         }, 300);
       }
-    }, i * 120);
+    }, i*110);
   });
 }
 
-function showResults(pulls, cfg) {
-  const totalValue = pulls.reduce((s, p) => s + p.price, 0);
-  const roi = ((totalValue - cfg.casePrice) / cfg.casePrice * 100);
-  const profit = totalValue - cfg.casePrice;
+function revealSlot(i, pull) {
+  const slot = document.getElementById('slot-'+i);
+  const vLow = pull.variant.toLowerCase();
+  const isHit = pull.variant !== 'Base';
 
-  // Find the best pull (highest price)
-  const best = pulls.reduce((a, b) => a.price > b.price ? a : b);
-  const hits  = pulls.filter(p => p.variant !== 'Base');
+  const estBadge = (isHit && pull.isEstimated)
+    ? `<span class="box-est-badge">EST</span>` : '';
+  const clickHint = isHit ? `<span class="box-click-hint">↗ details</span>` : '';
 
-  const resultBar = document.getElementById('result-bar');
-  resultBar.className = 'result-bar visible';
-  resultBar.innerHTML = `
-    <div class="result-item">
-      <div class="result-label">case value</div>
-      <div class="result-big">$${Math.round(totalValue).toLocaleString()}</div>
+  slot.className = `box-slot revealed${isHit?' is-hit is-'+vLow:''}${pull.isGuaranteed?' guaranteed-slot':''}`;
+  if (isHit) slot.setAttribute('onclick', `openHitDrawer(${i})`);
+
+  slot.innerHTML = `
+    <span class="box-num">${i+1}${pull.isGuaranteed?' ★':''}</span>
+    ${estBadge}
+    <span class="box-variant-badge" style="color:${VARIANT_COLORS[pull.variant]||'var(--muted)'}">
+      ${pull.variant}
+    </span>
+    <span class="box-player">${pull.player}</span>
+    <span class="box-price${pull.isEstimated?' estimated':''}">
+      $${Math.round(pull.price).toLocaleString()}
+    </span>
+    ${clickHint}`;
+}
+
+// ── Drawer ────────────────────────────────────────────────────────────────────
+function openHitDrawer(i) {
+  const pull = lastPulls[i];
+  if (!pull || pull.variant==='Base') return;
+  document.getElementById('d-player').textContent = pull.player;
+  document.getElementById('d-variant').textContent =
+    pull.variant + (pull.isEstimated ? ' · Projected Value' : ' · Sales History');
+  if (pull.isEstimated) renderProjectionBody(pull);
+  else renderSalesBody(pull);
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+function renderProjectionBody(pull) {
+  const products = (allData.products||[]).filter(p=>p.set===activeSet&&p.player!=='Unknown');
+  const { projections, byPlayer } = buildProjections(activeSet, products);
+  const proj = projections[pull.player+'|||'+pull.variant];
+  if (!proj) { document.getElementById('d-body').innerHTML='<div style="color:var(--muted);padding:20px 0;font-size:10px">No projection data.</div>'; return; }
+
+  // Known data for this player
+  const pv = byPlayer[pull.player]||{};
+  const known = Object.entries(pv).filter(([,d])=>d.avgPrice>0)
+    .sort((a,b)=>{const o={'Base':0,'Victory':1,'Vides':2,'Emerald':3,'Gold':4,'Chrome':5,'Fire':6,'SP':7};return (o[a[0]]??99)-(o[b[0]]??99);})
+    .map(([v,d]) => {
+      const bp=bestPriceFull(d);
+      return `<div class="d-stat"><span class="d-stat-label">${v}</span>
+        <span class="d-stat-val accent">$${Math.round(d.avgPrice)} · ${d.totalSales} sales${bp?` <span style="font-size:8px;color:var(--muted)">(${bp.recency})</span>`:''}</span></div>`;
+    }).join('');
+
+  // Anchors
+  const anchors = proj.anchors||[];
+  const tw = anchors.reduce((s,a)=>s+a.weight,0);
+  let anchorsHtml = '';
+  if (anchors.length) {
+    anchorsHtml = `<div class="d-section-title">Anchors · ${anchors.length}</div>`
+      + anchors.map(a => {
+          const wp = tw>0?Math.round(a.weight/tw*100):0;
+          const rc = a.sourceRecency==='30d'?'var(--accent)':a.sourceRecency==='90d'?'#ffb347':'var(--muted)';
+          return `<div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-bottom:4px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+              <span style="font-size:10px">${a.sourceVariant} → ${pull.variant}</span>
+              <span style="font-family:var(--display);font-size:12px;color:var(--accent)">$${a.impliedPrice}</span>
+            </div>
+            <div style="font-size:9px;color:var(--muted);line-height:1.7">
+              $${a.sourcePrice} × ${a.ratio}× = $${a.impliedPrice}<br>
+              <span style="color:${rc}">${a.sourceRecency}</span> · ${a.sourceSales} sales · proximity ${Math.round(a.proximity*100)}%
+            </div>
+            <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+              <div style="flex:1;height:3px;background:var(--border)">
+                <div style="width:${Math.max(4,wp)}%;height:100%;background:var(--accent);opacity:0.6"></div>
+              </div>
+              <span style="font-size:8px;color:var(--muted)">${wp}%</span>
+            </div>
+          </div>`;
+        }).join('')
+      + `<div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-top:4px;font-size:9px;color:var(--muted);line-height:1.8">
+          Weighted avg:<br><span style="font-family:var(--mono)">${anchors.map(a=>`  $${a.impliedPrice} (${a.sourceVariant}) × ${tw>0?Math.round(a.weight/tw*100):0}%`).join('<br>')}</span>
+        </div>`;
+  } else if (proj.aiOverride) {
+    anchorsHtml = `<div class="d-section-title">AI Override</div>
+      <div class="ai-override-note">${proj.aiOverride.reasoning||'Player-specific AI adjustment.'}</div>`;
+  }
+
+  const sc = proj.confidenceScore||0;
+  const cc = sc>=70?'#6fcf97':sc>=40?'#ffb347':'#ff6b6b';
+  const h30=anchors.some(a=>a.sourceRecency==='30d'), h90=anchors.some(a=>a.sourceRecency==='90d');
+  const rn = h30?'Using 30-day prices — recent data.':h90?'Using 90-day prices.':anchors.length?'Using all-time averages.':'';
+  const aiNote = proj.aiAdjusted
+    ? `<div class="ai-override-note"><strong>AI Calibrated</strong>${proj.aiAdjusted.reasoning||'Set-level AI adjustment.'}</div>` : '';
+
+  document.getElementById('d-body').innerHTML = `
+    <div class="d-section">
+      <div class="d-section-title">Confidence</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="flex:1;height:5px;background:var(--border);border-radius:3px">
+          <div style="width:${sc}%;height:100%;background:${cc};border-radius:3px"></div>
+        </div>
+        <span style="font-family:var(--display);font-size:10px;color:${cc};white-space:nowrap">${proj.confidence}</span>
+      </div>
+      ${rn?`<div style="font-size:9px;color:var(--muted)">${rn}</div>`:''}
     </div>
-    <div class="result-item">
-      <div class="result-label">vs retail ($${cfg.casePrice})</div>
-      <div class="result-big ${profit >= 0 ? 'green' : 'red'}">
-        ${profit >= 0 ? '+' : ''}$${Math.round(Math.abs(profit)).toLocaleString()}
+    <div class="d-section">${anchorsHtml}${aiNote}</div>
+    <div class="proj-final">
+      <div class="proj-final-label">Projected Value</div>
+      <div class="proj-final-val">$${proj.price}</div>
+      <div class="proj-final-note">
+        ${anchors.length>1?`Weighted avg of ${anchors.length} anchors.`:anchors.length===1?`Based on ${anchors[0].sourceVariant} only.`:'AI override.'}
+        Actual price will vary.
       </div>
     </div>
-    <div class="result-item">
-      <div class="result-label">ROI</div>
-      <div class="result-big ${roi >= 0 ? 'green' : 'red'}">${roi >= 0 ? '+' : ''}${Math.round(roi)}%</div>
-    </div>
-    <div class="result-breakdown">
-      <div>best pull: <strong style="color:${VARIANT_COLORS[best.variant] || 'var(--text)'}">
-        ${best.player} ${best.variant}</strong> · $${Math.round(best.price).toLocaleString()}</div>
-      <div>parallels pulled: <strong>${hits.length}</strong> of ${cfg.casePack}</div>
-      <div>base figures: <strong>${pulls.length - hits.length}</strong></div>
-      ${hits.length > 0 ? `<div>hit: ${hits.map(h =>
-        `<span style="color:${VARIANT_COLORS[h.variant]}">${h.player} ${h.variant}</span>`
-      ).join(', ')}</div>` : '<div style="color:var(--muted)">no hit this case</div>'}
-    </div>
-  `;
+    ${known?`<div class="d-section" style="margin-top:16px"><div class="d-section-title">Known data for ${pull.player}</div>${known}</div>`:''}`;
+}
 
-  // Add to history
+function renderSalesBody(pull) {
+  const rd = pull.realData;
+  const listings = (allData.allListings||[])
+    .filter(l => l.set===activeSet && l.player===pull.player && l.variant===pull.variant)
+    .sort((a,b) => new Date(b.date)-new Date(a.date));
+  const dp = bestPriceSim(rd)||rd?.avgPrice||0;
+  const sl = rd?.sales30d ? `${rd.sales30d} sales in last 30d · ${rd.totalSales||0} all-time` : `${rd?.totalSales||0} total sales`;
+
+  document.getElementById('d-body').innerHTML = `
+    <div class="sales-hero">
+      <div class="sales-hero-label">Market Value</div>
+      <div class="sales-hero-val">$${Math.round(dp).toLocaleString()}</div>
+      <div class="sales-hero-sub">${sl}</div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Price history</div>
+      <div class="d-stat"><span class="d-stat-label">30d avg</span><span class="d-stat-val accent">${rd?.avg30d?'$'+Math.round(rd.avg30d):'—'}</span></div>
+      <div class="d-stat"><span class="d-stat-label">90d avg</span><span class="d-stat-val">${rd?.avg90d?'$'+Math.round(rd.avg90d):'—'}</span></div>
+      <div class="d-stat"><span class="d-stat-label">All-time avg</span><span class="d-stat-val">${rd?.avgPrice?'$'+Math.round(rd.avgPrice):'—'}</span></div>
+      <div class="d-stat"><span class="d-stat-label">Last sale</span><span class="d-stat-val">${rd?.lastSalePrice?'$'+Math.round(rd.lastSalePrice):'—'}</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Recent sales (${listings.length})</div>
+      ${listings.length ? listings.slice(0,20).map(l => {
+        const ds = l.date ? new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—';
+        const img = l.image
+          ? `<img class="listing-img" src="${l.image}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          : `<div class="listing-img-ph">👻</div>`;
+        return `<div class="listing-card">${img}
+          <div class="listing-body">
+            <div class="listing-title">${l.title||''}</div>
+            <div class="listing-meta">
+              <span class="listing-price">$${Math.round(l.price)}</span>
+              <span class="listing-date">${ds}</span>
+              ${l.afa?`<span class="afa-badge">🏆 ${l.afa}</span>`:''}
+              ${l.url?`<a class="listing-link" href="${l.url}" target="_blank" rel="noopener">↗ view</a>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('') : '<div class="no-listings">no listings in database</div>'}
+    </div>`;
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function showResults(pulls, cfg) {
+  const tv = pulls.reduce((s,p)=>s+p.price,0);
+  const roi = (tv-cfg.casePrice)/cfg.casePrice*100;
+  const profit = tv-cfg.casePrice;
+  const best = pulls.reduce((a,b)=>a.price>b.price?a:b);
+  const hits = pulls.filter(p=>p.variant!=='Base');
+
+  document.getElementById('result-bar').className='result-bar visible';
+  document.getElementById('result-bar').innerHTML = `
+    <div><div class="result-label">case value</div><div class="result-big">$${Math.round(tv).toLocaleString()}</div></div>
+    <div><div class="result-label">vs retail ($${cfg.casePrice})</div>
+      <div class="result-big ${profit>=0?'green':'red'}">${profit>=0?'+':''}$${Math.round(Math.abs(profit)).toLocaleString()}</div></div>
+    <div><div class="result-label">ROI</div>
+      <div class="result-big ${roi>=0?'green':'red'}">${roi>=0?'+':''}${Math.round(roi)}%</div></div>
+    <div class="result-breakdown">
+      <div>best: <strong style="color:${VARIANT_COLORS[best.variant]||'var(--text)'}">${best.player} ${best.variant}</strong> · $${Math.round(best.price).toLocaleString()}</div>
+      <div>parallels: <strong>${hits.length}</strong>${hits.length===1?' (guaranteed)':hits.length>1?` (+ ${hits.length-1} bonus!)`:''}</div>
+      <div>base: <strong>${pulls.length-hits.length}</strong></div>
+    </div>`;
+
   simHistory.unshift({
-    set: (getSetConfig(activeSet) || {label:activeSet}).label,
-    casePrice: cfg.casePrice,
-    hit: hits.length ? hits.map(h => h.player + ' ' + h.variant).join(', ') : 'none',
-    hitVariant: hits.length ? hits[0].variant : null,
-    totalValue: Math.round(totalValue),
-    roi: Math.round(roi),
+    set:(getSetConfig(activeSet)||{label:activeSet}).label,
+    casePrice:cfg.casePrice,
+    hit:hits.map(h=>h.player+' '+h.variant).join(', ')||'—',
+    hitVariant:hits.length?hits[0].variant:null,
+    totalValue:Math.round(tv), roi:Math.round(roi),
   });
   renderHistory();
 }
 
 function renderHistory() {
   if (!simHistory.length) return;
-  const section = document.getElementById('history-section');
-  section.style.display = 'block';
-
-  document.getElementById('history-body').innerHTML = simHistory.map((h, i) => `
+  document.getElementById('history-section').style.display='block';
+  document.getElementById('history-body').innerHTML = simHistory.map((h,i) => `
     <tr>
-      <td>${simHistory.length - i}</td>
-      <td>${h.set}</td>
-      <td>$${h.casePrice}</td>
-      <td class="hit-col" style="color:${h.hitVariant ? VARIANT_COLORS[h.hitVariant] || 'var(--muted)' : 'var(--muted2)'}">
-        ${h.hit}
-      </td>
+      <td>${simHistory.length-i}</td><td>${h.set}</td><td>$${h.casePrice}</td>
+      <td class="hit-col" style="color:${h.hitVariant?VARIANT_COLORS[h.hitVariant]||'var(--muted)':'var(--muted2)'}">${h.hit}</td>
       <td>$${h.totalValue.toLocaleString()}</td>
-      <td class="${h.roi >= 0 ? 'green' : 'red'}">${h.roi >= 0 ? '+' : ''}${h.roi}%</td>
-    </tr>
-  `).join('');
+      <td class="${h.roi>=0?'green':'red'}">${h.roi>=0?'+':''}${h.roi}%</td>
+    </tr>`).join('');
 }
 
 function resetSim() {
-  simHistory = [];
+  simHistory=[]; lastPulls=[];
   renderEmptyGrid();
   document.getElementById('result-bar').classList.remove('visible');
-  document.getElementById('history-section').style.display = 'none';
-  isAnimating = false;
+  document.getElementById('history-section').style.display='none';
+  isAnimating=false;
+  document.getElementById('pull-btn').disabled=false;
+  closeDrawer();
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
 loadData();
 </script>
 </body>
