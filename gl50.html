@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · GL50 index</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
+<style>
+:root {
+  --bg:      #080808;
+  --s1:      #0f0f0f;
+  --s2:      #161616;
+  --s3:      #1e1e1e;
+  --border:  #222;
+  --accent:  #e8ff47;
+  --text:    #efefef;
+  --muted:   #555;
+  --muted2:  #333;
+  --mono:    'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --serif:   'Instrument Serif', serif;
+  --green:   #3ddc84;
+  --red:     #ff4455;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); min-height: 100vh; }
+body { color: var(--text); font-family: var(--mono); font-size: 12px; }
+
+/* ── Page ── */
+.page { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* ── Hero ── */
+.hero { display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 40px; flex-wrap: wrap; gap: 24px; }
+
+.hero-left {}
+.index-eyebrow {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.index-name {
+  font-family: var(--display); font-size: 72px; line-height: 0.9;
+  letter-spacing: 2px; color: var(--text);
+}
+.index-name em { color: var(--accent); font-style: normal; }
+.index-tagline {
+  font-family: var(--serif); font-size: 15px; color: var(--muted);
+  margin-top: 12px; font-style: italic; line-height: 1.5;
+}
+
+.hero-right { text-align: right; }
+.index-value-label {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.index-value {
+  font-family: var(--display); font-size: 56px; letter-spacing: 1px;
+  color: var(--accent); line-height: 1;
+}
+.index-change {
+  font-size: 13px; letter-spacing: 1px; margin-top: 6px;
+}
+.index-change.up   { color: var(--green); }
+.index-change.down { color: var(--red); }
+.index-updated {
+  font-size: 9px; color: var(--muted); margin-top: 4px; letter-spacing: 1px;
+}
+
+/* ── Stats strip ── */
+.stats-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--border); margin-bottom: 32px;
+  background: var(--border); gap: 1px;
+}
+.strip-stat {
+  background: var(--s1); padding: 16px 20px;
+}
+.strip-label {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.strip-val {
+  font-family: var(--display); font-size: 22px; letter-spacing: 0.5px;
+}
+.strip-val.up   { color: var(--green); }
+.strip-val.down { color: var(--red); }
+.strip-val.neutral { color: var(--text); }
+.strip-sub { font-size: 9px; color: var(--muted); margin-top: 3px; }
+
+/* ── Chart panel ── */
+.chart-panel {
+  background: var(--s1); border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.chart-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chart-title {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+.chart-legend { display: flex; gap: 20px; align-items: center; }
+.legend-item { display: flex; align-items: center; gap: 6px;
+  font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.legend-line { width: 20px; height: 2px; }
+
+.chart-wrap { padding: 24px; position: relative; }
+.chart-loading {
+  height: 280px; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+}
+
+/* SVG chart */
+.chart-svg { width: 100%; display: block; overflow: visible; }
+.chart-area-fill { fill: url(#areaGrad); }
+.chart-line    { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.25; }
+.chart-ma-line { fill: none; stroke: var(--accent); stroke-width: 2; }
+.chart-baseline { fill: none; stroke: var(--muted2); stroke-width: 1;
+  stroke-dasharray: 4 4; }
+.axis-label { font-family: var(--mono); font-size: 9px; fill: var(--muted); }
+.grid-line { stroke: var(--muted2); stroke-width: 1; opacity: 0.4; }
+
+/* Range toggle tabs */
+.range-tabs { display: flex; gap: 4px; }
+.range-tab {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted);
+  background: transparent; border: 1px solid var(--border2);
+  padding: 4px 10px; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+.range-tab:hover { color: var(--text); border-color: var(--muted); }
+.range-tab.active { color: var(--accent); border-color: var(--accent); }
+
+/* Hover tooltip */
+.chart-tooltip {
+  position: fixed; pointer-events: none; z-index: 200;
+  background: var(--s2); border: 1px solid var(--border);
+  padding: 10px 14px; min-width: 140px;
+  opacity: 0; transition: opacity 0.1s;
+}
+.chart-tooltip.visible { opacity: 1; }
+.tt-date { font-size: 8px; color: var(--muted); letter-spacing: 1px;
+  text-transform: uppercase; margin-bottom: 6px; }
+.tt-val { font-family: var(--display); font-size: 22px; color: var(--accent); }
+.tt-change { font-size: 9px; margin-top: 3px; }
+
+/* Crosshair */
+.crosshair { display: none; }
+.crosshair-line { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.crosshair-dot { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+
+/* ── Components table ── */
+.table-panel {
+  background: var(--s1); border: 1px solid var(--border);
+}
+.table-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.table-title {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+.table-meta { font-size: 9px; color: var(--muted2); }
+
+.components-table { width: 100%; border-collapse: collapse; }
+.components-table th {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); padding: 10px 16px; text-align: left;
+  border-bottom: 1px solid var(--border2);
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+.components-table th:hover { color: var(--text); }
+.components-table th.sorted { color: var(--accent); }
+.sort-arrow { margin-left: 4px; opacity: 0.5; }
+
+.components-table td {
+  padding: 11px 16px; border-bottom: 1px solid var(--s2);
+  font-size: 11px; vertical-align: middle;
+}
+.components-table tr:last-child td { border-bottom: none; }
+.components-table tr:hover td { background: var(--s2); }
+
+/* Column styles */
+.col-num { color: var(--muted); font-size: 9px; width: 32px; }
+.col-player { font-family: var(--display); font-size: 13px; letter-spacing: 0.5px; }
+.col-set { color: var(--muted); font-size: 10px; }
+.col-variant {}
+.col-last-price { font-family: var(--display); font-size: 14px; }
+.col-change { font-size: 11px; }
+.col-change.up   { color: var(--green); }
+.col-change.down { color: var(--red); }
+.col-change.flat { color: var(--muted); }
+.col-last-sale { color: var(--muted); font-size: 10px; }
+.col-stale { color: var(--muted2); font-size: 10px; }
+
+/* Variant badge */
+.variant-badge {
+  display: inline-block;
+  font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 2px 6px; font-weight: 500;
+  border: 1px solid currentColor; border-radius: 1px;
+}
+.vb-fire    { color: var(--fire); }
+.vb-chrome  { color: var(--chrome); }
+.vb-gold    { color: var(--gold); }
+.vb-emerald { color: var(--emerald); }
+.vb-victory { color: var(--victory); }
+.vb-base    { color: var(--base); border-color: var(--border); }
+
+/* Stale dot */
+.stale-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted2); margin-right: 5px; vertical-align: middle;
+}
+.fresh-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); margin-right: 5px; vertical-align: middle;
+}
+
+/* Loading state */
+.loading-row td {
+  padding: 60px; text-align: center;
+  color: var(--muted); font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+}
+.loading-dot { display: inline-block; animation: blink 1.2s infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,100%{opacity:0.15} 50%{opacity:1} }
+
+/* Error */
+.error-state {
+  padding: 40px; text-align: center;
+  color: var(--red); font-size: 10px; letter-spacing: 1px;
+}
+
+/* Methodology note */
+.methodology {
+  margin-top: 32px; padding: 20px 24px;
+  background: var(--s1); border: 1px solid var(--border);
+  font-size: 10px; color: var(--muted); line-height: 1.8;
+}
+.methodology strong { color: var(--text); }
+
+@media (max-width: 700px) {
+  .page { padding: 20px 16px 60px; }
+  .index-name { font-size: 48px; }
+  .stats-strip { grid-template-columns: repeat(2, 1fr); }
+  .hero { flex-direction: column; align-items: flex-start; }
+  .hero-right { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html" class="active">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="index-eyebrow">ghostladder market index</div>
+      <div class="index-name">GL<em>50</em></div>
+      <div class="index-tagline">
+        50 representative ghostwrite figures tracking<br>the health of the secondary market
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="index-value-label">index value</div>
+      <div class="index-value" id="hero-value">—</div>
+      <div class="index-change" id="hero-change">—</div>
+      <div class="index-updated" id="hero-updated">loading...</div>
+    </div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="stats-strip">
+    <div class="strip-stat">
+      <div class="strip-label">All-time high</div>
+      <div class="strip-val neutral" id="stat-high">—</div>
+      <div class="strip-sub" id="stat-high-date">—</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-label">All-time low</div>
+      <div class="strip-val neutral" id="stat-low">—</div>
+      <div class="strip-sub" id="stat-low-date">—</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-label">Since inception</div>
+      <div class="strip-val" id="stat-inception">—</div>
+      <div class="strip-sub" id="stat-inception-date">—</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-label">Components</div>
+      <div class="strip-val neutral" id="stat-components">—</div>
+      <div class="strip-sub" id="stat-stale">—</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-panel">
+    <div class="chart-header">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="chart-title" id="chart-period-label">index value · all-time · normalized to 1,000</div>
+        <div class="range-tabs">
+          <button class="range-tab active" data-range="all" onclick="setRange('all')">All-time</button>
+          <button class="range-tab" data-range="180" onclick="setRange('180')">6M</button>
+          <button class="range-tab" data-range="90"  onclick="setRange('90')">90D</button>
+          <button class="range-tab" data-range="30"  onclick="setRange('30')">30D</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px">
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-line" style="background: var(--accent)"></div>
+            30d avg
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: var(--accent); opacity: 0.25"></div>
+            raw
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: var(--muted2); border-top: 1px dashed var(--muted2)"></div>
+            1,000 baseline
+          </div>
+        </div>
+        <button class="refresh-btn" onclick="downloadSaleLog()" title="Download per-sale CSV for spot-checking">↓ Export CSV</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-loading" id="chart-loading">
+        loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+      </div>
+      <svg class="chart-svg" id="chart-svg" style="display:none" viewBox="0 0 900 280">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#e8ff47" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="#e8ff47" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <!-- Grid lines injected by JS -->
+        <g id="grid"></g>
+        <!-- Area fill -->
+        <path id="area-path" class="chart-area-fill"/>
+        <!-- Baseline 1000 -->
+        <line id="baseline" class="chart-baseline"/>
+        <!-- Main line (raw, faint) -->
+        <path id="line-path" class="chart-line"/>
+        <!-- 30-day rolling average -->
+        <path id="ma-line-path" class="chart-ma-line"/>
+        <!-- Axis labels -->
+        <g id="x-labels"></g>
+        <g id="y-labels"></g>
+        <!-- Crosshair (hover) -->
+        <g id="crosshair" class="crosshair">
+          <line id="ch-v" class="crosshair-line"/>
+          <circle id="ch-dot" class="crosshair-dot" r="4"/>
+        </g>
+        <!-- Invisible hit area for hover -->
+        <rect id="hit-area" fill="transparent" style="cursor:crosshair"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Components table -->
+  <div class="table-panel">
+    <div class="table-header">
+      <div class="table-title">index components · <span id="table-count">50</span> figures</div>
+      <div class="table-meta" id="table-meta">sorted by last sold price</div>
+    </div>
+    <table class="components-table" id="components-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th data-col="player">Player <span class="sort-arrow">↕</span></th>
+          <th data-col="set_name">Set <span class="sort-arrow">↕</span></th>
+          <th data-col="variant">Variant <span class="sort-arrow">↕</span></th>
+          <th data-col="last_price" class="sorted">Last Sale <span class="sort-arrow">↓</span></th>
+          <th data-col="change_pct">vs Inception <span class="sort-arrow">↕</span></th>
+          <th data-col="change_30d">30D <span class="sort-arrow">↕</span></th>
+          <th data-col="sale_count">Sales <span class="sort-arrow">↕</span></th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="loading-row">
+          <td colspan="9">
+            loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Methodology note -->
+  <div class="methodology">
+    <strong>Methodology:</strong>
+    The GL50 tracks 50 hand-curated ghostwrite figures across all active sets and variant tiers.
+    The index uses a <strong>price-weighted chained-return methodology</strong>, normalized to
+    <strong>1,000</strong> at the date of the first recorded sale.
+    Each component's influence is proportional to the <strong>square root of its price</strong> —
+    so a Fire at $10,000 carries significantly more weight than a Base at $80, but no single card
+    can dominate the index entirely. This reflects the reality that rare, high-value cards are
+    more meaningful signals of market health than cheap, liquid ones.
+    A component's last-sold price carries forward until that component next sells.
+    Components whose last sale is <strong>older than 60 days</strong> are flagged as stale.
+    The component list may be updated at the editorial discretion of the ghostladder team.
+    All prices sourced from verified eBay completed sales.
+  </div>
+
+</div>
+
+<div class="chart-tooltip" id="chart-tooltip">
+  <div class="tt-date" id="tt-date"></div>
+  <div class="tt-val" id="tt-val"></div>
+  <div class="tt-change" id="tt-change"></div>
+</div>
+
+<script>
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H   = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, { headers: SB_H });
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GL50 COMPONENTS — loaded from Supabase `gl50_components` table at runtime.
+// To add/remove/reorder cards: edit the table in Supabase (no code changes needed).
+// Schema: schema-gl50-components.sql
+// ─────────────────────────────────────────────────────────────────────────────
+let GL50_COMPONENTS = [];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function parseDate(str) {
+  if (!str) return null;
+  const d = new Date(String(str).substring(0,10) + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmt$(v) {
+  if (!v && v !== 0) return '—';
+  return '$' + Math.round(v).toLocaleString();
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
+function daysSince(d) {
+  if (!d) return 9999;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+function variantClass(v) {
+  const m = { fire:'vb-fire', chrome:'vb-chrome', gold:'vb-gold',
+              emerald:'vb-emerald', victory:'vb-victory', base:'vb-base' };
+  return m[(v||'').toLowerCase()] || 'vb-base';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE — fetch all sales for our components
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchComponentSales() {
+  // Filter to only the set_ids in GL50 — avoids fetching irrelevant sales
+  const setIds = [...new Set(GL50_COMPONENTS.map(c => c.set_id))].join(',');
+  const PAGE = 1000;
+  const base = `${SB_URL}/rest/v1/sales?select=set_id,player,variant,price,date&set_id=in.(${setIds})&or=(status.neq.invalid,status.is.null)&flagged=neq.true&order=date.asc`;
+
+  const countHeaders = { ...SB_H, 'Prefer': 'count=exact' };
+  const first = await fetch(`${base}&limit=${PAGE}&offset=0`, { headers: countHeaders });
+  if (!first.ok) { const txt = await first.text(); throw new Error(`sales fetch: ${first.status} — ${txt}`); }
+  const total = parseInt((first.headers.get('content-range') || '').split('/')[1] || '0');
+  const all = await first.json();
+
+  const pages = Math.ceil(total / PAGE);
+  for (let p = 1; p < pages; p++) {
+    const r = await fetch(`${base}&limit=${PAGE}&offset=${p * PAGE}`, { headers: countHeaders });
+    if (!r.ok) break;
+    all.push(...await r.json());
+  }
+  return all;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INDEX COMPUTATION
+// ─────────────────────────────────────────────────────────────────────────────
+function computeIndex(allSales) {
+  // Make a lookup key for each component
+  const compKey = c => `${c.set_id}|||${c.player}|||${c.variant}`;
+  const compSet = new Set(GL50_COMPONENTS.map(compKey));
+
+  // Filter to only our exact components
+  const sales = allSales.filter(s =>
+    compSet.has(`${s.set_id}|||${s.player}|||${s.variant}`)
+  );
+
+  // Group by component key, sort by date
+  const byComp = {};
+  for (const s of sales) {
+    const k = `${s.set_id}|||${s.player}|||${s.variant}`;
+    if (!byComp[k]) byComp[k] = [];
+    byComp[k].push({ date: parseDate(s.date), price: +s.price });
+  }
+
+  // For each component, get all unique sale dates with their price
+  // (multiple sales same day → average)
+  const compHistory = {};
+  for (const [k, rows] of Object.entries(byComp)) {
+    const byDay = {};
+    for (const r of rows) {
+      if (!r.date) continue;
+      const dk = r.date.toISOString().substring(0,10);
+      if (!byDay[dk]) byDay[dk] = [];
+      byDay[dk].push(r.price);
+    }
+    compHistory[k] = Object.entries(byDay)
+      .map(([dk, prices]) => ({
+        date: parseDate(dk),
+        price: prices.reduce((a,b)=>a+b,0) / prices.length
+      }))
+      .sort((a,b) => a.date - b.date);
+  }
+
+  const INDEX_START = '2026-01-01';
+
+  // Build timeline of index values
+  // Collect all sale dates across all components
+  const allDates = new Set();
+  for (const rows of Object.values(compHistory)) {
+    for (const r of rows) allDates.add(r.date.toISOString().substring(0,10));
+  }
+  const sortedDates = [...allDates].sort();
+  if (!sortedDates.length) return { timeline: [], components: [] };
+
+  // For each date, track "last known price" per component.
+  // Process all history (pre-Nov too) so carry-forward works correctly.
+  // Use CHAINED RETURNS (S&P 500 methodology): when a new component first
+  // enters the index its entry doesn't affect the index level — only
+  // subsequent price *changes* do. This prevents step-jumps when high-value
+  // components like Aaron Judge Chrome sell for the first time post-inception.
+  const lastPrice = {};
+  const timeline  = [];
+  const saleLog        = []; // export log: one entry per actual sale event
+
+  // Build a reverse lookup: compKey → component metadata (for export labels)
+  const compMeta = {};
+  for (const c of GL50_COMPONENTS) {
+    compMeta[compKey(c)] = c;
+  }
+
+  // ── Warm-up: average the first N sales before a component enters the index.
+  // Prevents a single outlier first sale from permanently anchoring the baseline.
+  // Soft floor: if fewer than N total sales exist, average all of them.
+  const WARMUP_N = { base: 5, victory: 2 };
+  const warmupFor = v => WARMUP_N[(v || '').toLowerCase()] || 1;
+
+  // Pre-compute graduation price + date for every component.
+  //
+  // Pre-inception cards (any sale before INDEX_START):
+  //   Entry price = last known price as of INDEX_START. These cards already
+  //   have months of history so there's no outlier-first-sale problem — the
+  //   carry-forward price on day one reflects the actual market.
+  //
+  // Post-inception new entrants (first sale after INDEX_START):
+  //   Entry price = warm-up average of first N sales. Prevents a single
+  //   outlier debut sale from anchoring the baseline.
+  const compGraduation = {};
+  for (const [k, hist] of Object.entries(compHistory)) {
+    if (!hist.length) continue;
+    const meta    = compMeta[k] || {};
+    const variant = meta.variant || k.split('|||')[2] || '';
+
+    const preHist  = hist.filter(r => r.date.toISOString().substring(0, 10) <= INDEX_START);
+    const postHist = hist.filter(r => r.date.toISOString().substring(0, 10) >  INDEX_START);
+
+    if (preHist.length > 0) {
+      // Use last known price at inception — reflects current market on day one
+      compGraduation[k] = {
+        price:   preHist[preHist.length - 1].price,
+        dateStr: INDEX_START,
+      };
+    } else {
+      // New entrant: warm-up average of first N post-inception sales
+      const slice = postHist.slice(0, warmupFor(variant));
+      if (!slice.length) continue;
+      compGraduation[k] = {
+        price:   slice.reduce((s, r) => s + r.price, 0) / slice.length,
+        dateStr: slice[slice.length - 1].date.toISOString().substring(0, 10),
+      };
+    }
+  }
+
+  let indexValue   = 1000;
+  let prevSnapshot = {};
+  let inceptionSet = false;
+  const graduated  = new Set();
+
+  for (const dk of sortedDates) {
+    const d = parseDate(dk);
+
+    // Find which components actually sold today
+    const todaySales = {};
+    for (const [k, rows] of Object.entries(compHistory)) {
+      const row = rows.find(r => r.date.toISOString().substring(0,10) === dk);
+      if (row) { todaySales[k] = row.price; lastPrice[k] = row.price; }
+    }
+
+    if (dk < INDEX_START) continue; // don't chart pre-inception dates
+
+    // First inception date: graduate all components with history ≤ INDEX_START
+    // using their warm-up average as the entry price.
+    if (!inceptionSet) {
+      for (const [k, grad] of Object.entries(compGraduation)) {
+        if (grad.dateStr <= INDEX_START) {
+          prevSnapshot[k] = grad.price;
+          graduated.add(k);
+        }
+      }
+      inceptionSet = true;
+      timeline.push({ date: d, value: 1000 });
+      continue;
+    }
+
+    // √price-weighted chained return across already-graduated components.
+    // Weight = √(last known price): rare/expensive cards matter more than cheap
+    // ones, but no single card can completely dominate the index.
+    const continuingKeys = [...graduated].filter(k => k in prevSnapshot);
+    const indexBefore = indexValue;
+    if (continuingKeys.length > 0) {
+      const totalW       = continuingKeys.reduce((s, k) => s + Math.sqrt(prevSnapshot[k]), 0);
+      const avgLogReturn = continuingKeys.reduce((s, k) =>
+        s + (Math.sqrt(prevSnapshot[k]) / totalW) * Math.log(lastPrice[k] / prevSnapshot[k]), 0);
+      indexValue = indexValue * Math.exp(avgLogReturn);
+    }
+
+    // Log each actual sale that occurred today (for export / debugging)
+    for (const [k, salePrice] of Object.entries(todaySales)) {
+      if (!graduated.has(k)) continue; // still in warm-up — no effect on index
+      const prevPrice = prevSnapshot[k];
+      const meta = compMeta[k] || {};
+      const pctReturn = ((salePrice - prevPrice) / prevPrice) * 100;
+      const totalW = continuingKeys.reduce((s, k) => s + Math.sqrt(prevSnapshot[k]), 0);
+      const cardW  = totalW > 0 ? Math.sqrt(prevPrice) / totalW : 0;
+      const contribution = (Math.exp(cardW * Math.log(salePrice / prevPrice)) - 1) * 100;
+      saleLog.push({
+        date:           dk,
+        player:         meta.player   || k.split('|||')[1] || '',
+        set_id:         meta.set_id   || k.split('|||')[0] || '',
+        variant:        meta.variant  || k.split('|||')[2] || '',
+        prev_price:     Math.round(prevPrice),
+        sale_price:     Math.round(salePrice),
+        pct_return:     +pctReturn.toFixed(2),
+        index_contrib:  +contribution.toFixed(3),
+        index_before:   +indexBefore.toFixed(2),
+        index_after:    +indexValue.toFixed(2),
+        active_comps:   continuingKeys.length,
+      });
+    }
+
+    // Advance prevSnapshot for graduated components
+    for (const k of graduated) {
+      if (k in lastPrice) prevSnapshot[k] = lastPrice[k];
+    }
+
+    // Graduate new components that have reached their warm-up threshold post-inception
+    for (const [k, grad] of Object.entries(compGraduation)) {
+      if (!graduated.has(k) && grad.dateStr <= dk) {
+        prevSnapshot[k] = grad.price;
+        graduated.add(k);
+      }
+    }
+
+    timeline.push({ date: d, value: indexValue });
+  }
+
+  // Expose sale log globally for export
+  window.GL50_SALE_LOG = saleLog;
+
+  if (!timeline.length) return { timeline: [], components: [] };
+
+  // Build per-component stats for table
+  const components = GL50_COMPONENTS.map(c => {
+    const k = compKey(c);
+    const hist = compHistory[k] || [];
+    const lastSale = hist.length ? hist[hist.length-1] : null;
+    const grad     = compGraduation[k];
+    const incPrice = grad ? grad.price : null;
+    const meta2    = compMeta[k] || {};
+    const variant2 = meta2.variant || k.split('|||')[2] || '';
+    const wn       = warmupFor(variant2);
+    const changePct = (incPrice && lastSale && incPrice > 0 && hist.length > wn)
+      ? ((lastSale.price - incPrice) / incPrice) * 100
+      : null;
+    // 30D: compare the most recent sale (must be within last 30 days) against
+    // the most recent sale in the 30–90 day lookback window. Capping the
+    // comparison to 90 days stops a stale comp from months ago inflating the %.
+    // Shows — if either window has no data.
+    const _now     = Date.now();
+    const _cut30   = new Date(_now - 30 * 86400000);
+    const _cut90   = new Date(_now - 90 * 86400000);
+    const _recent  = hist.filter(r => r.date > _cut30);
+    const _base    = hist.filter(r => r.date <= _cut30 && r.date >= _cut90);
+    const _rPrice  = _recent.length ? _recent[_recent.length - 1].price : null;
+    const _bPrice  = _base.length   ? _base[_base.length - 1].price     : null;
+    const change30d = (_rPrice && _bPrice)
+      ? ((_rPrice - _bPrice) / _bPrice) * 100
+      : null;
+    return {
+      ...c,
+      last_price: lastSale ? lastSale.price : null,
+      last_date:  lastSale ? lastSale.date  : null,
+      first_price: incPrice,
+      change_pct: changePct,
+      change_30d: change30d,
+      sale_count: hist.length,
+      is_stale: lastSale ? daysSince(lastSale.date) > 60 : true,
+    };
+  });
+
+  return { timeline, components, startDate: parseDate(INDEX_START), saleLog };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORT SALE LOG AS CSV
+// ─────────────────────────────────────────────────────────────────────────────
+function downloadSaleLog() {
+  const log = window.GL50_SALE_LOG || [];
+  if (!log.length) { alert('No sale data available yet — load the index first.'); return; }
+
+  const headers = [
+    'date','player','set_id','variant',
+    'prev_price','sale_price','pct_return',
+    'index_contrib','index_before','index_after','active_comps'
+  ];
+  const rows = log.map(r => headers.map(h => {
+    const v = r[h];
+    // Quote strings that contain commas
+    return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
+  }).join(','));
+
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `gl50-sale-log-${new Date().toISOString().substring(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER HERO + STATS STRIP
+// ─────────────────────────────────────────────────────────────────────────────
+function renderHero(timeline, startDate) {
+  if (!timeline.length) return;
+  const current = timeline[timeline.length-1];
+  const first   = timeline[0];
+  const allVals = timeline.map(t => t.value);
+  const high    = Math.max(...allVals);
+  const low     = Math.min(...allVals);
+  const highPt  = timeline.find(t => t.value === high);
+  const lowPt   = timeline.find(t => t.value === low);
+  const totalChg = ((current.value - 1000) / 1000) * 100;
+
+  document.getElementById('hero-value').textContent =
+    current.value.toFixed(1);
+  const chgEl = document.getElementById('hero-change');
+  chgEl.textContent = (totalChg >= 0 ? '+' : '') + totalChg.toFixed(1) + '% since inception';
+  chgEl.className = 'index-change ' + (totalChg >= 0 ? 'up' : 'down');
+
+  document.getElementById('hero-updated').textContent =
+    'last updated ' + fmtDate(current.date);
+
+  document.getElementById('stat-high').textContent = high.toFixed(1);
+  document.getElementById('stat-high-date').textContent = fmtDate(highPt?.date);
+  document.getElementById('stat-low').textContent  = low.toFixed(1);
+  document.getElementById('stat-low-date').textContent  = fmtDate(lowPt?.date);
+
+  const inceptionEl = document.getElementById('stat-inception');
+  inceptionEl.textContent = (totalChg >= 0 ? '+' : '') + totalChg.toFixed(1) + '%';
+  inceptionEl.className = 'strip-val ' + (totalChg >= 0 ? 'up' : 'down');
+  document.getElementById('stat-inception-date').textContent =
+    'since ' + fmtDate(startDate);
+
+  document.getElementById('stat-components').textContent = GL50_COMPONENTS.length;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER CHART
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Compute a rolling N-day average over a { date, value }[] timeline.
+function rolling30d(timeline, days = 30) {
+  const msWindow = days * 86400000;
+  return timeline.map((t, i) => {
+    const cutoff = t.date.getTime() - msWindow;
+    let sum = 0, count = 0;
+    for (let j = i; j >= 0; j--) {
+      if (timeline[j].date.getTime() < cutoff) break;
+      sum += timeline[j].value;
+      count++;
+    }
+    return { date: t.date, value: count ? sum / count : t.value };
+  });
+}
+
+function renderChart(timeline) {
+  if (timeline.length < 2) return;
+
+  document.getElementById('chart-loading').style.display = 'none';
+  const svg = document.getElementById('chart-svg');
+  svg.style.display = 'block';
+
+  const W = 900, H = 280;
+  const PAD = { top: 20, right: 20, bottom: 36, left: 52 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top  - PAD.bottom;
+
+  const vals  = timeline.map(t => t.value);
+  const dates = timeline.map(t => t.date);
+  const minV  = Math.min(...vals) * 0.97;
+  const maxV  = Math.max(...vals) * 1.03;
+  const minD  = dates[0].getTime();
+  const maxD  = dates[dates.length-1].getTime();
+
+  const xS = d  => PAD.left + ((d.getTime() - minD) / (maxD - minD)) * cW;
+  const yS = v  => PAD.top  + (1 - (v - minV) / (maxV - minV)) * cH;
+
+  // Grid lines
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const yTicks = 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const v = minV + (maxV - minV) * (i / yTicks);
+    const y = yS(v);
+    grid.innerHTML += `<line class="grid-line" x1="${PAD.left}" y1="${y}" x2="${W-PAD.right}" y2="${y}"/>`;
+  }
+
+  // Baseline 1000
+  const y1000 = yS(1000);
+  const bl = document.getElementById('baseline');
+  if (y1000 >= PAD.top && y1000 <= PAD.top + cH) {
+    bl.setAttribute('x1', PAD.left);
+    bl.setAttribute('y1', y1000);
+    bl.setAttribute('x2', W - PAD.right);
+    bl.setAttribute('y2', y1000);
+    bl.style.display = '';
+  } else {
+    bl.style.display = 'none';
+  }
+
+  // Build path points
+  const pts = timeline.map(t => [xS(t.date), yS(t.value)]);
+
+  // Raw line (faint background)
+  const lineD = pts.map((p,i) => (i===0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  document.getElementById('line-path').setAttribute('d', lineD);
+
+  // 30-day rolling average line (primary)
+  const maPts = rolling30d(timeline).map(t => [xS(t.date), yS(t.value)]);
+  const maLineD = maPts.map((p,i) => (i===0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  document.getElementById('ma-line-path').setAttribute('d', maLineD);
+
+  // Area fill follows the MA line for a cleaner look
+  const areaD = maLineD +
+    ` L${maPts[maPts.length-1][0]},${PAD.top+cH} L${maPts[0][0]},${PAD.top+cH} Z`;
+  document.getElementById('area-path').setAttribute('d', areaD);
+
+  // X axis labels — pick ~6 evenly spaced dates
+  const xLabels = document.getElementById('x-labels');
+  xLabels.innerHTML = '';
+  const step = Math.max(1, Math.floor(timeline.length / 6));
+  for (let i = 0; i < timeline.length; i += step) {
+    const t = timeline[i];
+    const x = xS(t.date);
+    const label = t.date.toLocaleDateString('en-US', { month:'short', year:'2-digit' });
+    xLabels.innerHTML += `<text class="axis-label" x="${x}" y="${PAD.top+cH+16}" text-anchor="middle">${label}</text>`;
+  }
+
+  // Y axis labels
+  const yLabels = document.getElementById('y-labels');
+  yLabels.innerHTML = '';
+  for (let i = 0; i <= yTicks; i++) {
+    const v = minV + (maxV - minV) * (i / yTicks);
+    const y = yS(v);
+    yLabels.innerHTML += `<text class="axis-label" x="${PAD.left-8}" y="${y+4}" text-anchor="end">${Math.round(v)}</text>`;
+  }
+
+  // Hit area + hover
+  const hitArea = document.getElementById('hit-area');
+  hitArea.setAttribute('x', PAD.left);
+  hitArea.setAttribute('y', PAD.top);
+  hitArea.setAttribute('width', cW);
+  hitArea.setAttribute('height', cH);
+
+  const ch  = document.getElementById('crosshair');
+  const chV = document.getElementById('ch-v');
+  const chD = document.getElementById('ch-dot');
+  const tt  = document.getElementById('chart-tooltip');
+
+  // Store data for hover
+  svg._chartData = { timeline, xS, yS, PAD, cH };
+
+  hitArea.addEventListener('mousemove', e => {
+    const rect = svg.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+
+    // Find nearest point
+    let nearest = null, minDist = Infinity;
+    for (const pt of pts) {
+      const d = Math.abs(pt[0] - mx);
+      if (d < minDist) { minDist = d; nearest = pt; }
+    }
+    if (!nearest) return;
+    const idx = pts.indexOf(nearest);
+    const t = timeline[idx];
+
+    ch.style.display = '';
+    chV.setAttribute('x1', nearest[0]); chV.setAttribute('y1', PAD.top);
+    chV.setAttribute('x2', nearest[0]); chV.setAttribute('y2', PAD.top+cH);
+    chD.setAttribute('cx', nearest[0]); chD.setAttribute('cy', nearest[1]);
+
+    const totalChg = ((t.value - 1000) / 1000) * 100;
+    document.getElementById('tt-date').textContent = fmtDate(t.date);
+    document.getElementById('tt-val').textContent  = t.value.toFixed(1);
+    const ttC = document.getElementById('tt-change');
+    ttC.textContent = (totalChg>=0?'+':'') + totalChg.toFixed(1) + '% from inception';
+    ttC.style.color = totalChg >= 0 ? 'var(--green)' : 'var(--red)';
+
+    tt.classList.add('visible');
+    tt.style.left = Math.min(e.clientX + 16, window.innerWidth - 180) + 'px';
+    tt.style.top  = Math.max(e.clientY - 60, 10) + 'px';
+  });
+
+  hitArea.addEventListener('mouseleave', () => {
+    ch.style.display = 'none';
+    tt.classList.remove('visible');
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER TABLE
+// ─────────────────────────────────────────────────────────────────────────────
+let tableData = [];
+let sortCol   = 'last_price';
+let sortAsc   = false;
+let staleCount = 0;
+
+function renderTable(components) {
+  tableData = components;
+  staleCount = components.filter(c => c.is_stale).length;
+  document.getElementById('stat-stale').textContent =
+    staleCount > 0 ? `${staleCount} stale (>60 days)` : 'all prices fresh';
+  document.getElementById('table-count').textContent = components.length;
+  sortAndRender();
+}
+
+function sortAndRender() {
+  const sorted = [...tableData].sort((a, b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (av === null || av === undefined) av = sortAsc ? Infinity : -Infinity;
+    if (bv === null || bv === undefined) bv = sortAsc ? Infinity : -Infinity;
+    if (av instanceof Date) av = av.getTime();
+    if (bv instanceof Date) bv = bv.getTime();
+    if (typeof av === 'string') return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    return sortAsc ? av - bv : bv - av;
+  });
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = sorted.map((c, i) => {
+    const chg = c.change_pct;
+    const chgText = chg === null ? '—'
+      : (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%';
+    const chgClass = chg === null ? 'flat' : chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat';
+    const chg30 = c.change_30d;
+    const chg30Text = chg30 === null ? '—'
+      : (chg30 >= 0 ? '+' : '') + chg30.toFixed(1) + '%';
+    const chg30Class = chg30 === null ? 'flat' : chg30 > 0 ? 'up' : chg30 < 0 ? 'down' : 'flat';
+    const staleHtml = c.is_stale
+      ? `<span class="stale-dot"></span><span class="col-stale">&gt;60d</span>`
+      : `<span class="fresh-dot"></span><span style="color:var(--muted);font-size:10px">fresh</span>`;
+
+    return `<tr>
+      <td class="col-num">${i+1}</td>
+      <td class="col-player">${c.player}</td>
+      <td class="col-set">${c.set_name}</td>
+      <td><span class="variant-badge ${variantClass(c.variant)}">${c.variant}</span></td>
+      <td class="col-last-price" style="color:${c.last_price ? 'var(--text)' : 'var(--muted)'}">${fmt$(c.last_price)}</td>
+      <td class="col-change ${chgClass}">${chgText}</td>
+      <td class="col-change ${chg30Class}">${chg30Text}</td>
+      <td style="color:var(--muted2);font-size:11px">${c.sale_count ?? '—'}</td>
+      <td>${staleHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Sort on header click
+document.querySelectorAll('.components-table th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) {
+      sortAsc = !sortAsc;
+    } else {
+      sortCol = col;
+      sortAsc = col === 'player' || col === 'set_name' || col === 'variant';
+    }
+    document.querySelectorAll('.components-table th').forEach(h => h.classList.remove('sorted'));
+    th.classList.add('sorted');
+    th.querySelector('.sort-arrow').textContent = sortAsc ? '↑' : '↓';
+    sortAndRender();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIME RANGE TOGGLE
+// ─────────────────────────────────────────────────────────────────────────────
+let fullTimeline  = [];   // complete computed timeline
+let currentRange  = 'all';
+
+function getWindowedTimeline(range) {
+  if (!fullTimeline.length) return [];
+  if (range === 'all') return fullTimeline;
+  const days   = range === '30' ? 30 : range === '90' ? 90 : 180;
+  const cutoff = new Date(Date.now() - days * 86400000);
+  const sliced = fullTimeline.filter(t => t.date >= cutoff);
+  return sliced.length >= 2 ? sliced : fullTimeline;
+}
+
+function setRange(range) {
+  currentRange = range;
+  document.querySelectorAll('.range-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.range === range)
+  );
+  updateChartView();
+}
+
+function updateChartView() {
+  const tl = getWindowedTimeline(currentRange);
+  if (!tl.length) return;
+
+  // Re-render the chart for this window
+  renderChart(tl);
+
+  // Period label
+  const periodLabel = currentRange === 'all' ? 'all-time · normalized to 1,000'
+    : currentRange === '180' ? 'past 6 months · normalized to 1,000'
+    : currentRange === '90'  ? 'past 90 days · normalized to 1,000'
+    : 'past 30 days · normalized to 1,000';
+  document.getElementById('chart-period-label').textContent = `index value · ${periodLabel}`;
+
+  // Hero change% relative to window start
+  const first = tl[0], last = tl[tl.length - 1];
+  const chg = ((last.value - first.value) / first.value) * 100;
+  const chgEl = document.getElementById('hero-change');
+  const periodSuffix = currentRange === 'all' ? 'since inception'
+    : currentRange === '180' ? 'past 6 months'
+    : currentRange === '90' ? 'past 90 days'
+    : 'past 30 days';
+  chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(1) + '% ' + periodSuffix;
+  chgEl.className   = 'index-change ' + (chg >= 0 ? 'up' : 'down');
+
+  // Stat strip: high/low within the window
+  const vals   = tl.map(t => t.value);
+  const high   = Math.max(...vals), low = Math.min(...vals);
+  const highPt = tl.find(t => t.value === high);
+  const lowPt  = tl.find(t => t.value === low);
+  document.getElementById('stat-high').textContent      = high.toFixed(1);
+  document.getElementById('stat-high-date').textContent = fmtDate(highPt?.date);
+  document.getElementById('stat-low').textContent       = low.toFixed(1);
+  document.getElementById('stat-low-date').textContent  = fmtDate(lowPt?.date);
+
+  // Stat strip: "since inception" cell → reflects window
+  const incEl = document.getElementById('stat-inception');
+  incEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%';
+  incEl.className   = 'strip-val ' + (chg >= 0 ? 'up' : 'down');
+  document.getElementById('stat-inception-date').textContent =
+    currentRange === 'all' ? 'since ' + fmtDate(tl[0].date) : periodSuffix;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    // Load components from Supabase — must come before fetchComponentSales()
+    GL50_COMPONENTS = await sbGet(
+      'gl50_components',
+      'select=*&active=eq.true&order=sort_order.asc,set_name.asc'
+    );
+    if (!GL50_COMPONENTS.length) {
+      document.getElementById('chart-loading').textContent = 'no active components found — run schema-gl50-components.sql in Supabase';
+      document.getElementById('table-body').innerHTML =
+        '<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--muted)">no components configured</td></tr>';
+      return;
+    }
+
+    const allSales = await fetchComponentSales();
+    const { timeline, components, startDate, saleLog } = computeIndex(allSales);
+
+    if (!timeline.length) {
+      document.getElementById('chart-loading').textContent = 'no sales data found for index components';
+      document.getElementById('table-body').innerHTML =
+        '<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--muted)">no data</td></tr>';
+      return;
+    }
+
+    fullTimeline = timeline;  // store for range switching
+
+    renderHero(timeline, startDate);
+    renderChart(timeline);
+    renderTable(components);
+
+  } catch(e) {
+    document.getElementById('chart-loading').innerHTML =
+      `<div class="error-state">failed to load: ${e.message}</div>`;
+    document.getElementById('table-body').innerHTML =
+      `<tr><td colspan="8" class="error-state">failed to load: ${e.message}</td></tr>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
