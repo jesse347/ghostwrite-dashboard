@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · model</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a; --s1: #111; --s2: #181818; --s3: #1e1e1e;
+  --border: #242424; --border2: #1a1a1a;
+  --accent: #e8ff47; --text: #f0f0f0; --muted: #888; --muted2: #555;
+  --display: 'Bebas Neue', sans-serif; --mono: 'DM Mono', monospace;
+  --green: #3ddc84; --red: #ff4455; --orange: #ff9f43;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 12px; min-height: 100vh; }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 32px; }
+
+/* ── Stats grid ── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 1px; background: var(--border); border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.stat-card { background: var(--s1); padding: 20px 22px; }
+.stat-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.stat-value { font-family: var(--display); font-size: 32px; color: var(--accent); line-height: 1; }
+.stat-sub   { font-size: 9px; color: var(--muted2); margin-top: 5px; letter-spacing: 0.5px; }
+
+/* ── Panels ── */
+.panel { background: var(--s1); border: 1px solid var(--border); margin-bottom: 24px; }
+.panel-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-body { padding: 20px; }
+
+/* ── Parameter table ── */
+.param-section         { margin-bottom: 22px; }
+.param-section:last-child { margin-bottom: 0; }
+.param-section-title   { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; gap: 8px; }
+.param-section.phase2 .param-section-title { color: var(--muted2); }
+.param-row             { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.param-row:last-child  { margin-bottom: 0; }
+.param-name            { font-size: 10px; color: var(--muted); width: 160px; flex-shrink: 0; }
+.param-value           { font-family: var(--display); font-size: 16px; color: var(--text); min-width: 56px; }
+.param-value.is-null   { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+.param-desc            { font-size: 9px; color: var(--muted2); flex: 1; line-height: 1.4; }
+.phase-badge           { font-size: 7px; letter-spacing: 1px; text-transform: uppercase; padding: 1px 5px; border: 1px solid var(--muted2); color: var(--muted2); border-radius: 2px; }
+
+/* ── Accuracy breakdown ── */
+.acc-section-title     { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border2); }
+.acc-section-title + .acc-section-title,
+.acc-spacer            { margin-top: 20px; }
+.weight-row            { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.weight-row:last-child { margin-bottom: 0; }
+.weight-name           { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); width: 110px; flex-shrink: 0; }
+.weight-bar-wrap       { flex: 1; height: 4px; background: var(--border); position: relative; }
+.weight-bar-fill       { height: 100%; background: var(--accent); opacity: 0.85; transition: width 0.5s ease; }
+.weight-val            { font-family: var(--display); font-size: 14px; color: var(--text); min-width: 44px; text-align: right; }
+
+/* ── Calibration table ── */
+.cal-table { width: 100%; border-collapse: collapse; }
+.cal-table thead th {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); text-align: left; padding: 0 12px 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cal-table tbody tr { border-bottom: 1px solid var(--border2); }
+.cal-table tbody tr:hover { background: var(--s2); }
+.cal-table td { padding: 10px 12px 10px 0; font-size: 11px; color: var(--muted2); vertical-align: top; }
+.cal-table td.reasoning { font-size: 10px; color: var(--muted); max-width: 340px; line-height: 1.5; }
+.cal-mae  { font-family: var(--display); font-size: 13px; }
+.cal-arrow { color: var(--muted2); margin: 0 4px; }
+
+/* Status / trigger tags */
+.tag-applied   { display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 6px; border: 1px solid var(--green); color: var(--green); border-radius: 2px; }
+.tag-skipped   { display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 6px; border: 1px solid var(--muted2); color: var(--muted2); border-radius: 2px; }
+.tag-trigger-manual { display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 5px; border: 1px solid var(--muted2); color: var(--muted2); border-radius: 2px; margin-left: 4px; }
+.tag-trigger-auto   { display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 5px; border: 1px solid var(--orange); color: var(--orange); border-radius: 2px; margin-left: 4px; }
+.tag-trigger-ai     { display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 5px; border: 1px solid #a8c8ff; color: #a8c8ff; border-radius: 2px; margin-left: 4px; }
+
+/* ── Signal lookup ── */
+.lookup-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+.lookup-bar input {
+  background: var(--s2); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 11px; padding: 8px 14px;
+  width: 300px; outline: none; flex-shrink: 0;
+}
+.lookup-bar input:focus { border-color: var(--accent); }
+.lookup-bar input::placeholder { color: var(--muted2); }
+.result-count { font-size: 9px; letter-spacing: 1px; color: var(--muted); margin-left: auto; }
+
+.signal-table { width: 100%; border-collapse: collapse; }
+.signal-table thead th {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); text-align: left; padding: 0 10px 10px 0;
+  border-bottom: 1px solid var(--border); cursor: pointer; user-select: none;
+}
+.signal-table thead th:hover { color: var(--text); }
+.signal-table tbody tr { border-bottom: 1px solid var(--border2); }
+.signal-table tbody tr:hover { background: var(--s2); }
+.signal-table td { padding: 9px 10px 9px 0; font-size: 11px; color: var(--muted2); vertical-align: middle; }
+.sig-player { color: var(--text) !important; font-weight: 500; }
+.sig-set    { font-size: 9px; color: var(--muted) !important; }
+.sig-price  { font-family: var(--display); font-size: 13px; color: var(--accent) !important; }
+.sig-ask    { font-family: var(--display); font-size: 13px; color: #a8c8ff !important; }
+.sig-momentum-up   { color: var(--green) !important; }
+.sig-momentum-down { color: var(--red) !important; }
+.stale-pill { font-size: 7px; letter-spacing: 1px; text-transform: uppercase; padding: 1px 5px; border: 1px solid var(--muted2); color: var(--muted2); border-radius: 2px; }
+
+/* ── Layout ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* ── Loading / empty / schema-missing ── */
+.loading-wrap { padding: 48px; text-align: center; color: var(--muted); font-family: var(--display); font-size: 11px; letter-spacing: 1px; }
+.empty { padding: 32px; text-align: center; color: var(--muted2); font-size: 11px; letter-spacing: 1px; line-height: 1.6; }
+.schema-banner { background: var(--s2); border: 1px solid var(--border); padding: 14px 20px; margin-bottom: 24px; font-size: 10px; color: var(--orange); letter-spacing: 0.5px; }
+.schema-banner code { background: var(--s3); padding: 2px 6px; border-radius: 2px; color: var(--text); font-size: 10px; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+  </div>
+</header>
+
+<div class="page">
+
+  <div class="page-header-block">
+    <div class="page-header-title">MODEL <em>TRANSPARENCY</em></div>
+    <div class="page-header-sub">estimation engine v2 · parameter audit · accuracy tracking · signal breakdown</div>
+  </div>
+
+  <!-- Schema-not-applied banner (hidden by default) -->
+  <div class="schema-banner" id="schema-banner" style="display:none">
+    ⚠ Engine v2 schema not yet applied — run <code>schema-v2-engine.sql</code> in Supabase to create
+    <code>engine_params</code>, <code>estimate_snapshots</code>, and <code>engine_calibration_log</code>.
+  </div>
+
+  <!-- Stats grid -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="stat-label">Engine Version</div><div class="stat-value" id="stat-version">—</div><div class="stat-sub" id="stat-version-sub"></div></div>
+    <div class="stat-card"><div class="stat-label">MAE (All-time)</div><div class="stat-value" id="stat-mae-all">—</div><div class="stat-sub">mean absolute error</div></div>
+    <div class="stat-card"><div class="stat-label">MAE (30d)</div><div class="stat-value" id="stat-mae-30d">—</div><div class="stat-sub">last 30 days</div></div>
+    <div class="stat-card"><div class="stat-label">Predictions</div><div class="stat-value" id="stat-preds">—</div><div class="stat-sub" id="stat-preds-sub"></div></div>
+    <div class="stat-card"><div class="stat-label">Last Calibration</div><div class="stat-value" id="stat-last-cal">—</div><div class="stat-sub" id="stat-last-cal-sub"></div></div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- Engine parameters -->
+    <div class="panel">
+      <div class="panel-header">Engine Parameters <span id="params-version-badge" style="font-size:9px;color:var(--text);letter-spacing:1px"></span></div>
+      <div class="panel-body" id="params-panel">
+        <div class="loading-wrap">loading…</div>
+      </div>
+    </div>
+
+    <!-- Accuracy breakdown -->
+    <div class="panel">
+      <div class="panel-header">Accuracy Breakdown</div>
+      <div class="panel-body" id="accuracy-panel">
+        <div class="loading-wrap">loading…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Calibration history -->
+  <div class="panel">
+    <div class="panel-header">Calibration History</div>
+    <div style="overflow-x:auto">
+      <table class="cal-table" id="cal-table">
+        <thead><tr>
+          <th>Date</th><th>Status</th><th>Parameter</th>
+          <th>Change</th><th>MAE Before → After</th><th>Obs</th><th>Reasoning</th>
+        </tr></thead>
+        <tbody id="cal-tbody"><tr><td colspan="7"><div class="loading-wrap">loading…</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Signal lookup -->
+  <div class="panel">
+    <div class="panel-header">Signal Lookup — Raw Ingredients</div>
+    <div style="padding:16px 20px 0">
+      <div class="lookup-bar">
+        <input type="text" id="signal-search" placeholder="search player or set…" oninput="filterSignals()">
+        <span class="result-count" id="signal-count"></span>
+      </div>
+    </div>
+    <div style="overflow-x:auto; padding:0 20px 20px">
+      <table class="signal-table">
+        <thead><tr>
+          <th onclick="sortSignals('player')">Player</th>
+          <th onclick="sortSignals('variant')">Variant</th>
+          <th onclick="sortSignals('avg_30d')">30d Avg</th>
+          <th onclick="sortSignals('avg_90d')">90d Avg</th>
+          <th onclick="sortSignals('lowest_ask')">Lowest Ask</th>
+          <th onclick="sortSignals('supply_count')">Supply</th>
+          <th onclick="sortSignals('momentum')">Momentum</th>
+          <th onclick="sortSignals('avg_seller_reliability')">Seller Rel.</th>
+          <th>Implied</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="signal-tbody"><tr><td colspan="10"><div class="loading-wrap">loading…</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H   = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, { headers: SB_H });
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+let allSignals    = [];
+let signalSortCol = 'avg_30d';
+let signalSortDir = 'desc';
+
+// ── Engine parameter section definitions ──────────────────────────────────────
+const PARAM_SECTIONS = [
+  { title: 'Freshness / Staleness', params: [
+    { key: 'staleness_tau',          label: 'Staleness τ',         unit: 'd',  desc: 'own-data weight = e^(−days/τ); at τ days ≈ 37%' },
+    { key: 'evidence_k',             label: 'Evidence k',                      desc: '1 − e^(−k × wt.sales); ~30 sales → 50% confidence' },
+  ]},
+  { title: 'Sales Recency Weights', params: [
+    { key: 'weight_30d',             label: '30d Weight',                      desc: 'multiplier for 30-day sales in salesStrength()' },
+    { key: 'weight_90d',             label: '90d Weight',                      desc: '90d (non-30d) sales' },
+    { key: 'weight_alltime',         label: 'All-time Weight',                 desc: 'all-time (non-90d) sales' },
+  ]},
+  { title: 'Recency Confidence', params: [
+    { key: 'recency_conf_30d',       label: 'Have 30d Sales',                  desc: 'confidence factor when 30d data exists' },
+    { key: 'recency_conf_90d',       label: 'Have 90d Sales',                  desc: 'only 90d data available' },
+    { key: 'recency_conf_alltime',   label: 'All-time Only',                   desc: 'only all-time average available' },
+  ]},
+  { title: 'Reference Distribution', params: [
+    { key: 'rarity_premium',         label: 'Rarity Premium',                  desc: 'min multiplier between adjacent variant tiers' },
+    { key: 'pop_proximity_floor',    label: 'Pop Proximity Floor',             desc: 'min population match quality 0–1' },
+    { key: 'league_same_weight',     label: 'Same-league Weight',              desc: 'trust bonus for same-league reference sets' },
+    { key: 'league_diff_weight',     label: 'Cross-league Weight',             desc: 'trust weight for cross-league reference sets' },
+    { key: 'evidence_threshold',     label: 'Evidence Threshold',              desc: 'min evidence to blend ratio estimate into ref-dist' },
+  ]},
+  { title: 'Confidence Quality Gates', params: [
+    { key: 'quality_medium',         label: 'Medium',                          desc: 'max model override weight when real data is stale' },
+    { key: 'quality_medium_low',     label: 'Medium-Low',                      desc: '' },
+    { key: 'quality_low',            label: 'Low',                             desc: '' },
+    { key: 'quality_very_low',       label: 'Very Low',                        desc: '' },
+  ]},
+  { title: 'Extrapolation Caps', params: [
+    { key: 'extrap_cap_low',         label: 'Floor',               unit: '×',  desc: 'minimum as fraction of distribution minimum' },
+    { key: 'extrap_cap_high',        label: 'Ceiling',             unit: '×',  desc: 'maximum as multiple of distribution maximum' },
+  ]},
+  { title: 'Listings Signal (Phase 2)', phase2: true, params: [
+    { key: 'listing_blend',          label: 'Listing Blend',                   desc: 'ask signal weight (NULL = off)' },
+    { key: 'listing_floor_discount', label: 'Ask Discount',                    desc: 'treat $1 ask as $N signal (NULL = off)' },
+    { key: 'supply_pressure',        label: 'Supply Pressure',                 desc: 'downward adj./unit excess supply (NULL = off)' },
+  ]},
+];
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [paramsArr, calLog, signals] = await Promise.all([
+      sbGet('engine_params',          'select=*&is_active=eq.true&limit=1'),
+      sbGet('engine_calibration_log', 'select=*&order=triggered_at.desc&limit=50'),
+      sbGet('price_signals',          'select=*&order=set_name.asc,player.asc&limit=2000'),
+    ]);
+
+    const params = paramsArr[0] || null;
+    allSignals = signals;
+
+    if (!params) {
+      document.getElementById('schema-banner').style.display = 'block';
+    }
+
+    renderStats(params, calLog);
+    renderParams(params);
+    renderAccuracy(params);
+    renderCalLog(calLog);
+    renderSignals(allSignals);
+
+  } catch (e) {
+    document.getElementById('stats-grid').innerHTML =
+      `<div class="stat-card" style="grid-column:1/-1"><div class="stat-label" style="color:var(--red)">Load error: ${e.message}</div></div>`;
+  }
+});
+
+// ── Stats grid ────────────────────────────────────────────────────────────────
+function renderStats(params, calLog) {
+  if (params) {
+    document.getElementById('stat-version').textContent     = `v${params.version}`;
+    document.getElementById('stat-version-sub').textContent = params.tag || '';
+
+    const fmtMae = v => (v != null) ? (v * 100).toFixed(1) + '%' : '—';
+    document.getElementById('stat-mae-all').textContent = fmtMae(params.mae_all_time);
+    document.getElementById('stat-mae-30d').textContent = fmtMae(params.mae_30d);
+
+    const resolved = params.resolved_snapshots || 0;
+    const total    = params.total_snapshots    || 0;
+    document.getElementById('stat-preds').textContent     = resolved.toLocaleString();
+    document.getElementById('stat-preds-sub').textContent = `${total.toLocaleString()} total snapshots`;
+  } else {
+    ['stat-version','stat-mae-all','stat-mae-30d','stat-preds'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('stat-preds-sub').textContent = 'schema not applied';
+  }
+
+  // Last calibration
+  const lastCal = calLog[0];
+  if (lastCal) {
+    const d       = new Date(lastCal.triggered_at);
+    const daysAgo = Math.round((Date.now() - d) / (24 * 60 * 60 * 1000));
+    document.getElementById('stat-last-cal').textContent     = daysAgo === 0 ? 'today' : `${daysAgo}d ago`;
+    document.getElementById('stat-last-cal-sub').textContent = lastCal.was_applied ? 'change applied' : 'no change';
+  } else {
+    document.getElementById('stat-last-cal').textContent     = '—';
+    document.getElementById('stat-last-cal-sub').textContent = 'no calibrations yet';
+  }
+}
+
+// ── Engine parameters panel ───────────────────────────────────────────────────
+function renderParams(params) {
+  if (!params) {
+    document.getElementById('params-panel').innerHTML =
+      '<div class="empty">schema not applied — run schema-v2-engine.sql</div>';
+    return;
+  }
+
+  document.getElementById('params-version-badge').textContent =
+    `v${params.version}${params.tag ? ' · ' + params.tag : ''}`;
+
+  document.getElementById('params-panel').innerHTML = PARAM_SECTIONS.map(section => {
+    const rows = section.params.map(p => {
+      const raw   = params[p.key];
+      const isNull = (raw === null || raw === undefined);
+      const display = isNull
+        ? '—'
+        : `${raw}${p.unit ? '&thinsp;' + p.unit : ''}`;
+
+      return `<div class="param-row">
+        <div class="param-name">${p.label}</div>
+        <div class="param-value${isNull ? ' is-null' : ''}">${display}</div>
+        ${p.desc ? `<div class="param-desc">${p.desc}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    const phase2Badge = section.phase2
+      ? `<span class="phase-badge">PHASE 2 — OFF</span>` : '';
+
+    return `<div class="param-section${section.phase2 ? ' phase2' : ''}">
+      <div class="param-section-title">${section.title} ${phase2Badge}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+// ── Accuracy breakdown ────────────────────────────────────────────────────────
+function renderAccuracy(params) {
+  const panel = document.getElementById('accuracy-panel');
+
+  if (!params) {
+    panel.innerHTML = '<div class="empty">schema not applied</div>';
+    return;
+  }
+
+  const maeConf    = params.mae_by_confidence; // JSON object or null
+  const maeMethod  = params.mae_by_method;     // JSON object or null
+  const maeVariant = params.mae_by_variant;    // JSON object or null
+
+  if (!maeConf && !maeMethod && !maeVariant) {
+    panel.innerHTML = `<div class="empty">awaiting first snapshot resolution<br>
+      <span style="font-size:9px;margin-top:6px;display:block;line-height:1.6">
+        run <strong style="color:var(--text)">takeEstimateSnapshots()</strong> in GAS,<br>
+        then <strong style="color:var(--text)">resolveSnapshots()</strong> to populate MAE data
+      </span></div>`;
+    return;
+  }
+
+  const maeColor = v => {
+    const pct = v * 100;
+    return pct < 10 ? 'var(--green)' : pct < 20 ? 'var(--accent)' : pct < 30 ? 'var(--orange)' : 'var(--red)';
+  };
+
+  let html = '';
+
+  // ── By confidence tier ─────────────────────────────────────────────────
+  if (maeConf && typeof maeConf === 'object') {
+    const CONF_ORDER = ['High', 'Medium-High', 'Medium', 'Medium-Low', 'Low', 'Very Low', 'No Data'];
+    const confRows   = CONF_ORDER.filter(k => maeConf[k] != null);
+
+    if (confRows.length) {
+      const maxConf = Math.max(...confRows.map(k => +maeConf[k]));
+
+      html += `<div class="acc-section-title">BY CONFIDENCE TIER</div>`;
+      html += confRows.map(k => {
+        const mae = +maeConf[k];
+        const pct = maxConf > 0 ? Math.round((mae / maxConf) * 100) : 0;
+        const col = maeColor(mae);
+        return `<div class="weight-row">
+          <div class="weight-name" style="width:100px">${k}</div>
+          <div class="weight-bar-wrap"><div class="weight-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+          <div class="weight-val" style="color:${col}">${(mae * 100).toFixed(1)}%</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── By method ─────────────────────────────────────────────────────────
+  if (maeMethod && typeof maeMethod === 'object') {
+    const methodRows = Object.entries(maeMethod)
+      .filter(([, v]) => v != null)
+      .sort((a, b) => +a[1] - +b[1]); // best (lowest MAE) first
+
+    if (methodRows.length) {
+      const maxMeth = Math.max(...methodRows.map(([, v]) => +v));
+
+      html += `<div class="acc-section-title" style="${maeConf ? 'margin-top:24px' : ''}">BY METHOD</div>`;
+      html += methodRows.map(([method, mae]) => {
+        const pct = maxMeth > 0 ? Math.round((+mae / maxMeth) * 100) : 0;
+        const col = maeColor(+mae);
+        return `<div class="weight-row">
+          <div class="weight-name" style="width:130px;font-size:9px">${method}</div>
+          <div class="weight-bar-wrap"><div class="weight-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+          <div class="weight-val" style="color:${col}">${(+mae * 100).toFixed(1)}%</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── By variant ────────────────────────────────────────────────────────
+  if (maeVariant && typeof maeVariant === 'object') {
+    const variantRows = Object.entries(maeVariant)
+      .filter(([, v]) => v != null)
+      .sort((a, b) => +a[1] - +b[1]); // best first
+
+    if (variantRows.length) {
+      const maxVar = Math.max(...variantRows.map(([, v]) => +v));
+
+      html += `<div class="acc-section-title" style="margin-top:24px">BY VARIANT</div>`;
+      html += variantRows.map(([variant, mae]) => {
+        const pct = maxVar > 0 ? Math.round((+mae / maxVar) * 100) : 0;
+        const col = maeColor(+mae);
+        return `<div class="weight-row">
+          <div class="weight-name" style="width:100px;font-size:9px">${variant}</div>
+          <div class="weight-bar-wrap"><div class="weight-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+          <div class="weight-val" style="color:${col}">${(+mae * 100).toFixed(1)}%</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  panel.innerHTML = html || '<div class="empty">no accuracy data yet</div>';
+}
+
+// ── Calibration history ───────────────────────────────────────────────────────
+function renderCalLog(calLog) {
+  const tbody = document.getElementById('cal-tbody');
+
+  if (!calLog.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty">no calibration history yet —<br>entries appear here when engine_params versions change</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = calLog.map(c => {
+    const d       = new Date(c.triggered_at);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const applied = !!c.was_applied;
+
+    const appliedTag = applied
+      ? `<span class="tag-applied">applied</span>`
+      : `<span class="tag-skipped">no change</span>`;
+
+    const trigBy = (c.triggered_by || 'manual').toLowerCase();
+    const trigTag = trigBy === 'auto'
+      ? `<span class="tag-trigger-auto">auto</span>`
+      : trigBy === 'ai'
+      ? `<span class="tag-trigger-ai">ai</span>`
+      : `<span class="tag-trigger-manual">manual</span>`;
+
+    const param  = c.parameter_changed
+      ? `<span style="color:var(--text)">${c.parameter_changed}</span>` : '—';
+
+    const change = (c.old_value != null && c.new_value != null)
+      ? `<span style="color:var(--muted2)">${c.old_value}</span>
+         <span class="cal-arrow">→</span>
+         <span style="color:${applied ? 'var(--accent)' : 'var(--muted2)'}">${c.new_value}</span>`
+      : '—';
+
+    const maeStr = c.mae_before != null
+      ? `<span class="cal-mae">${(+c.mae_before * 100).toFixed(1)}%</span>
+         ${c.mae_after != null
+           ? `<span class="cal-arrow">→</span><span class="cal-mae" style="color:${applied ? 'var(--green)' : 'var(--muted2)'}">${(+c.mae_after * 100).toFixed(1)}%</span>`
+           : ''}`
+      : '—';
+
+    const vChange = (c.old_version != null && c.new_version != null)
+      ? `v${c.old_version} → v${c.new_version}`
+      : '';
+
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--muted)">${dateStr}${vChange ? `<br><span style="font-size:8px;letter-spacing:0.5px">${vChange}</span>` : ''}</td>
+      <td style="white-space:nowrap">${appliedTag}${trigTag}</td>
+      <td>${param}</td>
+      <td style="white-space:nowrap">${change}</td>
+      <td style="white-space:nowrap">${maeStr}</td>
+      <td style="color:var(--muted)">${c.observations_used != null ? c.observations_used.toLocaleString() : '—'}</td>
+      <td class="reasoning">${c.reasoning || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Signal lookup ─────────────────────────────────────────────────────────────
+function filterSignals() {
+  const q = document.getElementById('signal-search').value.toLowerCase().trim();
+  const filtered = allSignals.filter(s =>
+    !q || `${s.player} ${s.set_name} ${s.variant}`.toLowerCase().includes(q)
+  );
+  renderSignals(filtered);
+}
+
+function sortSignals(col) {
+  if (signalSortCol === col) signalSortDir = signalSortDir === 'desc' ? 'asc' : 'desc';
+  else { signalSortCol = col; signalSortDir = 'desc'; }
+  filterSignals();
+}
+
+function renderSignals(signals) {
+  const sorted = signals.slice().sort((a, b) => {
+    let av = a[signalSortCol] || 0, bv = b[signalSortCol] || 0;
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    return signalSortDir === 'desc' ? (bv > av ? 1 : -1) : (av > bv ? 1 : -1);
+  });
+
+  document.getElementById('signal-count').textContent = sorted.length + ' signals';
+
+  if (!sorted.length) {
+    document.getElementById('signal-tbody').innerHTML =
+      '<tr><td colspan="10"><div class="empty">no results</div></td></tr>';
+    return;
+  }
+
+  document.getElementById('signal-tbody').innerHTML = sorted.map(s => {
+    const momentum = s.momentum;
+    const momStr   = momentum != null
+      ? `<span class="${momentum > 1.05 ? 'sig-momentum-up' : momentum < 0.95 ? 'sig-momentum-down' : ''}">${momentum.toFixed(2)}×</span>`
+      : '—';
+    const rel = s.avg_seller_reliability != null
+      ? `${Math.round(s.avg_seller_reliability * 100)}%` : '—';
+    const imp = s.implied_price
+      ? `$${Math.round(s.implied_price).toLocaleString()} <span style="font-size:8px;color:var(--muted2)">${s.implied_confidence || ''}</span>`
+      : '—';
+    const status = s.is_stale
+      ? `<span class="stale-pill">stale</span>` : `<span style="color:var(--green);font-size:9px">●</span>`;
+
+    return `<tr>
+      <td><div class="sig-player">${s.player}</div><div class="sig-set">${s.set_name}</div></td>
+      <td style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">${s.variant}</td>
+      <td class="sig-price">${s.avg_30d ? '$' + Math.round(s.avg_30d).toLocaleString() : '—'}</td>
+      <td style="font-family:var(--display);font-size:12px">${s.avg_90d ? '$' + Math.round(s.avg_90d).toLocaleString() : '—'}</td>
+      <td class="sig-ask">${s.lowest_ask ? '$' + Math.round(s.lowest_ask).toLocaleString() : '—'}</td>
+      <td style="color:var(--muted)">${s.supply_count || 0}</td>
+      <td>${momStr}</td>
+      <td style="color:var(--muted)">${rel}</td>
+      <td style="font-size:10px">${imp}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
