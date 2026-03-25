@@ -3,10 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ghostwrite · price guide</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>ghostladder · price guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #0a0a0a;
@@ -18,15 +16,9 @@
   --text: #f0f0f0;
   --muted: #888;
   --muted2: #555;
-  --display: 'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --mono: 'DM Mono', monospace;
   --body: 'DM Sans', sans-serif;
-  --fire: #ff4d00;
-  --chrome: #a8c7fa;
-  --gold: #ffd700;
-  --emerald: #3ddc84;
-  --vides: #b47aff;
-  --victory: #ff9500;
-  --base: #888;
   --flag-red: #ff4040;
 }
 
@@ -34,20 +26,9 @@
 body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 13px; min-height: 100vh; }
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
-.header {
-  padding: 24px 32px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.logo { font-family: var(--display); font-size: 18px; color: var(--accent); letter-spacing: -0.5px; }
-.logo span { color: var(--muted); font-size: 12px; margin-left: 10px; letter-spacing: 2px; text-transform: uppercase; }
-.nav-links { display: flex; gap: 24px; align-items: center; }
-.nav-links a { color: var(--muted); text-decoration: none; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; transition: color 0.15s; }
-.nav-links a:hover { color: var(--text); }
-.nav-links a.active { color: var(--accent); }
 
 /* ── Page layout ─────────────────────────────────────────────────────────────── */
-.page { display: flex; height: calc(100vh - 65px); overflow: hidden; }
+.page { display: flex; height: calc(100vh - 56px); overflow: hidden; }
 
 /* ── Left: product table ─────────────────────────────────────────────────────── */
 .product-list {
@@ -69,8 +50,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 .filter-row input:focus { border-color: var(--accent); }
 .chip {
   background: var(--surf1); border: 1px solid var(--border); color: var(--muted);
-  font-family: var(--display); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
-  padding: 5px 10px; border-radius: 2px; cursor: pointer; transition: all 0.15s;
+  font-family: var(--display); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 10px 20px; border-radius: 2px; cursor: pointer; transition: all 0.15s;
 }
 .chip:hover { color: var(--text); border-color: var(--muted); }
 .chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
@@ -98,19 +79,36 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 .td-set { font-size: 9px; color: var(--muted) !important; letter-spacing: 0.5px; }
 .td-price { font-family: var(--display); font-size: 16px; color: var(--accent) !important; }
 .td-last { font-family: var(--display); font-size: 13px; color: var(--text) !important; }
-.td-sales { font-family: var(--display); font-size: 12px; }
+.td-ask      { font-family: var(--display); font-size: 13px; color: var(--chrome) !important; }
+.td-estimate { font-family: var(--display); font-size: 14px; color: var(--accent) !important; }
+.td-sales    { font-family: var(--display); font-size: 12px; }
+
+/* ── Estimate badge ──────────────────────────────────────────────────────────── */
+.est-badge {
+  display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 1px 4px; border: 1px solid var(--muted2); color: var(--muted2);
+  border-radius: 2px; margin-left: 4px; vertical-align: middle;
+}
+.stale-badge {
+  display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 1px 4px; border: 1px solid var(--muted2); color: var(--muted2);
+  border-radius: 2px; vertical-align: middle;
+}
+
+/* ── Engine badge ────────────────────────────────────────────────────────────── */
+.engine-badge {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted2); padding: 8px 0 14px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+}
+.engine-badge span { color: var(--chrome); }
+/* est-badge chrome variant */
+.est-badge.chrome { border-color: var(--chrome); color: var(--chrome); }
 
 .v-tag {
   display: inline-block; font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
   padding: 2px 6px; border: 1px solid; border-radius: 2px;
 }
-.v-fire    { color: var(--fire);    border-color: var(--fire); }
-.v-chrome  { color: var(--chrome);  border-color: var(--chrome); }
-.v-gold    { color: var(--gold);    border-color: var(--gold); }
-.v-emerald { color: var(--emerald); border-color: var(--emerald); }
-.v-vides   { color: var(--vides);   border-color: var(--vides); }
-.v-victory { color: var(--victory); border-color: var(--victory); }
-.v-base    { color: var(--base);    border-color: var(--base); }
+/* .v-* variant classes come from variants.css */
 
 /* ── Right: listing drawer ───────────────────────────────────────────────────── */
 .drawer {
@@ -120,10 +118,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 }
 .drawer.open { width: 45%; min-width: 400px; }
 
-.drawer-header {
-  padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0;
-}
+.drawer-
 .drawer-title { font-family: var(--display); font-size: 13px; color: var(--text); line-height: 1.4; }
 .drawer-subtitle { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.5px; }
 .drawer-close {
@@ -194,7 +189,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 
 .empty { padding: 40px; text-align: center; color: var(--muted2); font-family: var(--display); font-size: 11px; letter-spacing: 1px; }
 
-
 .afa-badge {
   font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
   padding: 2px 6px; border: 1px solid #ffd700; color: #ffd700;
@@ -209,18 +203,28 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
 </head>
 <body>
 
-<div class="header">
-  <div class="logo">ghostwrite <span>price guide</span></div>
-  <div class="nav-links">
-    <a href="index.html">← dashboard</a>
-    <a href="heatmap.html" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none">heat map →</a>
-    <a href="case-sim.html" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none">case sim →</a>
-    <a href="guide.html" class="active">price guide</a>
-  </div>
-</div>
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html" class="active">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+</header>
 
 <div class="page">
 
@@ -228,15 +232,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
   <div class="product-list" id="product-list">
     <div class="filter-row">
       <input type="text" id="search-input" placeholder="search player, set..." oninput="applyFilters()">
-      <div id="league-chips">
-        <button class="chip active" data-league="ALL" onclick="setLeague(this)">ALL</button>
-        <button class="chip" data-league="NBA" onclick="setLeague(this)">NBA</button>
-        <button class="chip" data-league="WNBA" onclick="setLeague(this)">WNBA</button>
-        <button class="chip" data-league="MLB" onclick="setLeague(this)">MLB</button>
-      </div>
-      <div id="variant-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <div id="set-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <div id="variant-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
       <span class="result-count" id="result-count"></span>
     </div>
+
+    <div class="engine-badge">v2 engine · <span id="engine-tag">—</span></div>
 
     <div id="table-wrap">
       <div class="loading-wrap">
@@ -256,6 +257,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
       <button class="drawer-close" onclick="closeDrawer()">✕</button>
     </div>
     <div class="drawer-stats" id="drawer-stats"></div>
+    <div id="drawer-estimate"></div>
     <div class="drawer-listings" id="drawer-listings">
       <div class="empty">select a product to view listings</div>
     </div>
@@ -263,18 +265,85 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 
 </div>
 
+<script src="estimate-engine.js"></script>
 <script>
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, {headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+// Paginates automatically — Supabase caps a single request at 1000 rows by default.
+async function sbGetAll(table, qs, pageSize = 1000) {
+  let all = [], offset = 0;
+  while (true) {
+    const page = await sbGet(table, `${qs}&limit=${pageSize}&offset=${offset}`);
+    all = all.concat(page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
+async function sbInsert(table, row) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:'POST', headers:{...SB_H,'Prefer':'return=minimal'}, body:JSON.stringify(row)
+  });
+  // Non-blocking: don't throw, just log
+  if (!r.ok) console.warn(`sbInsert ${table}:`, r.status);
+}
+
+async function sbFetch(table, params) {
+  const qs = Object.entries(params).map(([k,v]) => `${k}=eq.${encodeURIComponent(v)}`).join('&');
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}&order=date.desc`, {headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+async function sbPatch(table, match, data) {
+  const qs = Object.entries(match).map(([k,v]) => `${k}=eq.${encodeURIComponent(v)}`).join('&');
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, {
+    method:'PATCH', headers:{...SB_H,'Prefer':'return=minimal'}, body:JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error('PATCH ' + r.status);
+}
+
+function normProduct(r) {
+  const setStr = (r.set_name || '').toUpperCase();
+  return {
+    set: r.set_name, player: r.player, variant: r.variant,
+    totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+    avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+    avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+    lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+    retail: +r.retail_price || 0,
+    multiplier: (r.retail_price && r.avg_price) ? Math.round(+r.avg_price / +r.retail_price * 10) / 10 : 0,
+    lowestAsk: 0,
+  };
+}
 
 const VARIANT_COLORS = {
-  Fire: 'var(--fire)', Chrome: 'var(--chrome)', Gold: 'var(--gold)',
-  Emerald: 'var(--emerald)', Vides: 'var(--vides)', Victory: 'var(--victory)', Base: 'var(--base)'
+  Base: 'var(--base)', Victory: 'var(--victory)', Vides: 'var(--vides)',
+  Emerald: 'var(--emerald)', Gold: 'var(--gold)', Chrome: 'var(--chrome)',
+  Fire: 'var(--fire)', 'Bet On Women': 'var(--bet-on-women)', SP: 'var(--sp)',
 };
 const VARIANT_ORDER = ['Fire','Chrome','Gold','Emerald','Vides','Victory','Base'];
 
+let allData = null;
 let allProducts = [];
-let allListings = [];
-let activeLeague = 'ALL';
+let globalEstimates = {};
+let globalRefreshed = {};
+let activeSet = 'ALL';
 let activeVariant = 'ALL';
 let sortCol = 'avgPrice';
 let sortDir = 'desc';
@@ -282,63 +351,153 @@ let selectedProduct = null;
 
 // ── Boot ────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  const data = await fetchData();
-  allProducts = (data.products || []).filter(p => p.player && p.player !== 'Unknown');
-  allListings = (data.allListings || []).filter(l => l.player && l.player !== 'Unknown');
-  buildVariantChips();
+  try {
+    const [pi, paramsData, setMathData, setsData, gradedSalesData] = await Promise.all([
+      rpc('get_price_intelligence'),
+      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('sets', 'select=id,name,league,active&active=eq.true'),
+      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+    ]);
+    const engineParams = (paramsData || [])[0] || null;
+    allProducts = pi.filter(r => r.player && r.player !== 'Unknown').map(normProduct);
 
-  // Check for ?player= URL param — pre-filter to that player
+    // Snapshot raw PI averages before normalization — used for display only.
+    // applyGradingNorm zeros avgPrice when all sales are graded so the engine
+    // doesn't treat a graded-only price as an ungraded comp. But the guide
+    // table should still show the real (graded) average for those combos.
+    allProducts.forEach(p => { p.rawAvgPrice = p.avgPrice; });
+
+    // Normalize product averages to remove graded-sale inflation so the
+    // engine uses accurate ungraded-equivalent prices when building comps.
+    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
+    applyGradingNorm(allProducts, gradedNormMap);
+
+    // Build set_id → name and league lookups
+    const setIdToName = {};
+    (setsData || []).forEach(s => { setIdToName[s.id] = s.name; });
+    const setLeagueMap = {};
+    (setsData || []).forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
+
+    // Build set_math: set_name → [{player, variant, population}]
+    const setMath = {};
+    (setMathData || []).forEach(row => {
+      const setName = setIdToName[row.set_id];
+      if (!setName || !row.player || row.player === 'Unknown') return;
+      if (!setMath[setName]) setMath[setName] = [];
+      setMath[setName].push({ player: row.player, variant: row.variant, population: +row.population });
+    });
+
+    // Set allData for estimate-engine.js
+    allData = { products: allProducts, setMath, setLeagueMap, signalMap: {}, activeWeights: engineParams };
+
+    // Pre-compute v2 estimates for all sets at boot
+    const setNames = [...new Set(allProducts.map(p => p.set).filter(Boolean))];
+    for (const setName of setNames) {
+      const setProducts = allProducts.filter(p => p.set === setName);
+      const { estimates, refreshedEstimates } = buildEstimates(setName, setProducts, engineParams);
+      Object.assign(globalEstimates, estimates);
+      Object.assign(globalRefreshed, refreshedEstimates);
+    }
+
+    // Show engine version tag
+    const engTag = document.getElementById('engine-tag');
+    if (engTag) engTag.textContent = engineParams?.tag || (engineParams ? `v${engineParams.version}` : 'no params');
+
+    // Use is_active=eq.true — avoids the scraped_at=eq.(latest) bug where
+    // incremental runs add a small batch with a newer timestamp, making the
+    // bulk of active listings invisible to the lowest-ask map.
+    const listings = await sbGetAll('listings',
+      'select=set_name,player,variant,ask_price&is_active=eq.true');
+    const lowestAskMap = {};
+    listings.forEach(l => {
+      if (!l.player || l.player === 'Unknown' || !l.ask_price) return;
+      const k = `${l.set_name}|||${l.player}|||${l.variant}`;
+      if (!lowestAskMap[k] || l.ask_price < lowestAskMap[k]) lowestAskMap[k] = l.ask_price;
+    });
+    allProducts.forEach(p => {
+      p.lowestAsk = lowestAskMap[`${p.set}|||${p.player}|||${p.variant}`] || 0;
+    });
+
+    buildSetChips(setsData || []);
+    buildVariantChips();
+  } catch(e) {
+    document.getElementById('table-wrap').innerHTML = '<div class="empty">failed to load data: ' + e.message + '</div>';
+    return;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const urlPlayer = params.get('player');
   if (urlPlayer) {
-    // Pre-fill search box with player name
     const searchEl = document.getElementById('search-input');
     if (searchEl) searchEl.value = urlPlayer;
   }
-
   applyFilters();
-
-  // After table renders, if a player was specified, open their Base drawer
   if (urlPlayer) {
     const match = allProducts.find(p =>
       p.player.toLowerCase() === urlPlayer.toLowerCase() && p.variant === 'Base'
     ) || allProducts.find(p =>
       p.player.toLowerCase() === urlPlayer.toLowerCase()
     );
-    if (match) {
-      setTimeout(() => openDrawer(match), 100);
-    }
+    if (match) setTimeout(() => openDrawer(match), 100);
   }
 });
 
-async function fetchData() {
-  try {
-    const res = await fetch(DATA_URL, { method: 'GET', redirect: 'follow' });
-    const text = await res.text();
-    return JSON.parse(text);
-  } catch(e) {
-    document.getElementById('table-wrap').innerHTML = '<div class="empty">failed to load data</div>';
-    return { products: [], allListings: [] };
-  }
+// ── Set name shortener ────────────────────────────────────────────────────────
+function shortSetName(n) {
+  return n
+    .replace('Game Face', '')
+    .replace('2024-25', '24-25')
+    .replace('2025-26', '25-26')
+    .replace('2026-27', '26-27')
+    .replace(/\b(20\d\d)\b/, (m, y) => "'" + y.slice(2))
+    .trim();
+}
+
+// ── Variant name shortener ────────────────────────────────────────────────────
+function shortVariantName(v) {
+  return v === 'Bet On Women' ? 'BET' : v;
+}
+
+// ── Set chips ─────────────────────────────────────────────────────────────────
+function buildSetChips(setsData) {
+  const el = document.getElementById('set-chips');
+  const active = (setsData || []).filter(s => s.active !== false && s.name);
+  active.sort((a, b) => shortSetName(b.name).localeCompare(shortSetName(a.name)));
+  el.innerHTML = `<button class="chip active" data-set="ALL" onclick="setActiveSet(this)">ALL</button>` +
+    active.map(s => `<button class="chip" data-set="${s.name}" onclick="setActiveSet(this)">${shortSetName(s.name)}</button>`).join('');
 }
 
 // ── Variant chips ────────────────────────────────────────────────────────────
 function buildVariantChips() {
+  // Order by total population across all sets (lowest → highest), Fire always first
+  const variantPop = {};
+  Object.values(allData?.setMath || {}).forEach(rows => {
+    rows.forEach(r => {
+      if (r.variant) {
+        variantPop[r.variant] = (variantPop[r.variant] || 0) + (+r.population || 0);
+      }
+    });
+  });
   const variants = [...new Set(allProducts.map(p => p.variant).filter(Boolean))];
-  variants.sort((a,b) => (VARIANT_ORDER.indexOf(a)||99) - (VARIANT_ORDER.indexOf(b)||99));
+  variants.sort((a, b) => {
+    if (a === 'Fire') return -1;
+    if (b === 'Fire') return 1;
+    return (variantPop[a] || 0) - (variantPop[b] || 0);
+  });
   const el = document.getElementById('variant-chips');
   el.innerHTML = ['ALL', ...variants].map(v => `
     <button class="chip ${v==='ALL'?'active':''}" data-variant="${v}" onclick="setVariant(this)"
       style="${v !== 'ALL' ? 'color:' + (VARIANT_COLORS[v]||'#888') + ';border-color:' + (VARIANT_COLORS[v]||'#888') : ''}"
-    >${v}</button>
+    >${v === 'ALL' ? 'ALL' : shortVariantName(v)}</button>
   `).join('');
 }
 
 // ── Filters ──────────────────────────────────────────────────────────────────
-function setLeague(btn) {
-  document.querySelectorAll('#league-chips .chip').forEach(b => b.classList.remove('active'));
+function setActiveSet(btn) {
+  document.querySelectorAll('#set-chips .chip').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  activeLeague = btn.dataset.league;
+  activeSet = btn.dataset.set;
   applyFilters();
 }
 
@@ -353,12 +512,7 @@ function applyFilters() {
   const q = document.getElementById('search-input').value.toLowerCase().trim();
 
   let filtered = allProducts.filter(p => {
-    if (activeLeague !== 'ALL') {
-      const s = (p.set||'').toUpperCase();
-      if (activeLeague === 'NBA' && (!s.includes('NBA') || s.includes('WNBA'))) return false;
-      if (activeLeague === 'WNBA' && !s.includes('WNBA')) return false;
-      if (activeLeague === 'MLB' && !s.includes('MLB')) return false;
-    }
+    if (activeSet !== 'ALL' && p.set !== activeSet) return false;
     if (activeVariant !== 'ALL' && p.variant !== activeVariant) return false;
     if (q && !`${p.player} ${p.set} ${p.variant}`.toLowerCase().includes(q)) return false;
     return true;
@@ -366,7 +520,8 @@ function applyFilters() {
 
   // Sort
   filtered.sort((a, b) => {
-    let av = a[sortCol] || 0, bv = b[sortCol] || 0;
+    let av = a[sortCol] || 0;
+    let bv = b[sortCol] || 0;
     if (typeof av === 'string') av = av.toLowerCase();
     if (typeof bv === 'string') bv = bv.toLowerCase();
     return sortDir === 'desc' ? (bv > av ? 1 : -1) : (av > bv ? 1 : -1);
@@ -379,12 +534,13 @@ function applyFilters() {
 // ── Table ────────────────────────────────────────────────────────────────────
 function renderTable(products) {
   const cols = [
-    { key: 'player',        label: 'Player',    },
-    { key: 'variant',       label: 'Variant',   },
-    { key: 'avgPrice',      label: 'Avg Price', },
-    { key: 'lastSalePrice', label: 'Last Sale', },
-    { key: 'totalSales',    label: 'Sales',     },
-    { key: 'sales30d',      label: '30d Sales', },
+    { key: 'player',        label: 'Player',          },
+    { key: 'variant',       label: 'Variant',         },
+    { key: 'avgPrice',      label: 'Avg. Price – All' },
+    { key: 'avg30d',        label: '30D Avg',         },
+    { key: 'lastSalePrice', label: 'Last Sale',        },
+    { key: 'totalSales',    label: 'Sales',            },
+    { key: 'sales30d',      label: '30d Sales',        },
   ];
 
   const thead = cols.map(c => {
@@ -405,7 +561,8 @@ function renderTable(products) {
         <div class="td-set">${p.set}</div>
       </td>
       <td><span class="v-tag ${vClass}">${p.variant}</span></td>
-      <td class="td-price">${p.avgPrice ? '$' + Math.round(p.avgPrice) : '—'}</td>
+      <td class="td-price">${(p.rawAvgPrice || p.avgPrice) ? '$' + Math.round(p.rawAvgPrice || p.avgPrice) : '—'}</td>
+      <td class="td-price">${p.avg30d ? '$' + Math.round(p.avg30d) : '—'}</td>
       <td class="td-last">${p.lastSalePrice ? '$' + Math.round(p.lastSalePrice) : '—'}</td>
       <td class="td-sales">${p.totalSales || 0}</td>
       <td class="td-sales">${p.sales30d || 0}</td>
@@ -415,7 +572,7 @@ function renderTable(products) {
   document.getElementById('table-wrap').innerHTML = `
     <table class="guide-table">
       <thead><tr>${thead}</tr></thead>
-      <tbody>${tbody || '<tr><td colspan="6"><div class="empty">no products match</div></td></tr>'}</tbody>
+      <tbody>${tbody || '<tr><td colspan="7"><div class="empty">no products match</div></td></tr>'}</tbody>
     </table>`;
 }
 
@@ -430,43 +587,95 @@ function sortBy(col) {
 }
 
 // ── Drawer ───────────────────────────────────────────────────────────────────
-function openDrawer(product) {
+async function openDrawer(product) {
   selectedProduct = product;
-
-  // Update selected row highlight
   applyFilters();
 
-  // Get listings for this product
-  const listings = allListings.filter(l =>
-    l.set === product.set &&
-    l.player === product.player &&
-    l.variant === product.variant
-  ).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  // Header
   const vClass = 'v-' + (product.variant||'base').toLowerCase();
   document.getElementById('drawer-title').innerHTML =
     `${product.player} <span class="v-tag ${vClass}" style="margin-left:6px">${product.variant}</span>`;
   document.getElementById('drawer-subtitle').textContent = product.set;
 
-  // Stats
   document.getElementById('drawer-stats').innerHTML = `
-    <div><div class="drawer-stat-label">Avg Price</div><div class="drawer-stat-value">${product.avgPrice ? '$' + Math.round(product.avgPrice) : '—'}</div></div>
+    <div><div class="drawer-stat-label">Avg Price</div><div class="drawer-stat-value">${(product.rawAvgPrice || product.avgPrice) ? '$' + Math.round(product.rawAvgPrice || product.avgPrice) : '—'}</div></div>
     <div><div class="drawer-stat-label">Last Sale</div><div class="drawer-stat-value">${product.lastSalePrice ? '$' + Math.round(product.lastSalePrice) : '—'}</div></div>
     <div><div class="drawer-stat-label">Total Sales</div><div class="drawer-stat-value">${product.totalSales || 0}</div></div>
     <div><div class="drawer-stat-label">30d Sales</div><div class="drawer-stat-value">${product.sales30d || 0}</div></div>
   `;
 
-  // Listings
-  if (!listings.length) {
-    document.getElementById('drawer-listings').innerHTML = '<div class="empty">no listings found</div>';
-  } else {
-    document.getElementById('drawer-listings').innerHTML = listings.map(l => renderListingCard(l)).join('');
+  // ── V2 Estimate section ────────────────────────────────────────────────────
+  const _k = `${product.set}|||${product.player}|||${product.variant}`;
+  const _ref = globalRefreshed[_k];
+  const _est = globalEstimates[_k];
+  let estimateHtml = '';
+  if (_ref) {
+    estimateHtml = `
+      <div style="padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">
+          V2 Estimate <span class="est-badge chrome">BLEND</span>
+        </div>
+        <div style="font-family:var(--display);font-size:22px;color:var(--accent);margin-bottom:10px">
+          $${_ref.price.toLocaleString()}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">Own price</span>
+            <span>$${_ref.ownPrice.toLocaleString()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">Data freshness</span>
+            <span>${_ref.freshness}%</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">Pure model est.</span>
+            <span>$${_ref.modelEstimate.toLocaleString()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">Confidence</span>
+            <span>${_ref.confidence}</span>
+          </div>
+        </div>
+      </div>`;
+  } else if (_est) {
+    estimateHtml = `
+      <div style="padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">
+          V2 Estimate <span class="est-badge">MODEL</span>
+        </div>
+        <div style="font-family:var(--display);font-size:22px;color:var(--accent);margin-bottom:10px">
+          $${_est.price.toLocaleString()}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">Confidence</span>
+          <span>${_est.confidence}</span>
+        </div>
+      </div>`;
   }
+  document.getElementById('drawer-estimate').innerHTML = estimateHtml;
 
-  // Open drawer
+  document.getElementById('drawer-listings').innerHTML = '<div class="loading-wrap"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>';
   document.getElementById('drawer').classList.add('open');
   document.getElementById('product-list').classList.add('drawer-open');
+
+  try {
+    const rawListings = await rpc('get_sales_by_combo', {
+      p_set_name: product.set, p_player: product.player, p_variant: product.variant
+    });
+    // Normalize listing fields
+    const listings = rawListings.map(l => ({
+      id: l.id, price: +l.price || 0, date: l.date,
+      image: l.image_url, url: l.ebay_url, afa: l.afa_grade,
+      flagged: l.flagged, title: l.title || '',
+      set: l.set_name, player: l.player, variant: l.variant,
+    }));
+    if (!listings.length) {
+      document.getElementById('drawer-listings').innerHTML = '<div class="empty">no listings found</div>';
+    } else {
+      document.getElementById('drawer-listings').innerHTML = listings.map(l => renderListingCard(l)).join('');
+    }
+  } catch(e) {
+    document.getElementById('drawer-listings').innerHTML = '<div class="empty">failed to load listings</div>';
+  }
 }
 
 function closeDrawer() {
@@ -478,6 +687,7 @@ function closeDrawer() {
 
 // ── Listing card ─────────────────────────────────────────────────────────────
 function renderListingCard(listing) {
+  const saleId = listing.id;
   const flagClass = listing.flagged ? 'flagged' : '';
   const flagLabel = listing.flagged ? '⚑ flagged' : 'flag';
   const flagBtnClass = listing.flagged ? 'flagged' : '';
@@ -495,7 +705,7 @@ function renderListingCard(listing) {
     ? `<a class="listing-link" href="${listing.url}" target="_blank" rel="noopener">↗ view listing</a>`
     : '';
 
-  return `<div class="listing-card ${flagClass}" id="card-${listing.rowIndex}">
+  return `<div class="listing-card ${flagClass}" id="card-${saleId}">
     ${imgHtml}
     <div class="listing-body">
       <div class="listing-title">${listing.title}</div>
@@ -508,53 +718,50 @@ function renderListingCard(listing) {
       </div>
     </div>
     <div class="listing-actions">
-      <button class="flag-btn ${flagBtnClass}" onclick="toggleFlag(event, ${listing.rowIndex}, ${listing.flagged})">${flagLabel}</button>
+      <button class="flag-btn ${flagBtnClass}" onclick="toggleFlag(event, '${saleId}', ${listing.flagged})">${flagLabel}</button>
     </div>
   </div>`;
 }
 
+// ── Estimate helpers (v2 engine) ──────────────────────────────────────────────
+
+function getEstimateValue(product) {
+  const k = `${product.set}|||${product.player}|||${product.variant}`;
+  return (globalRefreshed[k]?.price) || (globalEstimates[k]?.price) || product.avgPrice || 0;
+}
+
+function renderEstimateCell(product) {
+  const k   = `${product.set}|||${product.player}|||${product.variant}`;
+  const ref = globalRefreshed[k];
+  const est = globalEstimates[k];
+  if (ref) return `$${ref.price.toLocaleString()}<span class="est-badge chrome">BLEND</span>`;
+  if (est) return `$${est.price.toLocaleString()}<span class="est-badge">MODEL</span>`;
+  if (product.avgPrice) return `$${Math.round(product.avgPrice).toLocaleString()}`;
+  return '—';
+}
+
 // ── Flagging ─────────────────────────────────────────────────────────────────
-async function toggleFlag(event, rowIndex, currentlyFlagged) {
+async function toggleFlag(event, saleId, currentlyFlagged) {
   event.stopPropagation();
   const newFlagged = !currentlyFlagged;
 
   // Optimistic UI update
-  const card = document.getElementById('card-' + rowIndex);
+  const card = document.getElementById('card-' + saleId);
   const btn = card.querySelector('.flag-btn');
   if (newFlagged) {
-    card.classList.add('flagged');
-    btn.classList.add('flagged');
-    btn.textContent = '⚑ flagged';
+    card.classList.add('flagged'); btn.classList.add('flagged'); btn.textContent = '⚑ flagged';
   } else {
-    card.classList.remove('flagged');
-    btn.classList.remove('flagged');
-    btn.textContent = 'flag';
+    card.classList.remove('flagged'); btn.classList.remove('flagged'); btn.textContent = 'flag';
   }
 
-  // Update local data
-  const listing = allListings.find(l => l.rowIndex === rowIndex);
-  if (listing) listing.flagged = newFlagged;
-
-  // Write to sheet via Apps Script
   try {
-    // Google Apps Script doPost requires no-cors mode
-    await fetch(DATA_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ rowIndex, flagged: newFlagged }),
-    });
+    await sbPatch('sales', {id: saleId}, {flagged: newFlagged});
   } catch(e) {
     // Revert on error
-    if (listing) listing.flagged = currentlyFlagged;
     if (newFlagged) {
-      card.classList.remove('flagged');
-      btn.classList.remove('flagged');
-      btn.textContent = 'flag';
+      card.classList.remove('flagged'); btn.classList.remove('flagged'); btn.textContent = 'flag';
     } else {
-      card.classList.add('flagged');
-      btn.classList.add('flagged');
-      btn.textContent = '⚑ flagged';
+      card.classList.add('flagged'); btn.classList.add('flagged'); btn.textContent = '⚑ flagged';
     }
     console.error('Flag failed:', e);
   }

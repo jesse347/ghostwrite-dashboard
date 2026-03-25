@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · live market</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #080808;
+  --s1: #101010;
+  --s2: #161616;
+  --s3: #1e1e1e;
+  --border: #282828;
+  --accent: #e8ff47;
+  --accent-dim: rgba(232,255,71,0.10);
+  --red: #ff4040;
+  --green: #3ddc84;
+  --orange: #ffb347;
+  --blue: #5b9cf6;
+  --text: #f0f0f0;
+  --muted: #666;
+  --muted2: #999;
+  --mono: 'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --serif: 'Instrument Serif', serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999;
+}
+
+/* ── Header ── */
+
+.logo { font-family: var(--display); font-size: 20px; letter-spacing: 3px; color: var(--text); }
+.logo em { color: var(--accent); font-style: normal; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Layout ── */
+.page { max-width: 1440px; margin: 0 auto; padding: 32px; }
+
+/* ── Section labels ── */
+.section-label {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Stat cards ── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 1px; background: var(--border); border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--s1); padding: 22px 24px;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; bottom: 0; left: 0;
+  width: 0; height: 2px; background: var(--accent); transition: width 0.4s ease;
+}
+.stat-card:hover::before { width: 100%; }
+.stat-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.stat-value { font-family: var(--display); font-size: 36px; letter-spacing: 1px; line-height: 1; margin-bottom: 6px; }
+.stat-value.accent { color: var(--accent); }
+.stat-value.green { color: var(--green); }
+.stat-value.red   { color: var(--red); }
+.stat-value.orange{ color: var(--orange); }
+.stat-sub { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; line-height: 1.4; }
+
+/* ── Two-col grid ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+.three-col { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
+
+/* ── Panels ── */
+.panel {
+  background: var(--s1); border: 1px solid var(--border); padding: 24px;
+}
+.panel-title {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title span { color: var(--muted2); font-size: 9px; }
+
+/* ── Chart containers ── */
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap canvas { width: 100% !important; }
+
+/* ── Seller bar chart ── */
+.seller-bars { display: flex; flex-direction: column; gap: 10px; }
+.seller-row { display: flex; align-items: center; gap: 10px; }
+.seller-name { font-size: 10px; color: var(--muted2); width: 140px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seller-bar-wrap { flex: 1; height: 16px; background: var(--s3); position: relative; overflow: hidden; }
+.seller-bar {
+  height: 100%; background: var(--accent); opacity: 0.7;
+  transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+}
+.seller-bar::after {
+  content: attr(data-count);
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-size: 9px; color: #000; font-weight: 500;
+}
+.seller-pct { font-size: 9px; color: var(--muted); width: 36px; text-align: right; flex-shrink: 0; }
+
+/* ── Ask vs Sale table ── */
+.avs-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.avs-table thead th {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+  text-align: left; padding: 0 8px 10px 0; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.avs-table tbody tr { border-bottom: 1px solid var(--s3); cursor: default; transition: background 0.08s; }
+.avs-table tbody tr:hover { background: var(--s2); }
+.avs-table tbody td { padding: 8px 8px 8px 0; color: var(--muted2); white-space: nowrap; }
+.avs-table .td-player { color: var(--text); font-size: 11px; }
+.avs-table .td-price { color: var(--accent); font-size: 12px; }
+.avs-table .td-sale  { color: var(--muted2); }
+.avs-table .td-premium.pos { color: var(--red); }
+.avs-table .td-premium.neg { color: var(--green); }
+.avs-table .td-premium.neu { color: var(--muted); }
+
+/* Variant tag */
+.v-tag {
+  display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 1px 5px; border: 1px solid;
+}
+/* .v-* variant classes come from variants.css */
+.v-base  { color: var(--base);  border-color: var(--base); }
+.v-other { color: var(--muted); border-color: var(--muted); }
+
+/* ── Set breakdown ── */
+.set-rows { display: flex; flex-direction: column; gap: 16px; }
+.set-row { }
+.set-row-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.set-name-label { font-size: 10px; color: var(--text); letter-spacing: 0.5px; }
+.set-row-meta { font-size: 9px; color: var(--muted); }
+.set-price-bar { height: 4px; background: var(--s3); position: relative; }
+.set-price-fill { height: 100%; background: var(--accent); opacity: 0.5; transition: width 0.6s; }
+.set-price-range { display: flex; justify-content: space-between; margin-top: 4px; font-size: 8px; color: var(--muted); }
+
+/* ── Age histogram ── */
+.age-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
+.age-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.age-bar {
+  width: 100%; background: var(--accent); opacity: 0.6;
+  transition: height 0.5s cubic-bezier(0.16,1,0.3,1);
+  min-height: 2px;
+}
+.age-label { font-size: 7px; color: var(--muted); letter-spacing: 0.5px; white-space: nowrap; }
+
+/* ── Quality panel ── */
+.quality-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--s3); }
+.quality-row:last-child { border-bottom: none; }
+.quality-label { font-size: 10px; color: var(--muted2); }
+.quality-val { font-family: var(--display); font-size: 22px; }
+.quality-sub { font-size: 8px; color: var(--muted); margin-top: 2px; }
+
+/* ── Auction spotlight ── */
+.auction-list { display: flex; flex-direction: column; gap: 10px; }
+.auction-row {
+  display: grid; grid-template-columns: 1fr auto auto;
+  gap: 12px; align-items: center;
+  padding: 10px 12px; background: var(--s2); border-left: 2px solid var(--orange);
+}
+.auction-title { font-size: 10px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auction-player { font-size: 9px; color: var(--muted); margin-top: 2px; }
+.auction-price { font-family: var(--display); font-size: 20px; color: var(--orange); text-align: right; }
+.auction-meta  { font-size: 8px; color: var(--muted); text-align: right; }
+
+/* ── Loading ── */
+.loading-overlay {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 300px; gap: 12px; color: var(--muted);
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+}
+.spinner {
+  width: 16px; height: 16px; border: 1.5px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Sort headers ── */
+thead th { cursor: pointer; user-select: none; }
+thead th:hover { color: var(--text); }
+thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); }
+thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
+#avs-pagination button:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Concentration donut ── */
+.donut-wrap { display: flex; align-items: center; gap: 24px; }
+.donut-canvas { width: 140px !important; height: 140px !important; flex-shrink: 0; }
+.donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.donut-item { display: flex; align-items: center; gap: 8px; font-size: 9px; color: var(--muted2); }
+.donut-swatch { width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0; }
+.donut-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.donut-item-pct  { color: var(--text); font-size: 10px; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+}
+</style>
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
+<script src="estimate-engine.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html" class="active">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+  <div class="header-right">
+    <div class="scraped-badge" id="scraped-badge">—</div>
+    <div class="live-badge"><div class="live-dot"></div>live listings</div>
+    <button class="refresh-btn" onclick="loadData()">↻ refresh</button>
+  </div>
+</header>
+<div class="admin-subnav">
+  <a href="admin.html">Admin</a>
+  <a href="admin_views.html">Analytics</a>
+  <a href="listings.html" class="active">Listings Intel</a>
+  <a href="admin_slides.html">Slides</a>
+</div>
+
+<div class="page" id="main">
+  <div class="loading-overlay"><div class="spinner"></div>loading live market data</div>
+</div>
+
+<script>
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H   = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, {headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+
+// Paginates automatically — Supabase caps a single request at 1000 rows by default.
+async function sbGetAll(table, qs, pageSize = 1000) {
+  let all = [], offset = 0;
+  while (true) {
+    const page = await sbGet(table, `${qs}&limit=${pageSize}&offset=${offset}`);
+    all = all.concat(page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
+let allListings = [], piData = [];
+let allData = null, estimateMap = {};
+let avsSortCol = 'lowestAsk', avsSortDir = 'desc';
+let avsPage = 0;
+const AVS_PAGE_SIZE = 50;
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('main').innerHTML =
+    '<div class="loading-overlay"><div class="spinner"></div>loading live market data</div>';
+
+  try {
+    // Fetch latest scraped_at (for badge display only — not used to filter)
+    const latestRun = await sbGet('listings',
+      'select=scraped_at&order=scraped_at.desc&limit=1');
+
+    if (!latestRun.length) {
+      document.getElementById('main').innerHTML =
+        '<div class="loading-overlay" style="color:var(--red)">no listings data yet — run ingestion first</div>';
+      return;
+    }
+
+    const latestScrapedAt = latestRun[0].scraped_at;
+
+    // Fetch active listings only. is_active is maintained by markStaleListingsInactive_()
+    // in Apps Script, which deactivates rows not seen within LISTING_STALE_DAYS_.
+    // We do NOT filter by scraped_at — incremental runs produce a newer timestamp,
+    // which would exclude the bulk of records if we used scraped_at=eq.latest.
+    const [listings, pi, paramsData, setMathData, setsData, gradedSalesData] = await Promise.all([
+      sbGetAll('listings',
+        `select=*&is_active=eq.true&order=ask_price.desc`),
+      rpc('get_price_intelligence'),
+      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('sets', 'select=id,name,league,active&active=eq.true'),
+      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+    ]);
+
+    allListings = listings;
+
+    // Normalize PI
+    piData = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
+      key: `${r.set_name}|||${r.player}|||${r.variant}`,
+      player: r.player, variant: r.variant, set: r.set_name,
+      lastSalePrice: +r.last_sale_price || 0,
+      lastSaleDate:  r.last_sale_date,
+      avgPrice:      +r.avg_price || 0,
+      avg30d:        +r.avg_30d   || 0,
+      totalSales:    +r.total_sales || 0,
+    }));
+
+    // ── Build estimate engine allData ──────────────────────────────────────
+    const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
+      set: r.set_name, player: r.player, variant: r.variant,
+      totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+      avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+      avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+      lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+    }));
+    products.forEach(p => { p.rawAvgPrice = p.avgPrice; });
+    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
+    applyGradingNorm(products, gradedNormMap);
+
+    const setIdToName = {};
+    (setsData || []).forEach(s => { setIdToName[s.id] = s.name; });
+    const setMath = {};
+    (setMathData || []).forEach(r => {
+      const name = setIdToName[r.set_id];
+      if (!name || !r.player || r.player === 'Unknown') return;
+      if (!setMath[name]) setMath[name] = [];
+      setMath[name].push({ player: r.player, variant: r.variant, population: r.population });
+    });
+    const setLeagueMap = {};
+    (setsData || []).forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
+    const activeWeights = (paramsData || [])[0] || null;
+    allData = { products, signalMap: {}, activeWeights, setMath, setLeagueMap };
+
+    // Pre-compute estimates for every set that has active listings
+    estimateMap = {};
+    const uniqueSets = [...new Set(allListings.map(l => l.set_name).filter(Boolean))];
+    uniqueSets.forEach(setName => {
+      const setProducts = products.filter(p => p.set === setName);
+      if (!setProducts.length) return;
+      try {
+        const { estimates, refreshedEstimates } = buildEstimates(setName, setProducts, activeWeights);
+        // refreshedEstimates covers cards with real sales (blended model+data);
+        // estimates covers cards with no sales at all. Merge both, refreshed takes priority.
+        const merged = { ...estimates, ...refreshedEstimates };
+        Object.entries(merged).forEach(([pv, est]) => {
+          if (est && est.price > 0) estimateMap[`${setName}|||${pv}`] = est.price;
+        });
+      } catch(e) {}
+    });
+
+    // Show scrape time
+    const d = new Date(latestScrapedAt);
+    document.getElementById('scraped-badge').textContent =
+      'scraped ' + d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) +
+      ' · ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+
+    render();
+  } catch(e) {
+    document.getElementById('main').innerHTML =
+      `<div class="loading-overlay" style="color:var(--red)">error: ${e.message}</div>`;
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const page = document.getElementById('main');
+
+  // Compute headline stats
+  const total        = allListings.length;
+  const sellers      = new Set(allListings.map(l => l.seller).filter(Boolean));
+  const prices       = allListings.map(l => l.ask_price).filter(n => n > 0).sort((a,b) => a-b);
+  const lowestAsk    = prices.length ? prices[0] : 0;
+  const auctions     = allListings.filter(l => l.listing_type === 'Auction' || l.listing_type === 'Auction+BIN');
+  const boCount      = allListings.filter(l => l.has_best_offer).length;
+  const ghostsWithAsks = new Set(
+    allListings
+      .filter(l => l.player && l.player !== 'Unknown' && l.ask_price > 0)
+      .map(l => `${l.set_name}|||${l.player}|||${l.variant}`)
+  ).size;
+  const ambigCount   = allListings.filter(l => l.ambiguous).length;
+  const unknownCount = allListings.filter(l => !l.player || l.player === 'Unknown').length;
+
+  // Seller concentration
+  const sellerMap = {};
+  allListings.forEach(l => {
+    if (!l.seller) return;
+    sellerMap[l.seller] = (sellerMap[l.seller]||0) + 1;
+  });
+  const topSellers = Object.entries(sellerMap)
+    .sort((a,b) => b[1]-a[1]).slice(0, 12);
+  const top5Pct = topSellers.slice(0,5).reduce((s,[,n])=>s+n,0) / total * 100;
+
+  // Set breakdown
+  const setMap = {};
+  allListings.forEach(l => {
+    if (!l.set_name) return;
+    if (!setMap[l.set_name]) setMap[l.set_name] = { count:0, prices:[] };
+    setMap[l.set_name].count++;
+    if (l.ask_price > 0) setMap[l.set_name].prices.push(l.ask_price);
+  });
+
+  // Ask vs Last Sale
+  const avsMap = {};
+  allListings.forEach(l => {
+    if (!l.player || l.player === 'Unknown' || !l.ask_price) return;
+    const k = `${l.set_name}|||${l.player}|||${l.variant}`;
+    if (!avsMap[k]) avsMap[k] = { player:l.player, variant:l.variant, set:l.set_name, asks:[], rawListings:[], count:0 };
+    avsMap[k].asks.push(l.ask_price);
+    avsMap[k].rawListings.push(l);
+    avsMap[k].count++;
+  });
+  const avsRows = Object.entries(avsMap).map(([k, v]) => {
+    const pi = piData.find(p => p.key === k);
+    const lowestAsk = v.asks.sort((a,b)=>a-b)[0] || 0;
+    const lastSale = pi ? pi.lastSalePrice : 0;
+    const premium = lastSale > 0 ? Math.round((lowestAsk - lastSale) / lastSale * 100) : null;
+    const estimate = estimateMap[k] || 0;
+    const cheapest = [...v.rawListings].sort((a,b) => a.ask_price - b.ask_price)[0];
+    const ebayUrl  = cheapest?.ebay_url || '';
+    return { ...v, lowestAsk, lastSale, premium, totalSales: pi ? pi.totalSales : 0, estimate, ebayUrl };
+  });
+
+  // Listing age buckets
+  const ageBuckets = {'0-7d':0,'8-14d':0,'15-30d':0,'31-60d':0,'60d+':0};
+  allListings.forEach(l => {
+    const d = l.days_listed;
+    if (d === null || d === undefined) return;
+    if      (d <= 7)  ageBuckets['0-7d']++;
+    else if (d <= 14) ageBuckets['8-14d']++;
+    else if (d <= 30) ageBuckets['15-30d']++;
+    else if (d <= 60) ageBuckets['31-60d']++;
+    else              ageBuckets['60d+']++;
+  });
+  const maxAge = Math.max(...Object.values(ageBuckets));
+
+  // Active auctions (sorted by current bid)
+  const activeAuctions = allListings
+    .filter(l => l.listing_type === 'Auction' || l.listing_type === 'Auction+BIN')
+    .filter(l => l.player && l.player !== 'Unknown')
+    .sort((a,b) => b.ask_price - a.ask_price)
+    .slice(0, 6);
+
+  page.innerHTML = `
+    <!-- Headline stats -->
+    <div class="section-label">live market snapshot</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Live Listings</div>
+        <div class="stat-value accent">${total.toLocaleString()}</div>
+        <div class="stat-sub">${auctions.length} auctions · ${total - auctions.length} fixed price</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Sellers</div>
+        <div class="stat-value">${sellers.size.toLocaleString()}</div>
+        <div class="stat-sub">top 5 hold ${Math.round(top5Pct)}% of supply</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Lowest Ask</div>
+        <div class="stat-value orange">$${Math.round(lowestAsk).toLocaleString()}</div>
+        <div class="stat-sub">across all classified listings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Ghosts with Asks</div>
+        <div class="stat-value">${ghostsWithAsks.toLocaleString()}</div>
+        <div class="stat-sub">unique products with active listings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Data Quality</div>
+        <div class="stat-value ${unknownCount/total > 0.15 ? 'red' : 'green'}">
+          ${Math.round((1 - unknownCount/total)*100)}%
+        </div>
+        <div class="stat-sub">${unknownCount} unclassified · ${ambigCount} ambiguous</div>
+      </div>
+    </div>
+
+    <!-- Supply concentration + Age histogram -->
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-title">Supply Concentration by Seller <span>top ${Math.min(12, topSellers.length)} sellers</span></div>
+        <div class="donut-wrap" style="margin-bottom:20px">
+          <canvas class="donut-canvas" id="donut-chart"></canvas>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+        <div class="seller-bars" id="seller-bars"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Set Breakdown <span>by listing count</span></div>
+        <div class="set-rows" id="set-rows"></div>
+        <div style="margin-top:24px">
+          <div class="panel-title" style="margin-bottom:14px">Listing Age Distribution</div>
+          <div class="age-bars" id="age-bars">
+            ${Object.entries(ageBuckets).map(([label, count]) => `
+              <div class="age-bar-col">
+                <div class="age-bar" style="height:${maxAge > 0 ? Math.round(count/maxAge*80) : 2}px" title="${count} listings"></div>
+                <div class="age-label">${label}</div>
+              </div>`).join('')}
+          </div>
+          <div style="font-size:8px;color:var(--muted);margin-top:8px">
+            ${ageBuckets['0-7d']} fresh · ${ageBuckets['60d+']} stale (60d+)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Listings Table -->
+    <div class="section-label">active listings by card</div>
+    <div class="panel" style="margin-bottom:32px">
+      <div class="panel-title">
+        All Active Listings
+        <span id="avs-count">${avsRows.length} unique cards</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="avs-table" id="avs-table">
+          <thead>
+            <tr>
+              <th onclick="sortAvs('player')">Player</th>
+              <th onclick="sortAvs('variant')">Variant</th>
+              <th onclick="sortAvs('set')">Set</th>
+              <th onclick="sortAvs('count')">Listings</th>
+              <th onclick="sortAvs('lowestAsk')">Lowest Ask</th>
+              <th onclick="sortAvs('estimate')">Estimate</th>
+              <th onclick="sortAvs('lastSale')">Last Sale</th>
+              <th onclick="sortAvs('premium')">Premium</th>
+              <th onclick="sortAvs('totalSales')">Sales (All-time)</th>
+            </tr>
+          </thead>
+          <tbody id="avs-body"></tbody>
+        </table>
+      </div>
+      <div id="avs-pagination"></div>
+    </div>
+
+    <!-- Active auctions -->
+    ${activeAuctions.length ? `
+    <div class="section-label">active auctions</div>
+    <div class="panel" style="margin-bottom:32px">
+      <div class="panel-title">Live Auctions <span>classified only · sorted by current bid</span></div>
+      <div class="auction-list">
+        ${activeAuctions.map(l => {
+          const pi = piData.find(p => p.key === `${l.set_name}|||${l.player}|||${l.variant}`);
+          const lastSale = pi ? pi.lastSalePrice : 0;
+          const prem = lastSale > 0 ? Math.round((l.ask_price - lastSale)/lastSale*100) : null;
+          return `<div class="auction-row">
+            <div>
+              <div class="auction-title">${l.title || ''}</div>
+              <div class="auction-player">${l.player} · ${l.variant} · ${l.set_name}${prem !== null ? ' · <span style="color:'+((prem>=0)?'var(--red)':'var(--green)')+'">'+((prem>=0)?'+':'')+prem+'% vs last sale</span>' : ''}</div>
+            </div>
+            <div>
+              <div class="auction-price">$${Math.round(l.ask_price).toLocaleString()}</div>
+              <div class="auction-meta">${l.bid_count || 0} bid${l.bid_count !== 1 ? 's' : ''}</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:var(--muted)"><a href="${l.ebay_url}" target="_blank" style="color:var(--accent);text-decoration:none">↗ view</a></div>
+              ${lastSale ? `<div style="font-size:8px;color:var(--muted);margin-top:2px">last sale $${lastSale.toLocaleString()}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+  `;
+
+  // Render seller bars
+  const maxCount = topSellers[0]?.[1] || 1;
+  document.getElementById('seller-bars').innerHTML = topSellers.map(([seller, count]) => `
+    <div class="seller-row">
+      <div class="seller-name" title="${seller}">${seller}</div>
+      <div class="seller-bar-wrap">
+        <div class="seller-bar" style="width:${Math.round(count/maxCount*100)}%" data-count="${count}"></div>
+      </div>
+      <div class="seller-pct">${Math.round(count/total*100)}%</div>
+    </div>`).join('');
+
+  // Render donut chart (supply concentration: top 5 vs others)
+  const top5 = topSellers.slice(0,5);
+  const othersCount = total - top5.reduce((s,[,n])=>s+n,0);
+  const donutColors = ['#e8ff47','#ffb347','#5b9cf6','#3ddc84','#c084fc','#555'];
+  const donutData = [...top5.map(([s,n])=>({label:s,value:n})), {label:`others (${sellers.size-5})`,value:othersCount}];
+
+  new Chart(document.getElementById('donut-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: donutData.map(d => d.label),
+      datasets: [{ data: donutData.map(d => d.value), backgroundColor: donutColors, borderWidth: 0, hoverBorderWidth: 2, hoverBorderColor: '#fff' }]
+    },
+    options: {
+      cutout: '65%', responsive: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/total*100)}%)` }
+      }}
+    }
+  });
+
+  document.getElementById('donut-legend').innerHTML = donutData.map((d,i) => `
+    <div class="donut-item">
+      <div class="donut-swatch" style="background:${donutColors[i]}"></div>
+      <div class="donut-item-name" title="${d.label}">${d.label}</div>
+      <div class="donut-item-pct">${Math.round(d.value/total*100)}%</div>
+    </div>`).join('');
+
+  // Render set rows
+  const sortedSets = Object.entries(setMap).sort((a,b)=>b[1].count-a[1].count);
+  const maxSetCount = sortedSets[0]?.[1].count || 1;
+  const allSetPrices = sortedSets.flatMap(([,v])=>v.prices);
+  const globalMaxPrice = Math.max(...allSetPrices) || 1;
+
+  document.getElementById('set-rows').innerHTML = sortedSets.map(([setName, data]) => {
+    const setMedian = data.prices.length ? median([...data.prices].sort((a,b)=>a-b)) : 0;
+    const setMin    = data.prices.length ? Math.min(...data.prices) : 0;
+    const setMax    = data.prices.length ? Math.max(...data.prices) : 0;
+    const barWidth  = Math.round(data.count / maxSetCount * 100);
+    return `<div class="set-row">
+      <div class="set-row-header">
+        <div class="set-name-label">${setName}</div>
+        <div class="set-row-meta">${data.count} listings · med $${Math.round(setMedian)}</div>
+      </div>
+      <div class="set-price-bar">
+        <div class="set-price-fill" style="width:${barWidth}%"></div>
+      </div>
+      <div class="set-price-range">
+        <span>$${Math.round(setMin)}</span>
+        <span>$${Math.round(setMax)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Render ask vs sale table
+  renderAvsTable(avsRows);
+}
+
+// ── Ask vs Sale table ─────────────────────────────────────────────────────────
+let _avsAllRows = []; // cache for pagination
+
+function renderAvsTable(rows) {
+  _avsAllRows = [...rows].sort((a,b) => {
+    let av = a[avsSortCol], bv = b[avsSortCol];
+    if (av === null || av === undefined) av = avsSortDir === 'asc' ? Infinity : -Infinity;
+    if (bv === null || bv === undefined) bv = avsSortDir === 'asc' ? Infinity : -Infinity;
+    if (typeof av === 'string') return avsSortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return avsSortDir === 'asc' ? av - bv : bv - av;
+  });
+
+  // Update sort indicators
+  document.querySelectorAll('#avs-table thead th').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+  });
+  const cols = ['player','variant','set','count','lowestAsk','estimate','lastSale','premium','totalSales'];
+  const thEl = document.querySelectorAll('#avs-table thead th')[cols.indexOf(avsSortCol)];
+  if (thEl) thEl.classList.add('sort-' + avsSortDir);
+
+  _renderAvsPage();
+}
+
+function _renderAvsPage() {
+  const totalPages = Math.max(1, Math.ceil(_avsAllRows.length / AVS_PAGE_SIZE));
+  avsPage = Math.min(avsPage, totalPages - 1);
+  const pageRows = _avsAllRows.slice(avsPage * AVS_PAGE_SIZE, (avsPage + 1) * AVS_PAGE_SIZE);
+  const start = avsPage * AVS_PAGE_SIZE + 1;
+  const end   = Math.min((avsPage + 1) * AVS_PAGE_SIZE, _avsAllRows.length);
+
+  document.getElementById('avs-body').innerHTML = pageRows.map(r => {
+    const vLow = (r.variant||'').toLowerCase();
+    const vClass = ['fire','chrome','gold','emerald','vides','victory','sp','base']
+      .includes(vLow) ? 'v-'+vLow : 'v-other';
+    const premClass = r.premium === null ? 'neu' : r.premium > 20 ? 'pos' : r.premium < -10 ? 'neg' : 'neu';
+    const premStr   = r.premium === null ? '—' : (r.premium >= 0 ? '+' : '') + r.premium + '%';
+    const setShort  = r.set.replace('Game Face','').replace('2024-25','24-25').replace('2025-26','25-26').trim();
+    const estCell = r.estimate > 0
+      ? `<span style="font-family:var(--display);font-size:13px;color:#a8c8ff">$${Math.round(r.estimate).toLocaleString()}</span>`
+      : `<span style="color:var(--muted)">—</span>`;
+    const viewLink = r.ebayUrl
+      ? `<a href="${r.ebayUrl}" target="_blank" style="font-size:8px;color:var(--accent);text-decoration:none;margin-left:6px;white-space:nowrap">↗ view</a>`
+      : '';
+    return `<tr>
+      <td class="td-player">${r.player}${viewLink}</td>
+      <td><span class="v-tag ${vClass}">${r.variant}</span></td>
+      <td style="font-size:9px;color:var(--muted)">${setShort}</td>
+      <td style="color:var(--muted2)">${r.count}</td>
+      <td class="td-price">$${Math.round(r.lowestAsk).toLocaleString()}</td>
+      <td>${estCell}</td>
+      <td class="td-sale">${r.lastSale > 0 ? '$' + Math.round(r.lastSale).toLocaleString() : '<span style="color:var(--muted)">—</span>'}</td>
+      <td class="td-premium ${premClass}">${premStr}</td>
+      <td style="color:var(--muted)">${r.totalSales || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Pagination controls
+  const pg = document.getElementById('avs-pagination');
+  if (pg) pg.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:10px;color:var(--muted)">
+      <button onclick="avsPageGo(-1)" ${avsPage === 0 ? 'disabled' : ''}
+        style="background:var(--s2);border:1px solid var(--border);color:var(--muted2);padding:4px 10px;cursor:pointer;font-family:var(--mono);font-size:9px">
+        ← prev
+      </button>
+      <span>${start}–${end} of ${_avsAllRows.length}</span>
+      <button onclick="avsPageGo(1)" ${avsPage >= totalPages - 1 ? 'disabled' : ''}
+        style="background:var(--s2);border:1px solid var(--border);color:var(--muted2);padding:4px 10px;cursor:pointer;font-family:var(--mono);font-size:9px">
+        next →
+      </button>
+      <span style="margin-left:4px">page ${avsPage + 1} / ${totalPages}</span>
+    </div>`;
+}
+
+function avsPageGo(delta) {
+  const totalPages = Math.max(1, Math.ceil(_avsAllRows.length / AVS_PAGE_SIZE));
+  avsPage = Math.max(0, Math.min(avsPage + delta, totalPages - 1));
+  _renderAvsPage();
+  document.getElementById('avs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function sortAvs(col) {
+  if (avsSortCol === col) avsSortDir = avsSortDir === 'asc' ? 'desc' : 'asc';
+  else { avsSortCol = col; avsSortDir = col === 'premium' || col === 'lowestAsk' || col === 'estimate' || col === 'count' ? 'desc' : 'asc'; }
+  avsPage = 0; // reset to first page on sort change
+  // Re-render just the table body — recompute rows from current allListings
+  const avsMap = {};
+  allListings.forEach(l => {
+    if (!l.player || l.player === 'Unknown' || !l.ask_price) return;
+    const k = `${l.set_name}|||${l.player}|||${l.variant}`;
+    if (!avsMap[k]) avsMap[k] = { player:l.player, variant:l.variant, set:l.set_name, asks:[], rawListings:[], count:0 };
+    avsMap[k].asks.push(l.ask_price);
+    avsMap[k].rawListings.push(l);
+    avsMap[k].count++;
+  });
+  const avsRows = Object.entries(avsMap).map(([k,v]) => {
+    const pi = piData.find(p => p.key === k);
+    const lowestAsk = v.asks.sort((a,b)=>a-b)[0] || 0;
+    const lastSale = pi ? pi.lastSalePrice : 0;
+    const premium = lastSale > 0 ? Math.round((lowestAsk - lastSale)/lastSale*100) : null;
+    const estimate = estimateMap[k] || 0;
+    const cheapest = [...v.rawListings].sort((a,b) => a.ask_price - b.ask_price)[0];
+    const ebayUrl  = cheapest?.ebay_url || '';
+    return { ...v, lowestAsk, lastSale, premium, totalSales: pi ? pi.totalSales : 0, estimate, ebayUrl };
+  });
+  renderAvsTable(avsRows);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function median(sorted) {
+  if (!sorted.length) return 0;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+}
+
+loadData();
+</script>
+</body>
+</html>

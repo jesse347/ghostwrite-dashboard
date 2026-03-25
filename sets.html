@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · sets</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
+<style>
+:root {
+  --bg:      #080808;
+  --s1:      #101010;
+  --s2:      #161616;
+  --s3:      #1e1e1e;
+  --border:  #282828;
+  --accent:  #e8ff47;
+  --accent-dim: rgba(232,255,71,0.12);
+  --red:     #ff4040;
+  --green:   #3ddc84;
+  --orange:  #ff9f43;
+  --text:    #f0f0f0;
+  --muted:   #666;
+  --muted2:  #999;
+  --mono:    'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --serif:   'Instrument Serif', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); min-height: 100vh; }
+body { color: var(--text); font-family: var(--mono); font-size: 12px; }
+
+/* ── Page layout ── */
+.page { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* ── Page header ── */
+.page-eyebrow {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.page-title {
+  font-family: var(--display); font-size: 48px; letter-spacing: 1px;
+  line-height: 1; color: var(--text); margin-bottom: 8px;
+}
+.page-title em { color: var(--accent); font-style: normal; }
+.page-sub {
+  font-size: 10px; letter-spacing: 1px; color: var(--muted);
+  margin-bottom: 32px;
+}
+
+/* ── Global controls bar ── */
+.controls-bar {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  margin-bottom: 36px; padding: 16px 20px;
+  background: var(--s1); border: 1px solid var(--border);
+}
+.control-group { display: flex; align-items: center; gap: 10px; }
+.control-label {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
+}
+
+/* estimate mode toggle */
+.estimate-toggle { display: flex; gap: 2px; }
+.tog-btn {
+  font-family: var(--display); font-size: 10px; letter-spacing: 1px;
+  text-transform: uppercase; padding: 5px 12px;
+  background: var(--s2); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.tog-btn:hover { color: var(--text); border-color: var(--muted); }
+.tog-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* recency slider */
+.recency-wrap { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; }
+.recency-track {
+  flex: 1; display: flex; flex-direction: column; gap: 4px; position: relative;
+}
+.recency-labels {
+  display: flex; justify-content: space-between;
+  font-size: 7px; letter-spacing: 1px; color: var(--muted2);
+  text-transform: uppercase;
+}
+input[type=range].recency-slider {
+  width: 100%; height: 2px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--border); outline: none; cursor: pointer;
+}
+input[type=range].recency-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 0;
+  background: var(--accent); cursor: pointer;
+}
+input[type=range].recency-slider::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 0;
+  background: var(--accent); cursor: pointer; border: none;
+}
+.recency-current {
+  font-size: 8px; letter-spacing: 1px; color: var(--accent);
+  text-transform: uppercase; min-width: 70px; text-align: right;
+}
+
+/* ── Set rows ── */
+.sets-list { display: flex; flex-direction: column; gap: 2px; }
+
+.set-row {
+  background: var(--s1); border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  grid-template-rows: auto auto;
+  min-height: 140px;
+  transition: border-color 0.15s;
+  animation: fadeIn 0.4s ease both;
+}
+.set-row:hover { border-color: #444; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger animation */
+.set-row:nth-child(1) { animation-delay: 0.05s; }
+.set-row:nth-child(2) { animation-delay: 0.10s; }
+.set-row:nth-child(3) { animation-delay: 0.15s; }
+.set-row:nth-child(4) { animation-delay: 0.20s; }
+.set-row:nth-child(5) { animation-delay: 0.25s; }
+.set-row:nth-child(6) { animation-delay: 0.30s; }
+
+/* Set image */
+.set-image-wrap {
+  position: relative; overflow: hidden;
+  background: var(--s2);
+  grid-row: 1 / -1;
+  height: 180px;
+  align-self: start;
+}
+.set-image {
+  width: 100%; height: 100%; object-fit: contain;
+  display: block; opacity: 0.85;
+  transition: opacity 0.3s, transform 0.4s;
+}
+.set-row:hover .set-image { opacity: 1; transform: scale(1.03); }
+.set-image-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-size: 32px;
+  color: var(--muted2); letter-spacing: 2px;
+}
+
+/* Set content */
+.set-content {
+  padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* Set name + meta */
+.set-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 16px;
+}
+.set-name-block {}
+.set-name {
+  font-family: var(--display); font-size: 22px; letter-spacing: 1px;
+  color: var(--text); line-height: 1; margin-bottom: 4px;
+}
+.set-meta {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Status badge */
+.set-status {
+  font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 1px; flex-shrink: 0;
+}
+.set-status.active   { background: rgba(61,220,132,0.12); color: var(--green); border: 1px solid rgba(61,220,132,0.3); }
+.set-status.inactive { background: var(--s2); color: var(--muted); border: 1px solid var(--border); }
+
+/* Stats grid */
+.set-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+}
+.set-stat {
+  background: var(--s2); padding: 12px 14px;
+}
+.stat-lbl {
+  font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 5px;
+}
+.stat-val {
+  font-family: var(--display); font-size: 20px; letter-spacing: 0.5px;
+  line-height: 1; color: var(--text);
+}
+.stat-val.accent  { color: var(--accent); }
+.stat-val.gold    { color: var(--gold); }
+.stat-val.green   { color: var(--green); }
+.stat-val.red     { color: var(--red); }
+.stat-val.orange  { color: var(--orange); }
+.stat-val.muted   { color: var(--muted); }
+.stat-sub {
+  font-size: 8px; color: var(--muted); margin-top: 3px; line-height: 1.3;
+}
+
+/* Loading / error */
+.loading-state {
+  padding: 80px 32px; text-align: center;
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted);
+}
+.loading-dot { display: inline-block; animation: blink 1.2s infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,100%{opacity:0.15} 50%{opacity:1} }
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 1px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+
+/* ── Expandable grid panel ── */
+.set-expand-btn {
+  font-family: var(--display); font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted); background: none;
+  border: none; cursor: pointer; padding: 0; transition: color 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.set-expand-btn:hover { color: var(--text); }
+.set-expand-btn .chevron {
+  display: inline-block; transition: transform 0.2s; font-size: 8px;
+}
+.set-expand-btn.open .chevron { transform: rotate(180deg); }
+
+.set-grid-panel {
+  display: none; border-top: 1px solid var(--border);
+  background: var(--s2); padding: 20px 24px;
+  grid-column: 1 / -1;
+}
+.set-grid-panel.open { display: block; }
+
+/* ── Biggest Hits panel ── */
+.set-hits-panel {
+  display: none; border-top: 1px solid var(--border);
+  background: var(--s2); padding: 18px 24px 20px;
+  grid-column: 1 / -1;
+}
+.set-hits-panel.open { display: block; }
+
+.hits-panel-header {
+  font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+}
+.hits-mode-tag {
+  background: var(--s3); border: 1px solid var(--border);
+  border-radius: 2px; padding: 2px 7px;
+  font-size: 7px; letter-spacing: 1px; color: var(--muted2);
+}
+.hits-mode-tag .htag-sales { color: var(--accent); }
+.hits-mode-tag .htag-est   { color: rgba(192,132,252,0.75); }
+.hits-strip {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.hit-card {
+  flex-shrink: 0; width: 108px; background: var(--s3);
+  border: 1px solid var(--border); border-radius: 3px;
+  display: flex; flex-direction: column; position: relative;
+  transition: border-color 0.15s;
+}
+.hit-card:hover { border-color: #444; }
+.hit-rank {
+  position: absolute; top: 6px; left: 6px; z-index: 2;
+  font-size: 8px; font-family: var(--mono);
+  background: rgba(0,0,0,0.7); padding: 1px 5px; border-radius: 2px;
+  color: var(--muted2);
+}
+.hit-rank-1 { color: var(--accent) !important; }
+.hit-rank-2 { color: #4fd1ff !important; }
+.hit-rank-3 { color: var(--orange) !important; }
+.hit-img-wrap {
+  width: 100%; height: 120px; background: var(--s2);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.hit-img-wrap img { width: 100%; height: 100%; object-fit: contain; }
+.hit-info {
+  padding: 8px 8px 9px; display: flex; flex-direction: column; gap: 2px;
+}
+.hit-price {
+  font-family: var(--display); font-size: 20px; letter-spacing: 0.5px;
+  line-height: 1; color: var(--accent);
+}
+.hit-price.estimated { color: #c084fc; }
+.hit-player {
+  font-size: 9px; color: var(--text); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.hit-variant {
+  font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2);
+}
+
+/* Grid layout */
+.mini-grid-wrap { overflow-x: auto; }
+.mini-col-headers { display: grid; gap: 2px; margin-bottom: 2px; }
+.mini-col-header {
+  font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); text-align: center; padding: 4px 2px;
+}
+.mini-row { display: grid; gap: 2px; margin-bottom: 2px; align-items: stretch; }
+.mini-row-name {
+  font-size: 9px; color: var(--text); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; padding-right: 8px;
+  display: flex; align-items: center;
+}
+.mini-cell {
+  height: 40px; border-radius: 1px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+  position: relative; overflow: hidden;
+  transition: opacity 0.12s;
+}
+.mini-cell:hover { opacity: 0.85; }
+
+/* Real data: yellow */
+.mini-cell.real {
+  background: rgba(232,255,71,0.18);
+  border: 1px solid rgba(232,255,71,0.5);
+}
+/* Estimated: purple */
+.mini-cell.estimated {
+  background: rgba(192,132,252,0.12);
+  border: 1px solid rgba(192,132,252,0.3);
+}
+/* No data: dark empty */
+.mini-cell.no-data {
+  background: var(--s1); border: 1px dashed var(--border);
+}
+/* N/A: combo doesn't exist in set_math */
+.mini-cell.na {
+  background: transparent; border: 1px solid #2a2a2a;
+  color: #555; font-size: 11px;
+}
+
+.mini-cell-price {
+  font-family: var(--display); font-size: 11px; line-height: 1;
+  color: var(--text);
+}
+.mini-cell.real .mini-cell-price { color: var(--accent); }
+.mini-cell.estimated .mini-cell-price { color: var(--vides); }
+.mini-cell-sub { font-size: 7px; color: var(--muted); }
+
+.mini-legend {
+  display: flex; gap: 16px; margin-bottom: 14px;
+  font-size: 8px; letter-spacing: 1px; color: var(--muted);
+  text-transform: uppercase;
+}
+.mini-legend-dot {
+  width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0;
+}
+
+.mini-grid-label {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 12px;
+}
+
+@media (max-width: 700px) {
+  .page { padding: 20px 16px 60px; }
+  .set-row { grid-template-columns: 80px 1fr; }
+  .set-stats { grid-template-columns: repeat(2, 1fr); }
+  .controls-bar { flex-direction: column; align-items: flex-start; }
+}
+</style>
+<script src="estimate-engine.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html" class="active">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="page">
+
+  <div class="page-eyebrow">ghostladder · market intelligence</div>
+  <div class="page-title">ACTIVE <em>SETS</em></div>
+  <div class="page-sub">case roi · base value · hit value · per set</div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <div class="control-group">
+      <div class="control-label">estimate mode</div>
+      <div class="estimate-toggle">
+        <button id="tog-sales" class="tog-btn" onclick="setEstimateMode('sales-only')">sales only</button>
+        <button id="tog-blend" class="tog-btn active" onclick="setEstimateMode('model-blend')">model blend</button>
+        <button id="tog-full"  class="tog-btn" onclick="setEstimateMode('full-model')">full model</button>
+      </div>
+    </div>
+    <div class="control-group recency-wrap">
+      <div class="control-label">recency</div>
+      <div class="recency-track">
+        <input type="range" class="recency-slider" id="recency-slider"
+               min="0" max="3" step="0.01" value="1"
+               oninput="setRecency(this.value)"
+               onchange="snapRecency(this)">
+        <div class="recency-labels">
+          <span>all-time</span>
+          <span>90d</span>
+          <span>30d</span>
+          <span>last sale</span>
+        </div>
+      </div>
+      <div class="recency-current" id="recency-label">90d avg</div>
+    </div>
+  </div>
+
+  <!-- Sets list -->
+  <div id="sets-list">
+    <div class="loading-state">
+      loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H   = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`,{headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const VARIANT_PROXIMITY = {
+  'Base':    {'Victory':0.9,'Vides':0.85,'Emerald':0.85,'Gold':0.75,'Chrome':0.6,'Fire':0.4,'SP':0.8},
+  'Victory': {'Base':0.9,'Vides':0.9,'Emerald':0.9,'Gold':0.8,'Chrome':0.65,'Fire':0.45,'SP':0.85},
+  'Emerald': {'Base':0.85,'Victory':0.9,'Vides':0.95,'Gold':0.9,'Chrome':0.7,'Fire':0.5,'SP':0.8},
+  'Vides':   {'Base':0.85,'Victory':0.9,'Emerald':0.95,'Gold':0.9,'Chrome':0.7,'Fire':0.5,'SP':0.8},
+  'Gold':    {'Base':0.75,'Victory':0.8,'Emerald':0.9,'Vides':0.9,'Chrome':0.85,'Fire':0.65,'SP':0.7},
+  'Chrome':  {'Base':0.6,'Victory':0.65,'Emerald':0.7,'Vides':0.7,'Gold':0.85,'Fire':0.8,'SP':0.6},
+  'Fire':    {'Base':0.4,'Victory':0.45,'Emerald':0.5,'Vides':0.5,'Gold':0.65,'Chrome':0.8,'SP':0.4},
+  'SP':      {'Base':0.8,'Victory':0.85,'Emerald':0.8,'Vides':0.8,'Gold':0.7,'Chrome':0.6,'Fire':0.4},
+};
+
+// Default set image — replace per set once you have real images
+const DEFAULT_SET_IMAGE = 'https://www.ghostwrite.com/cdn-cgi/image/width=1200,height=1200,format=auto/https://s3.us-east-1.amazonaws.com/media.ghostwrite.com/content/nba-2026-season-blind-box/page/primary-image-v2.png?v=1759806d-8d16-4de0-89a1-7be5cbdbee51';
+
+// Set images are stored in Supabase sets.image_url — update them there.
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allData      = null;
+let estimateMode = 'model-blend'; // 'sales-only' | 'model-blend' | 'full-model'
+let recencyLevel = 1;        // 0=alltime, 1=90d, 2=30d, 3=last-sale
+
+const RECENCY_LABELS = ['all-time avg', '90d avg', '30d avg', 'last sale'];
+
+// ── Recency: pick best price from PI row given current slider ─────────────────
+function bestPrice(p) {
+  if (!p) return null;
+  switch (recencyLevel) {
+    case 3: // last sale
+      return p.lastSalePrice > 0 ? p.lastSalePrice : null;
+    case 2: // 30d
+      if (p.avg30d  && p.sales30d  >= 1) return p.avg30d;
+      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
+      if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+      if (p.lastSalePrice > 0) return p.lastSalePrice;
+      return null;
+    case 1: // 90d (default)
+      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
+      if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+      if (p.lastSalePrice > 0) return p.lastSalePrice;
+      return null;
+    case 0: // all-time
+    default:
+      if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+      if (p.lastSalePrice > 0) return p.lastSalePrice;
+      return null;
+  }
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const [pi, setsData, setMathData, paramsData, gradedSalesData] = await Promise.all([
+      rpc('get_price_intelligence'),
+      sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true&order=name.asc'),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+    ]);
+
+    // set_id → name
+    const setIdToName = {};
+    setsData.forEach(s => { setIdToName[s.id] = s.name; });
+
+    // PI: keyed by set|||player|||variant
+    const piMap = {};
+    pi.filter(r => r.player && r.player !== 'Unknown').forEach(r => {
+      piMap[`${r.set_name}|||${r.player}|||${r.variant}`] = {
+        set: r.set_name, player: r.player, variant: r.variant,
+        totalSales: +r.total_sales || 0,
+        avgPrice:   +r.avg_price   || 0,
+        avg30d:     +r.avg_30d     || 0, sales30d: +r.sales_30d || 0,
+        avg90d:     +r.avg_90d     || 0, sales90d: +r.sales_90d || 0,
+        lastSaleDate:  r.last_sale_date,
+        lastSalePrice: +r.last_sale_price || 0,
+      };
+    });
+
+    // set_math: setName → [{player, variant, population}]
+    const setMath = {};
+    setMathData.forEach(row => {
+      const setName = setIdToName[row.set_id];
+      if (!setName) return;
+      if (!setMath[setName]) setMath[setName] = [];
+      setMath[setName].push({ player: row.player, variant: row.variant, population: +row.population });
+    });
+
+    // Sort setsData by total 30d sales descending
+    const set30dSales = {};
+    Object.values(piMap).forEach(p => {
+      if (!set30dSales[p.set]) set30dSales[p.set] = 0;
+      set30dSales[p.set] += p.sales30d || 0;
+    });
+    setsData.sort((a, b) => (set30dSales[b.name] || 0) - (set30dSales[a.name] || 0));
+
+    const activeWeights = (paramsData || [])[0] || null;
+
+    // Build set→league lookup (used by estimation engine for comp weighting)
+    const setLeagueMap = {};
+    setsData.forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
+
+    // Build products array in standard shape (consistent with heatmap/case-sim)
+    const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
+      set: r.set_name, player: r.player, variant: r.variant,
+      totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+      avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+      avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+      lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+    }));
+
+    // Normalize product averages to remove graded-sale inflation so the
+    // engine uses accurate ungraded-equivalent prices when building comps.
+    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
+    applyGradingNorm(products, gradedNormMap);
+
+    allData = { setsData, piMap, setMath, signalMap: {}, set30dSales, activeWeights, setLeagueMap, products };
+    render();
+
+  } catch(e) {
+    document.getElementById('sets-list').innerHTML =
+      `<div class="loading-state" style="color:var(--red)">failed to load: ${e.message}</div>`;
+  }
+}
+
+// ── Compute stats for one set ─────────────────────────────────────────────────
+function computeSetStats(setName, cfg) {
+  const mathRows = (allData.setMath[setName] || []);
+  const casePack  = +cfg.figures_per_case || 12;
+  const casePrice = +cfg.case_price || 0;
+  const hitRatio  = +cfg.hit_ratio  || 1.02;  // guaranteed hits per case
+
+  // ── Avg Base Value: player-equally-weighted ───────────────────────────────
+  // For each player with a Base entry, get their base price.
+  // Average across players (not across individual sales) so popular players
+  // with more sales don't dominate.
+  const basePlayers = {};
+  let baseGMV = 0, basePop = 0; // population-weighted totals for pool formula
+  mathRows.filter(r => r.variant === 'Base').forEach(r => {
+    const key = `${setName}|||${r.player}|||Base`;
+    const pi  = allData.piMap[key];
+    const price = pi ? bestPrice(pi) : null;
+    if (price && price > 0) {
+      basePlayers[r.player] = price;
+      baseGMV += r.population * price;
+      basePop  += r.population;
+    }
+  });
+  const baseValues = Object.values(basePlayers);
+  const avgBase = baseValues.length
+    ? Math.round(baseValues.reduce((a,b) => a+b, 0) / baseValues.length)
+    : null;
+
+  // ── Avg Hit Value: population-weighted across all non-base combos ─────────
+  // Real mode: use actual sales prices where available
+  // Model mode: fill gaps with shared estimate engine (same as heatmap + case-sim)
+  const setProducts = (allData.products || []).filter(p =>
+    p.set === setName && p.player && p.player !== 'Unknown'
+  );
+  const { estimates: setEstimates, refreshedEstimates: setRefreshed } = estimateMode !== 'sales-only'
+    ? buildEstimates(setName, setProducts, allData.activeWeights)
+    : { estimates: {}, refreshedEstimates: {} };
+
+  let realGMV = 0, realPop = 0;
+  let fullGMV = 0, fullPop = 0;
+
+  const nonBase = mathRows.filter(r => r.variant !== 'Base' && r.population > 0);
+  nonBase.forEach(({ player, variant, population }) => {
+    const key = `${setName}|||${player}|||${variant}`;
+    const pi  = allData.piMap[key];
+    const realPrice = pi ? bestPrice(pi) : null;
+
+    if (realPrice && realPrice > 0) {
+      realGMV += population * realPrice;
+      realPop += population;
+    }
+
+    // Determine which price to use for the full (model-enhanced) calculation
+    let usePrice = realPrice;
+    if (estimateMode === 'full-model') {
+      // Full Model: prefer freshness-blended estimate, fall back to gap-fill only.
+      // No realPrice fallback — PWAHP must match snapshot (which only stores model estimates).
+      const ref = setRefreshed[`${player}|||${variant}`];
+      if (ref && ref.price > 0) {
+        usePrice = ref.price;
+      } else {
+        const est = setEstimates[`${player}|||${variant}`];
+        usePrice = (est && est.price > 0) ? est.price : null;
+      }
+    } else if (estimateMode === 'model-blend') {
+      // Model Blend: fill gaps only
+      if (!usePrice) {
+        const est = setEstimates[`${player}|||${variant}`];
+        if (est && est.price > 0) usePrice = est.price;
+      }
+    }
+    // Sales Only: usePrice stays as realPrice (no model fill)
+
+    if (usePrice && usePrice > 0) {
+      fullGMV += population * usePrice;
+      fullPop += population;
+    }
+  });
+
+  const useFullModel = estimateMode !== 'sales-only';
+  const avgHit = useFullModel
+    ? (fullPop > 0 ? Math.round(fullGMV / fullPop) : null)
+    : (realPop > 0 ? Math.round(realGMV / realPop) : null);
+
+  const denomPop = nonBase.reduce((s, r) => s + r.population, 0);
+  const hitCoverage = useFullModel
+    ? (denomPop > 0 ? Math.round(fullPop / denomPop * 100) : 0)
+    : (denomPop > 0 ? Math.round(realPop / denomPop * 100) : 0);
+
+  // ── Expected Case ROI ─────────────────────────────────────────────────────
+  // Actuarial formula: hitRatio guaranteed hits × avgHit + (casePack − hitRatio) bases × avgBase
+  let expectedValue = null;
+  let roi = null;
+  if (avgHit && avgBase && casePrice > 0) {
+    expectedValue = Math.round((casePack - hitRatio) * avgBase + hitRatio * avgHit);
+    roi = Math.round(((expectedValue - casePrice) / casePrice) * 100);
+  }
+
+  const playersWithData = Object.keys(basePlayers).length;
+  const totalPlayers    = [...new Set(mathRows.map(r => r.player))].length;
+
+  return { avgBase, avgHit, expectedValue, roi, casePrice, casePack,
+           hitRatio, playersWithData, totalPlayers, hitCoverage };
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const { setsData } = allData;
+  if (!setsData.length) {
+    document.getElementById('sets-list').innerHTML =
+      '<div class="loading-state" style="color:var(--muted)">no active sets found</div>';
+    return;
+  }
+
+  const html = setsData.map((cfg, idx) => {
+    const setName = cfg.name;
+    const stats   = computeSetStats(setName, cfg);
+    const img     = cfg.image_url || DEFAULT_SET_IMAGE;
+    const isActive = cfg.active !== false;
+
+    const fmtRoi = stats.roi !== null
+      ? `<span class="stat-val ${stats.roi >= 0 ? 'green' : 'red'}">${stats.roi >= 0 ? '+' : ''}${stats.roi}%</span>`
+      : `<span class="stat-val muted">—</span>`;
+
+    const fmtBase = stats.avgBase
+      ? `<span class="stat-val accent">$${stats.avgBase.toLocaleString()}</span>`
+      : `<span class="stat-val muted">—</span>`;
+
+    const fmtHit = stats.avgHit
+      ? `<span class="stat-val gold">$${stats.avgHit.toLocaleString()}</span>`
+      : `<span class="stat-val muted">—</span>`;
+
+    const fmtRetail = stats.casePrice
+      ? `<span class="stat-val">$${stats.casePrice.toLocaleString()}</span>`
+      : `<span class="stat-val muted">—</span>`;
+
+    return `
+    <div class="set-row" id="set-row-${idx}">
+      <div class="set-image-wrap">
+        <img class="set-image" src="${img}" alt="${setName}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="set-image-fallback" style="display:none">GW</div>
+      </div>
+      <div class="set-content">
+        <div class="set-header">
+          <div class="set-name-block">
+            <div class="set-name">${setName.toUpperCase()}</div>
+            <div class="set-meta">${stats.casePack} figures/case · ${stats.hitRatio} guaranteed hit · ${stats.totalPlayers} players</div>
+          </div>
+          <div class="set-status ${isActive ? 'active' : 'inactive'}">${isActive ? 'active' : 'inactive'}</div>
+        </div>
+        <div class="set-stats">
+          <div class="set-stat">
+            <div class="stat-lbl">case retail</div>
+            ${fmtRetail}
+            <div class="stat-sub">${stats.casePack} figures · 1 guaranteed hit</div>
+          </div>
+          <div class="set-stat">
+            <div class="stat-lbl">avg base value</div>
+            ${fmtBase}
+            <div class="stat-sub">${RECENCY_LABELS[recencyLevel]} · ${stats.playersWithData}/${stats.totalPlayers} players w/ data</div>
+          </div>
+          <div class="set-stat">
+            <div class="stat-lbl">avg hit value ${estimateMode === 'model' ? '<span style="color:var(--muted2);font-size:7px">+model</span>' : ''}</div>
+            ${fmtHit}
+            <div class="stat-sub">${stats.hitCoverage}% combos covered</div>
+          </div>
+          <div class="set-stat">
+            <div class="stat-lbl">est. case value</div>
+            ${stats.expectedValue
+              ? `<span class="stat-val">$${stats.expectedValue.toLocaleString()}</span>`
+              : `<span class="stat-val muted">—</span>`}
+            <div class="stat-sub">${(+stats.hitRatio).toFixed(2)} hit · ${(stats.casePack - stats.hitRatio).toFixed(2)} bases per case</div>
+          </div>
+          <div class="set-stat">
+            <div class="stat-lbl">expected case roi</div>
+            ${fmtRoi}
+            <div class="stat-sub">over case retail</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:20px">
+          <button class="set-expand-btn" id="expand-btn-${idx}"
+            onclick="toggleGrid(${idx}, '${setName.replace(/'/g, "\\'")}')">
+            <span class="chevron">▼</span> view player grid
+          </button>
+          <button class="set-expand-btn" id="hits-btn-${idx}"
+            onclick="toggleHits(${idx}, '${setName.replace(/'/g, "\\'")}')">
+            <span class="chevron">▼</span> biggest hits from set
+          </button>
+        </div>
+      </div>
+      <div class="set-grid-panel" id="grid-panel-${idx}"></div>
+      <div class="set-hits-panel" id="hits-panel-${idx}"></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('sets-list').innerHTML = `<div class="sets-list">${html}</div>`;
+}
+
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+function setEstimateMode(mode) {
+  estimateMode = mode;
+  document.getElementById('tog-sales').classList.toggle('active', mode === 'sales-only');
+  document.getElementById('tog-blend').classList.toggle('active', mode === 'model-blend');
+  document.getElementById('tog-full').classList.toggle('active', mode === 'full-model');
+  if (allData) { render(); refreshOpenGrids(); refreshOpenHits(); }
+}
+
+function setRecency(val) {
+  const snapped = Math.round(+val);
+  if (snapped === recencyLevel) return;
+  recencyLevel = snapped;
+  document.getElementById('recency-label').textContent = RECENCY_LABELS[recencyLevel];
+  if (allData) { render(); refreshOpenGrids(); refreshOpenHits(); }
+}
+
+function snapRecency(el) {
+  const target = Math.round(+el.value);
+  const start = +el.value;
+  const t0 = performance.now();
+  const dur = 120;
+  (function step(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const ease = p < 0.5 ? 2*p*p : -1 + (4 - 2*p)*p;
+    el.value = start + (target - start) * ease;
+    if (p < 1) requestAnimationFrame(step);
+    else el.value = target;
+  })(t0);
+}
+
+// ── Grid ─────────────────────────────────────────────────────────────────────
+const VARIANT_ORDER = ['Fire','Bet On Women','Chrome','Gold','Emerald','Vides','Victory','Base','SP'];
+
+function shortVariantName(v) {
+  return v === 'Bet On Women' ? 'BET' : v;
+}
+const MINI_LABEL_W  = '140px';
+
+function toggleGrid(idx, setName) {
+  const panel = document.getElementById(`grid-panel-${idx}`);
+  const btn   = document.getElementById(`expand-btn-${idx}`);
+  const isOpen = panel.classList.contains('open');
+
+  if (isOpen) {
+    panel.classList.remove('open');
+    btn.classList.remove('open');
+    btn.innerHTML = '<span class="chevron">▼</span> view player grid';
+    return;
+  }
+
+  // Build and show the grid
+  panel.innerHTML = buildMiniGrid(setName);
+  panel.classList.add('open');
+  btn.classList.add('open');
+  btn.innerHTML = '<span class="chevron">▼</span> hide player grid';
+}
+
+function buildMiniGrid(setName) {
+  const mathRows = (allData.setMath[setName] || []);
+  if (!mathRows.length) return '<div style="color:var(--muted);font-size:10px;padding:8px 0">no roster data</div>';
+
+  // Pre-compute estimates using shared engine (same logic as heatmap + case-sim)
+  const gridSetProducts = (allData.products || []).filter(p =>
+    p.set === setName && p.player && p.player !== 'Unknown'
+  );
+  const { estimates: gridEstimates, refreshedEstimates: gridRefreshed } = estimateMode !== 'sales-only'
+    ? buildEstimates(setName, gridSetProducts, allData.activeWeights)
+    : { estimates: {}, refreshedEstimates: {} };
+
+  // Variants: known ones ordered by VARIANT_ORDER, any extras (e.g. Sapphire) appended
+  // SP is always pinned last, matching heatmap.html behaviour
+  const mathVariants  = [...new Set(mathRows.map(r => r.variant).filter(Boolean))];
+  const knownVariants = VARIANT_ORDER.filter(v => mathVariants.includes(v));
+  const extraVariants = mathVariants.filter(v => !VARIANT_ORDER.includes(v));
+  const spIdx = knownVariants.indexOf('SP');
+  const variants = spIdx >= 0
+    ? [...knownVariants.slice(0, spIdx), ...extraVariants, 'SP']
+    : [...knownVariants, ...extraVariants];
+
+  // Players: from set_math, sorted alphabetically
+  const players = [...new Set(mathRows.map(r => r.player).filter(p => p && p !== 'Unknown'))].sort();
+
+  // Valid combos: set of "player|||variant" that actually exist in set_math
+  const mathSet = new Set(mathRows.map(r => `${r.player}|||${r.variant}`));
+
+  const gridCols = `${MINI_LABEL_W} ${variants.map(() => '1fr').join(' ')}`;
+
+  // Column headers
+  let html = `
+    <div class="mini-legend">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="mini-legend-dot" style="background:rgba(232,255,71,0.5)"></div> real sales
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="mini-legend-dot" style="background:rgba(192,132,252,0.4)"></div> estimated
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="mini-legend-dot" style="background:var(--border)"></div> no data
+      </div>
+    </div>
+    <div class="mini-grid-wrap">
+    <div class="mini-col-headers" style="grid-template-columns:${gridCols}">
+      <div></div>
+      ${variants.map(v => `<div class="mini-col-header">${shortVariantName(v)}</div>`).join('')}
+    </div>`;
+
+  players.forEach(player => {
+    const cells = variants.map(variant => {
+      // If this player/variant combo doesn't exist in set_math, show X
+      if (!mathSet.has(`${player}|||${variant}`)) {
+        return `<div class="mini-cell na" title="${player} · ${variant} · not in this set">✕</div>`;
+      }
+
+      const key     = `${setName}|||${player}|||${variant}`;
+      const pi      = allData.piMap[key];
+      const realPrice = pi ? bestPrice(pi) : null;
+
+      // ── Full Model: show refreshed estimate for real-data cells ───────────
+      const refData = gridRefreshed[`${player}|||${variant}`];
+      if (estimateMode === 'full-model' && refData) {
+        const freshLabel = refData.freshness >= 70 ? `${refData.freshness}% fresh`
+                         : refData.freshness >= 30 ? `${refData.freshness}% fresh`
+                         : `stale · $${refData.ownPrice} real`;
+        return `<div class="mini-cell estimated" title="${player} · ${variant} · $${refData.price} model · $${refData.ownPrice} real · ${refData.freshness}% fresh">
+          <div class="mini-cell-price">$${refData.price.toLocaleString()}</div>
+          <div class="mini-cell-sub" style="color:var(--muted)">${freshLabel}</div>
+        </div>`;
+      }
+
+      if (realPrice && realPrice > 0) {
+        const sales = recencyLevel === 3 ? (pi.totalSales || 0)
+                    : recencyLevel === 2 ? (pi.sales30d || pi.sales90d || pi.totalSales || 0)
+                    : recencyLevel === 1 ? (pi.sales90d || pi.totalSales || 0)
+                    : (pi.totalSales || 0);
+        return `<div class="mini-cell real" title="${player} · ${variant} · $${Math.round(realPrice)} · ${sales} sales">
+          <div class="mini-cell-price">$${Math.round(realPrice).toLocaleString()}</div>
+          <div class="mini-cell-sub">${sales} sale${sales !== 1 ? 's' : ''}</div>
+        </div>`;
+      }
+
+      const estData = gridEstimates[`${player}|||${variant}`];
+      if (estimateMode !== 'sales-only' && estData && estData.price > 0) {
+        const est  = estData.price;
+        const conf = estData.confidence;
+        return `<div class="mini-cell estimated" title="${player} · ${variant} · ~$${est} est. (${conf})">
+          <div class="mini-cell-price">~$${est.toLocaleString()}</div>
+          <div class="mini-cell-sub" style="color:var(--vides)">${conf.toLowerCase()}</div>
+        </div>`;
+      }
+
+      return `<div class="mini-cell no-data" title="${player} · ${variant} · no data"></div>`;
+    }).join('');
+
+    html += `<div class="mini-row" style="grid-template-columns:${gridCols}">
+      <div class="mini-row-name">${player}</div>
+      ${cells}
+    </div>`;
+  });
+
+  html += '</div>'; // close mini-grid-wrap
+  return html;
+}
+
+// ── Refresh any open grid panels ─────────────────────────────────────────────
+function refreshOpenGrids() {
+  document.querySelectorAll('.set-grid-panel.open').forEach(panel => {
+    const idx     = panel.id.replace('grid-panel-', '');
+    const setName = allData.setsData[+idx]?.name;
+    if (setName) panel.innerHTML = buildMiniGrid(setName);
+  });
+}
+
+// ── Biggest Hits panel ────────────────────────────────────────────────────────
+// Player slug: lowercase, strip accents/periods, spaces → underscores
+function _slugPlayer(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\./g,'').replace(/[^a-z0-9\s]/g,'').trim().replace(/\s+/g,'_');
+}
+// Set slug: lowercase, strip accents, spaces → hyphens
+function _slugSet(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+}
+// Variant → canonical filename slug
+function _slugVariant(v) {
+  const l = (v||'').toLowerCase();
+  if (l.includes('fire'))    return 'fire';
+  if (l.includes('gold'))    return 'gold';
+  if (l.includes('chrome'))  return 'chrome';
+  if (l.includes('emerald')) return 'emerald';
+  if (l.includes('victory')) return 'victory';
+  if (l.includes('vides'))   return 'vides';
+  if (l.includes('bet'))     return 'bet-on-women';
+  if (l.includes('sp'))      return 'sp';
+  return 'base';
+}
+function _figUrl(set, player, variant) {
+  return `assets/figures/${_slugSet(set)}/${_slugPlayer(player)}_${_slugVariant(variant)}.png`;
+}
+
+function toggleHits(idx, setName) {
+  const panel = document.getElementById(`hits-panel-${idx}`);
+  const btn   = document.getElementById(`hits-btn-${idx}`);
+  const isOpen = panel.classList.contains('open');
+
+  if (isOpen) {
+    panel.classList.remove('open');
+    btn.classList.remove('open');
+    btn.innerHTML = '<span class="chevron">▼</span> biggest hits from set';
+    return;
+  }
+
+  panel.innerHTML = buildHitsStrip(setName);
+  panel.classList.add('open');
+  btn.classList.add('open');
+  btn.innerHTML = '<span class="chevron">▼</span> hide biggest hits';
+}
+
+function buildHitsStrip(setName) {
+  const mathCombos = (allData.setMath[setName] || []);
+  if (!mathCombos.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">no data</div>';
+
+  // setProds is only needed for buildEstimates (it uses PI rows internally)
+  const setProds = (allData.products || []).filter(p => p.set === setName);
+
+  // Build estimates for blend / full-model modes
+  let ests = {}, refEsts = {};
+  if (estimateMode !== 'sales-only' && setProds.length) {
+    try {
+      const r = buildEstimates(setName, setProds, allData.activeWeights);
+      ests    = r.estimates          || {};
+      refEsts = r.refreshedEstimates || {};
+    } catch(e) {}
+  }
+
+  // Score every set_math combo (includes rare variants with no real sales)
+  const scored = [];
+  mathCombos.forEach(({ player, variant }) => {
+    const piKey  = `${setName}|||${player}|||${variant}`;
+    const p      = allData.piMap[piKey]; // undefined if no sales yet
+    const estKey = `${player}|||${variant}`;
+    let price = null, isEst = false;
+
+    if (estimateMode === 'sales-only') {
+      price = p ? bestPrice(p) : null;
+
+    } else if (estimateMode === 'model-blend') {
+      price = p ? bestPrice(p) : null;
+      if (!price) {
+        const est = ests[estKey];
+        if (est && est.price > 0) { price = est.price; isEst = true; }
+      }
+
+    } else { // full-model
+      const ref = refEsts[estKey];
+      if (ref && ref.price > 0)       { price = ref.price;  isEst = true; }
+      else { const est = ests[estKey];
+        if (est && est.price > 0)     { price = est.price;  isEst = true; } }
+      if (!price && p)                { price = bestPrice(p); isEst = false; }
+    }
+
+    if (price > 0) scored.push({ player, variant, displayPrice: price, isEst,
+      totalSales: p?.totalSales || 0, lastSaleDate: p?.lastSaleDate });
+  });
+
+  const top10 = scored.sort((a, b) => b.displayPrice - a.displayPrice).slice(0, 10);
+  if (!top10.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">no data for current mode</div>';
+
+  const modeLabel = estimateMode === 'sales-only' ? 'avg sale price'
+                  : estimateMode === 'model-blend'
+                    ? '<span class="htag-sales">sales</span> · <span class="htag-est">est. fill</span>'
+                  : 'model estimate';
+
+  const cards = top10.map((item, i) => {
+    const rank    = i + 1;
+    const rankCls = rank === 1 ? 'hit-rank-1' : rank === 2 ? 'hit-rank-2' : rank === 3 ? 'hit-rank-3' : '';
+    const src     = _figUrl(setName, item.player, item.variant);
+
+    return `<div class="hit-card">
+      <div class="hit-rank ${rankCls}">#${rank}</div>
+      <div class="hit-img-wrap">
+        <img src="${src}" alt="${item.player}" onerror="this.style.opacity='0'">
+      </div>
+      <div class="hit-info">
+        <div class="hit-price${item.isEst ? ' estimated' : ''}">$${Math.round(item.displayPrice).toLocaleString()}</div>
+        <div class="hit-player">${item.player}</div>
+        <div class="hit-variant">${item.variant}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="hits-panel-header">biggest hits from set
+    <span class="hits-mode-tag">${modeLabel}</span>
+  </div>
+  <div class="hits-strip">${cards}</div>`;
+}
+
+function refreshOpenHits() {
+  document.querySelectorAll('.set-hits-panel.open').forEach(panel => {
+    const idx     = panel.id.replace('hits-panel-', '');
+    const setName = allData.setsData[+idx]?.name;
+    if (setName) panel.innerHTML = buildHitsStrip(setName);
+  });
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
