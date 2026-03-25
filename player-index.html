@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · Player Indexes</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
+<style>
+:root {
+  --bg:      #080808;
+  --s1:      #0f0f0f;
+  --s2:      #161616;
+  --s3:      #1e1e1e;
+  --border:  #222;
+  --border2: #2a2a2a;
+  --accent:  #e8ff47;
+  --text:    #efefef;
+  --muted:   #555;
+  --muted2:  #333;
+  --chrome:  #4fd1ff;
+  --mono:    'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --serif:   'Instrument Serif', serif;
+  --green:   #3ddc84;
+  --red:     #ff4455;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); min-height: 100vh; }
+body { color: var(--text); font-family: var(--mono); font-size: 12px; }
+.page { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* ── Page hero ── */
+.hero {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 48px; flex-wrap: wrap; gap: 20px;
+}
+.hero-left {}
+.eyebrow {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.page-title {
+  font-family: var(--display); font-size: 64px; line-height: 0.9;
+  letter-spacing: 2px; color: var(--text); margin-bottom: 12px;
+}
+.page-title em { color: var(--accent); font-style: normal; }
+.page-tagline {
+  font-family: var(--serif); font-size: 14px; color: var(--muted);
+  font-style: italic; line-height: 1.5;
+}
+
+/* ── Player card grid ── */
+.player-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 36px;
+}
+
+.player-card {
+  background: var(--s1); border: 1px solid var(--border);
+  padding: 28px; cursor: pointer; transition: border-color 0.2s;
+}
+.pc-label {
+  font-size: 8px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.pc-name {
+  font-family: var(--display); font-size: 40px; letter-spacing: 1px;
+  line-height: 1; margin-bottom: 4px;
+}
+.pc-sport {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 20px;
+}
+.pc-value {
+  font-family: var(--display); font-size: 52px; letter-spacing: 1px;
+  line-height: 1; margin-bottom: 4px;
+}
+.pc-change { font-size: 12px; letter-spacing: 0.5px; margin-bottom: 20px; }
+.pc-change.up   { color: var(--green); }
+.pc-change.down { color: var(--red); }
+.pc-change.flat { color: var(--muted); }
+
+/* Sparkline */
+.pc-spark { height: 60px; margin-bottom: 20px; overflow: hidden; }
+.pc-spark svg { width: 100%; height: 100%; display: block; }
+
+.pc-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; border-top: 1px solid var(--border2); padding-top: 16px;
+}
+.pc-stat-label {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 4px;
+}
+.pc-stat-val {
+  font-family: var(--display); font-size: 18px; letter-spacing: 0.5px;
+}
+
+/* ── Comparison chart ── */
+.compare-panel {
+  background: var(--s1); border: 1px solid var(--border);
+  margin-bottom: 36px;
+}
+.panel-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.panel-title {
+  font-family: var(--display); font-size: 13px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+}
+.chart-legend {
+  display: flex; gap: 20px; align-items: center;
+  font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-line { width: 20px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+
+.chart-wrap { padding: 12px 24px 24px; }
+.chart-loading {
+  padding: 56px 0; text-align: center;
+  color: var(--muted); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+}
+.chart-svg { width: 100%; display: none; }
+
+/* Loading dots */
+.loading-dot { animation: blink-dot 1.2s infinite; display: inline-block; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink-dot { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
+
+/* ── Detail section ── */
+.detail-panel { background: var(--s1); border: 1px solid var(--border); }
+
+.detail-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+}
+.d-tab {
+  font-family: var(--display); font-size: 10px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted); padding: 14px 24px;
+  cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.d-tab:hover { color: var(--text); }
+.d-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* Stat strip */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  border-bottom: 1px solid var(--border);
+  background: var(--border); gap: 1px;
+}
+.strip-cell { background: var(--s1); padding: 16px 20px; }
+.strip-label {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.strip-val { font-family: var(--display); font-size: 22px; }
+.strip-val.up   { color: var(--green); }
+.strip-val.down { color: var(--red); }
+.strip-val.neutral { color: var(--text); }
+.strip-sub { font-size: 9px; color: var(--muted); margin-top: 3px; }
+
+/* Components table */
+.comp-table { width: 100%; border-collapse: collapse; }
+.comp-table thead th {
+  font-family: var(--display); font-size: 8px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted);
+  text-align: left; padding: 14px 12px 14px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+.comp-table thead th:hover { color: var(--text); }
+.comp-table thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); }
+.comp-table thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
+.comp-table tbody tr { border-bottom: 1px solid var(--muted2); transition: background 0.1s; }
+.comp-table tbody tr:hover { background: var(--s2); }
+.comp-table td { padding: 10px 12px 10px 0; font-size: 11px; vertical-align: middle; }
+.td-num  { color: var(--muted); font-size: 10px; width: 28px; }
+.td-price { font-family: var(--display); font-size: 18px; }
+.td-set  { font-size: 9px; color: var(--muted); margin-top: 3px; }
+.chg-up   { color: var(--green); }
+.chg-down { color: var(--red); }
+.chg-flat { color: var(--muted); }
+.fresh-badge { font-size: 8px; letter-spacing: 1px; color: var(--green); }
+.stale-badge { font-size: 8px; letter-spacing: 1px; color: var(--red); }
+
+/* Range toggle tabs */
+.range-tabs { display: flex; gap: 4px; }
+.range-tab {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted);
+  background: transparent; border: 1px solid var(--border2);
+  padding: 4px 10px; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+.range-tab:hover { color: var(--text); border-color: var(--muted); }
+.range-tab.active { color: var(--accent); border-color: var(--accent); }
+
+/* Detail chart header */
+.detail-chart-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px 12px; border-bottom: 1px solid var(--border2);
+}
+.detail-chart-label {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+
+/* Hover tooltip */
+.chart-tooltip {
+  position: fixed; pointer-events: none; z-index: 200;
+  background: var(--s2); border: 1px solid var(--border);
+  padding: 10px 14px; min-width: 140px;
+  opacity: 0; transition: opacity 0.1s;
+}
+.chart-tooltip.visible { opacity: 1; }
+.tt-date { font-size: 8px; color: var(--muted); letter-spacing: 1px;
+  text-transform: uppercase; margin-bottom: 6px; }
+.tt-val  { font-family: var(--display); font-size: 22px; }
+.tt-change { font-size: 9px; margin-top: 3px; }
+
+/* Methodology */
+.methodology {
+  font-size: 10px; color: var(--muted); line-height: 1.7;
+  padding: 24px 0; border-top: 1px solid var(--border); margin-top: 32px;
+}
+.methodology strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html" class="active">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="eyebrow">ghostladder market indexes</div>
+      <div class="page-title">Player <em>Indexes</em></div>
+      <div class="page-tagline">
+        Price-weighted performance tracking for individual superstar players —<br>
+        every card, every set, with rare variants carrying more weight than cheap ones.
+      </div>
+    </div>
+  </div>
+
+  <!-- Player cards (top summary) -->
+  <div class="player-grid">
+
+    <div class="player-card" id="card-ohtani" onclick="selectPlayer('ohtani')">
+      <div class="pc-label">ghostladder player index</div>
+      <div class="pc-name" style="color: var(--chrome)">Shohei Ohtani</div>
+      <div class="pc-sport">MLB · All Sets &amp; Variants</div>
+      <div class="pc-value" id="val-ohtani" style="color: var(--chrome)">—</div>
+      <div class="pc-change flat" id="chg-ohtani">loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>
+      <div class="pc-spark"><svg id="spark-ohtani" viewBox="0 0 400 60" preserveAspectRatio="none"></svg></div>
+      <div class="pc-stats">
+        <div>
+          <div class="pc-stat-label">Cards Tracked</div>
+          <div class="pc-stat-val" id="cards-ohtani">—</div>
+        </div>
+        <div>
+          <div class="pc-stat-label">Total Sales</div>
+          <div class="pc-stat-val" id="sales-ohtani">—</div>
+        </div>
+        <div>
+          <div class="pc-stat-label">Last Sale</div>
+          <div class="pc-stat-val" style="font-size:13px" id="updated-ohtani">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-card" id="card-clark" onclick="selectPlayer('clark')">
+      <div class="pc-label">ghostladder player index</div>
+      <div class="pc-name" style="color: var(--accent)">Caitlin Clark</div>
+      <div class="pc-sport">WNBA · All Sets &amp; Variants</div>
+      <div class="pc-value" id="val-clark" style="color: var(--accent)">—</div>
+      <div class="pc-change flat" id="chg-clark">loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>
+      <div class="pc-spark"><svg id="spark-clark" viewBox="0 0 400 60" preserveAspectRatio="none"></svg></div>
+      <div class="pc-stats">
+        <div>
+          <div class="pc-stat-label">Cards Tracked</div>
+          <div class="pc-stat-val" id="cards-clark">—</div>
+        </div>
+        <div>
+          <div class="pc-stat-label">Total Sales</div>
+          <div class="pc-stat-val" id="sales-clark">—</div>
+        </div>
+        <div>
+          <div class="pc-stat-label">Last Sale</div>
+          <div class="pc-stat-val" style="font-size:13px" id="updated-clark">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Detail section -->
+  <div class="detail-panel">
+    <div class="detail-tabs">
+      <div class="d-tab active" id="tab-ohtani" onclick="selectPlayer('ohtani')">Shohei Ohtani</div>
+      <div class="d-tab"         id="tab-clark"  onclick="selectPlayer('clark')">Caitlin Clark</div>
+    </div>
+
+    <div class="stat-strip">
+      <div class="strip-cell">
+        <div class="strip-label" id="stat-high-label">Period high</div>
+        <div class="strip-val neutral" id="stat-high">—</div>
+        <div class="strip-sub" id="stat-high-date">—</div>
+      </div>
+      <div class="strip-cell">
+        <div class="strip-label" id="stat-low-label">Period low</div>
+        <div class="strip-val neutral" id="stat-low">—</div>
+        <div class="strip-sub" id="stat-low-date">—</div>
+      </div>
+      <div class="strip-cell">
+        <div class="strip-label" id="stat-inception-label">Period change</div>
+        <div class="strip-val" id="stat-inception">—</div>
+        <div class="strip-sub" id="stat-inception-sub">—</div>
+      </div>
+      <div class="strip-cell">
+        <div class="strip-label">Cards tracked</div>
+        <div class="strip-val neutral" id="stat-cards">—</div>
+        <div class="strip-sub" id="stat-stale">—</div>
+      </div>
+      <div class="strip-cell">
+        <div class="strip-label">Total sales</div>
+        <div class="strip-val neutral" id="stat-total-sales">—</div>
+        <div class="strip-sub" id="stat-total-sales-sub">all-time</div>
+      </div>
+    </div>
+
+    <!-- Detail chart -->
+    <div class="detail-chart-header">
+      <div class="detail-chart-label" id="detail-period-label">index value · all-time · normalized to 1,000</div>
+      <div class="range-tabs">
+        <button class="range-tab active" data-range="all" onclick="setDetailRange('all')">All-time</button>
+        <button class="range-tab" data-range="90"  onclick="setDetailRange('90')">90D</button>
+        <button class="range-tab" data-range="30"  onclick="setDetailRange('30')">30D</button>
+      </div>
+    </div>
+    <div class="chart-wrap" style="padding: 16px 24px 24px; border-bottom: 1px solid var(--border); position:relative">
+      <div class="chart-loading" id="detail-loading">
+        loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+      </div>
+      <svg class="chart-svg" id="detail-svg" viewBox="0 0 900 220" style="overflow:visible"></svg>
+    </div>
+
+    <!-- Components table -->
+    <div style="padding: 0 0 0 0;">
+      <div id="table-wrap" style="padding: 0 24px 32px">
+        <div class="chart-loading">loading cards<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison chart -->
+  <div class="compare-panel" style="margin-top: 36px;">
+    <div class="panel-header">
+      <div class="panel-title">Performance comparison · normalized to 1,000 at first sale</div>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <div class="legend-line" style="background: var(--chrome)"></div>
+          Shohei Ohtani
+        </div>
+        <div class="legend-item">
+          <div class="legend-line" style="background: var(--accent)"></div>
+          Caitlin Clark
+        </div>
+        <div class="legend-item">
+          <div class="legend-line" style="background: var(--muted2); border-top: 1px dashed var(--muted2)"></div>
+          1,000 baseline
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-loading" id="compare-loading">
+        loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+      </div>
+      <svg class="chart-svg" id="compare-svg" viewBox="0 0 900 260"></svg>
+    </div>
+  </div>
+
+  <!-- Hover tooltip (shared by detail chart) -->
+  <div class="chart-tooltip" id="pi-tooltip">
+    <div class="tt-date"  id="pi-tt-date">—</div>
+    <div class="tt-val"   id="pi-tt-val" style="color:var(--accent)">—</div>
+    <div class="tt-change" id="pi-tt-change">—</div>
+  </div>
+
+  <div class="methodology">
+    <strong>Methodology:</strong>
+    Each player index tracks all ghostwrite figures for that player across every active set and variant tier.
+    The index uses a <strong>price-weighted chained-return methodology</strong> — normalized to
+    <strong>1,000</strong> at the date of the player's first recorded sale.
+    Each card's influence is proportional to the <strong>square root of its price</strong>: a Fire at $10,000
+    moves the index more than a Base at $80, but no single card dominates entirely. This reflects the reality
+    that rare, high-value variants are stronger signals of a player's market health than high-volume cheap ones.
+    New cards enter after a <em>warm-up period</em> (averaged over their first few sales) to prevent a single
+    outlier sale from anchoring the baseline.
+    Cards with no sale in the past <strong>180 days</strong> are excluded from return calculations.
+    A card is flagged <strong>stale</strong> in the table when its last sale is older than 60 days.
+    All prices sourced from verified eBay completed sales.
+  </div>
+
+</div>
+
+<script>
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H   = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+
+// ── Player config ─────────────────────────────────────────────────────────────
+const PLAYERS = {
+  clark:  { name: 'Caitlin Clark',  sport: 'WNBA', color: '#e8ff47' },
+  ohtani: { name: 'Shohei Ohtani', sport: 'MLB',  color: '#4fd1ff' },
+};
+
+let indexData    = {};   // { clark: { timeline, components, inceptionDate }, ohtani: {...} }
+let setNameMap   = {};   // set_id → set_name
+let detailRange  = 'all'; // active range for the detail chart
+let activePlayer = 'ohtani';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function parseDate(s) {
+  if (!s) return null;
+  const d = new Date(String(s).substring(0, 10) + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
+function fmt$(v) {
+  if (!v && v !== 0) return '—';
+  return '$' + Math.round(v).toLocaleString();
+}
+function daysSince(d) {
+  if (!d) return 9999;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+function fmtPct(v) {
+  if (v == null) return '—';
+  return (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+}
+function variantClass(v) {
+  const m = { fire:'vb-fire', chrome:'vb-chrome', gold:'vb-gold',
+              emerald:'vb-emerald', victory:'vb-victory', base:'vb-base',
+              sapphire:'vb-sapphire' };
+  return m[(v || '').toLowerCase()] || 'vb-base';
+}
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
+async function fetchAll(url) {
+  const PAGE = 1000;
+  const hdrs = { ...SB_H, 'Prefer': 'count=exact' };
+  const first = await fetch(`${url}&limit=${PAGE}&offset=0`, { headers: hdrs });
+  if (!first.ok) throw new Error(`fetch: ${first.status}`);
+  const total = parseInt((first.headers.get('content-range') || '').split('/')[1] || '0');
+  const all   = await first.json();
+  const pages = Math.ceil(total / PAGE);
+  for (let p = 1; p < pages; p++) {
+    const r = await fetch(`${url}&limit=${PAGE}&offset=${p * PAGE}`, { headers: hdrs });
+    if (!r.ok) break;
+    all.push(...await r.json());
+  }
+  return all;
+}
+
+async function fetchPlayerSales(playerName) {
+  const url = `${SB_URL}/rest/v1/sales?select=set_id,variant,price,date`
+    + `&player=eq.${encodeURIComponent(playerName)}`
+    + `&or=(status.neq.invalid,status.is.null)&flagged=neq.true`
+    + `&order=date.asc`;
+  return fetchAll(url);
+}
+
+async function fetchSets() {
+  const r = await fetch(
+    `${SB_URL}/rest/v1/sets?select=id,name&order=name.asc`,
+    { headers: SB_H }
+  );
+  if (!r.ok) return;
+  const rows = await r.json();
+  rows.forEach(s => { setNameMap[s.id] = s.name; });
+}
+
+// ── Index computation ─────────────────────────────────────────────────────────
+function computePlayerIndex(allSales) {
+  if (!allSales.length) return { timeline: [], components: [], inceptionDate: null };
+
+  // Group by set_id + variant = a unique "card"
+  const byCard = {};
+  for (const s of allSales) {
+    const k = `${s.set_id}|||${s.variant}`;
+    if (!byCard[k]) byCard[k] = { set_id: s.set_id, variant: s.variant, sales: [] };
+    const d = parseDate(s.date);
+    if (d) byCard[k].sales.push({ date: d, price: +s.price });
+  }
+
+  // Per-card: daily averages sorted by date
+  const cardHistory = {};
+  for (const [k, card] of Object.entries(byCard)) {
+    const byDay = {};
+    for (const r of card.sales) {
+      const dk = r.date.toISOString().substring(0, 10);
+      if (!byDay[dk]) byDay[dk] = [];
+      byDay[dk].push(r.price);
+    }
+    cardHistory[k] = Object.entries(byDay)
+      .map(([dk, prices]) => ({
+        date:  parseDate(dk),
+        price: prices.reduce((a, b) => a + b, 0) / prices.length,
+      }))
+      .sort((a, b) => a.date - b.date);
+  }
+
+  // All unique sale dates across all cards
+  const allDates = new Set();
+  for (const rows of Object.values(cardHistory))
+    for (const r of rows) allDates.add(r.date.toISOString().substring(0, 10));
+  const sortedDates = [...allDates].sort();
+  if (!sortedDates.length) return { timeline: [], components: [], inceptionDate: null };
+
+  const inceptionDateStr = sortedDates[0];
+
+  // ── Warm-up: average the first N sales before a card enters the index.
+  // Prevents a single outlier first sale (e.g. a raw Base at $7 when the
+  // true market is ~$30) from permanently anchoring the baseline.
+  // Soft floor: if a card has fewer than N total sales, average all of them
+  // so low-volume cards still graduate and contribute.
+  const WARMUP_N = { base: 5, victory: 2 };
+  const warmupFor = v => WARMUP_N[(v || '').toLowerCase()] || 1;
+
+  const cardGraduation = {}; // k → { price: warmup avg, dateStr: date of Nth sale }
+  for (const [k, card] of Object.entries(byCard)) {
+    const hist = cardHistory[k] || [];
+    if (!hist.length) continue;
+    const slice = hist.slice(0, warmupFor(card.variant));
+    cardGraduation[k] = {
+      price:   slice.reduce((s, r) => s + r.price, 0) / slice.length,
+      dateStr: slice[slice.length - 1].date.toISOString().substring(0, 10),
+    };
+  }
+
+  // Chained-return index
+  const lastPrice = {};
+  const timeline  = [];
+  let   indexValue = 1000;
+  const prevSnap   = {};   // only contains graduated cards
+  const graduated  = new Set();
+
+  for (const dk of sortedDates) {
+    // Update lastPrice with today's sales (carry-forward for non-selling days)
+    for (const [k, rows] of Object.entries(cardHistory)) {
+      const row = rows.find(r => r.date.toISOString().substring(0, 10) === dk);
+      if (row) lastPrice[k] = row.price;
+    }
+
+    // Equal-weighted chained return across already-graduated cards.
+    // Equal-weighting: each card contributes its *percentage return* equally,
+    // regardless of absolute price. A 10% drop in Fire counts the same as a
+    // 10% drop in Base.
+    // Staleness cutoff: cards whose last sale is >180 days before the current
+    // date are excluded to avoid deadweight from inactive cards.
+    const STALE_MS = 180 * 86400000;
+    const dCurrent = parseDate(dk).getTime();
+    const contKeys = [...graduated].filter(k => {
+      if (!(k in lastPrice) || !(k in prevSnap)) return false;
+      const hist     = cardHistory[k] || [];
+      const lastSale = hist.length ? hist[hist.length - 1].date.getTime() : 0;
+      return (dCurrent - lastSale) <= STALE_MS;
+    });
+    if (contKeys.length > 0) {
+      // √price-weighted geometric mean.
+      // Weight each card by √(last known price) so expensive/rare cards
+      // (Fire, Chrome) influence the index more than cheap ones (Base),
+      // without letting a single high-value sale dominate entirely.
+      const totalW       = contKeys.reduce((s, k) => s + Math.sqrt(prevSnap[k]), 0);
+      const avgLogReturn = contKeys.reduce((s, k) =>
+        s + (Math.sqrt(prevSnap[k]) / totalW) * Math.log(lastPrice[k] / prevSnap[k]), 0);
+      indexValue = indexValue * Math.exp(avgLogReturn);
+    }
+
+    // Advance prevSnap for graduated cards so next day's return is vs today
+    for (const k of graduated) {
+      if (k in lastPrice) prevSnap[k] = lastPrice[k];
+    }
+
+    // Graduate cards that have now accumulated enough warm-up sales.
+    // Entry is at the warm-up average price — not current market price —
+    // so the card enters at a neutral 1× and only future moves affect the index.
+    for (const [k, grad] of Object.entries(cardGraduation)) {
+      if (!graduated.has(k) && grad.dateStr <= dk) {
+        prevSnap[k] = grad.price;
+        graduated.add(k);
+      }
+    }
+
+    timeline.push({ date: parseDate(dk), value: indexValue });
+  }
+
+  // Per-card stats for the components table
+  const _now  = Date.now();
+  const _c30  = new Date(_now - 30 * 86400000);
+  const _c90  = new Date(_now - 90 * 86400000);
+
+  const components = Object.entries(byCard).map(([k, card]) => {
+    const hist     = cardHistory[k] || [];
+    const lastSale = hist.length ? hist[hist.length - 1] : null;
+    // "vs inception" = last price vs the warm-up average (graduation price),
+    // so it reflects performance since the card's smoothed entry baseline.
+    const grad     = cardGraduation[k];
+    const inc      = grad ? grad.price : null;
+    const n        = warmupFor(card.variant);
+    const changePct = (inc && lastSale && inc > 0 && hist.length > n)
+      ? ((lastSale.price - inc) / inc) * 100 : null;
+
+    const recent  = hist.filter(r => r.date > _c30);
+    const base30  = hist.filter(r => r.date <= _c30 && r.date >= _c90);
+    const rPrice  = recent.length  ? recent[recent.length - 1].price  : null;
+    const bPrice  = base30.length  ? base30[base30.length - 1].price  : null;
+    const chg30d  = (rPrice && bPrice) ? ((rPrice - bPrice) / bPrice) * 100 : null;
+
+    return {
+      set_id:     card.set_id,
+      set_name:   setNameMap[card.set_id] || card.set_id,
+      variant:    card.variant,
+      last_price: lastSale ? lastSale.price : null,
+      last_date:  lastSale ? lastSale.date  : null,
+      inc_price:  inc,
+      change_pct: changePct,
+      change_30d: chg30d,
+      sale_count: hist.length,
+      is_stale:   !lastSale || daysSince(lastSale.date) > 60,
+    };
+  }).sort((a, b) => (b.last_price || 0) - (a.last_price || 0));
+
+  return { timeline, components, inceptionDate: parseDate(inceptionDateStr) };
+}
+
+// ── Rolling average ───────────────────────────────────────────────────────────
+function rolling(timeline, days) {
+  const ms = days * 86400000;
+  return timeline.map((t, i) => {
+    const cut = t.date.getTime() - ms;
+    let sum = 0, n = 0;
+    for (let j = i; j >= 0 && timeline[j].date.getTime() >= cut; j--) {
+      sum += timeline[j].value; n++;
+    }
+    return { date: t.date, value: n ? sum / n : t.value };
+  });
+}
+
+// ── SVG helpers ───────────────────────────────────────────────────────────────
+function makePath(pts) {
+  if (!pts.length) return '';
+  return 'M ' + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L ');
+}
+
+// ── Sparkline ─────────────────────────────────────────────────────────────────
+function renderSparkline(svgId, timeline, color) {
+  const svg = document.getElementById(svgId);
+  if (!svg || timeline.length < 2) return;
+  const ma   = rolling(timeline, 14);
+  const vals = ma.map(t => t.value);
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const W = 400, H = 60, pad = 4;
+  const range = maxV - minV || 1;
+  const pts = ma.map((t, i) => [
+    pad + (i / (ma.length - 1)) * (W - 2 * pad),
+    H - pad - ((t.value - minV) / range) * (H - 2 * pad),
+  ]);
+  const lastPt = pts[pts.length - 1];
+  svg.innerHTML = `
+    <polyline points="${pts.map(p => p.join(',')).join(' ')}"
+      fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" opacity="0.9"/>
+    <circle cx="${lastPt[0].toFixed(1)}" cy="${lastPt[1].toFixed(1)}" r="3" fill="${color}"/>
+  `;
+}
+
+// ── Comparison chart ──────────────────────────────────────────────────────────
+function renderComparisonChart() {
+  const loading = document.getElementById('compare-loading');
+  const svg     = document.getElementById('compare-svg');
+
+  const timelines = {
+    clark:  (indexData.clark  || {}).timeline || [],
+    ohtani: (indexData.ohtani || {}).timeline || [],
+  };
+  const validTLs = Object.values(timelines).filter(t => t.length >= 2);
+  if (!validTLs.length) return;
+
+  loading.style.display = 'none';
+  svg.style.display     = 'block';
+
+  const W = 900, H = 260;
+  const PAD = { top: 20, right: 24, bottom: 36, left: 54 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top  - PAD.bottom;
+
+  const allDates  = validTLs.flatMap(t => t.map(p => p.date));
+  const allValues = validTLs.flatMap(t => t.map(p => p.value));
+  const minD = Math.min(...allDates.map(d => d.getTime()));
+  const maxD = Math.max(...allDates.map(d => d.getTime()));
+  const minV = Math.min(...allValues, 1000) * 0.96;
+  const maxV = Math.max(...allValues, 1000) * 1.04;
+
+  const xS = d => PAD.left + ((d.getTime() - minD) / (maxD - minD || 1)) * cW;
+  const yS = v => PAD.top  + (1 - (v - minV) / (maxV - minV || 1)) * cH;
+
+  // Grid
+  let g = '';
+  for (let i = 0; i <= 5; i++) {
+    const v = minV + (maxV - minV) * (i / 5);
+    const y = yS(v).toFixed(1);
+    g += `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="#181818" stroke-width="1"/>`;
+    g += `<text x="${PAD.left - 6}" y="${(+y + 4).toFixed(1)}" fill="#444" font-size="9" font-family="DM Mono,monospace" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  // Baseline
+  const bY = yS(1000).toFixed(1);
+  g += `<line x1="${PAD.left}" y1="${bY}" x2="${W - PAD.right}" y2="${bY}" stroke="#2a2a2a" stroke-width="1" stroke-dasharray="4,3"/>`;
+  // X labels
+  const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  for (let i = 0; i <= 6; i++) {
+    const t = new Date(minD + (maxD - minD) * (i / 6));
+    const x = (PAD.left + ((t.getTime() - minD) / (maxD - minD || 1)) * cW).toFixed(1);
+    g += `<text x="${x}" y="${H - PAD.bottom + 18}" fill="#444" font-size="9" font-family="DM Mono,monospace" text-anchor="middle">${mos[t.getMonth()]} '${String(t.getFullYear()).slice(2)}</text>`;
+  }
+
+  // Lines (14-day rolling)
+  const lineFor = (tl, color) => {
+    if (tl.length < 2) return '';
+    const ma = rolling(tl, 14);
+    const pts = ma.map(t => [xS(t.date), yS(t.value)]);
+    return `<path d="${makePath(pts)}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+  };
+
+  svg.innerHTML = g
+    + lineFor(timelines.clark,  '#e8ff47')
+    + lineFor(timelines.ohtani, '#4fd1ff');
+}
+
+// ── Detail chart range helper ─────────────────────────────────────────────────
+function getDetailTimeline(playerId) {
+  const full = (indexData[playerId] || {}).timeline || [];
+  if (detailRange === 'all' || full.length < 2) return full;
+  const days   = detailRange === '30' ? 30 : 90;
+  const cutoff = new Date(Date.now() - days * 86400000);
+  const sliced = full.filter(t => t.date >= cutoff);
+  return sliced.length >= 2 ? sliced : full;
+}
+
+function setDetailRange(range) {
+  detailRange = range;
+  document.querySelectorAll('.range-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.range === range)
+  );
+  const periodLabel = range === 'all' ? 'all-time · normalized to 1,000'
+    : range === '90' ? 'past 90 days · normalized to 1,000'
+    : 'past 30 days · normalized to 1,000';
+  document.getElementById('detail-period-label').textContent = `index value · ${periodLabel}`;
+  if (indexData[activePlayer]) {
+    renderStatStrip(activePlayer);
+    renderDetailChart(activePlayer);
+  }
+}
+
+// ── Detail chart ──────────────────────────────────────────────────────────────
+function renderDetailChart(playerId) {
+  const data    = indexData[playerId];
+  const cfg     = PLAYERS[playerId];
+  const loading = document.getElementById('detail-loading');
+  const svg     = document.getElementById('detail-svg');
+
+  const tl = getDetailTimeline(playerId);
+  if (!data || tl.length < 2) {
+    loading.textContent = 'Not enough data';
+    return;
+  }
+
+  loading.style.display = 'none';
+  svg.style.display     = 'block';
+
+  const W = 900, H = 220;
+  const PAD = { top: 16, right: 24, bottom: 36, left: 54 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top  - PAD.bottom;
+
+  const ma    = rolling(tl, 30);
+  const allV  = [...tl.map(t => t.value), ...ma.map(t => t.value)];
+  const minV  = Math.min(...allV, tl[0].value) * 0.96;
+  const maxV  = Math.max(...allV, tl[0].value) * 1.04;
+  const dates = tl.map(t => t.date);
+  const minD  = dates[0].getTime();
+  const maxD  = dates[dates.length - 1].getTime();
+
+  const xS = d => PAD.left + ((d.getTime() - minD) / (maxD - minD || 1)) * cW;
+  const yS = v => PAD.top  + (1 - (v - minV) / (maxV - minV || 1)) * cH;
+
+  const rawPts = tl.map(t => [xS(t.date), yS(t.value)]);
+  const maPts  = ma.map(t => [xS(t.date), yS(t.value)]);
+
+  // Area fill
+  const maF = maPts[0], maL = maPts[maPts.length - 1];
+  const areaD = makePath(maPts)
+    + ` L ${maL[0].toFixed(1)},${(H - PAD.bottom).toFixed(1)}`
+    + ` L ${maF[0].toFixed(1)},${(H - PAD.bottom).toFixed(1)} Z`;
+
+  // Grid
+  let g = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = minV + (maxV - minV) * (i / 4);
+    const y = yS(v).toFixed(1);
+    g += `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="#181818" stroke-width="1"/>`;
+    g += `<text x="${PAD.left - 6}" y="${(+y + 4).toFixed(1)}" fill="#444" font-size="9" font-family="DM Mono,monospace" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  const bY = yS(tl[0].value).toFixed(1);
+  g += `<line x1="${PAD.left}" y1="${bY}" x2="${W - PAD.right}" y2="${bY}" stroke="#2a2a2a" stroke-width="1" stroke-dasharray="4,3"/>`;
+  const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  for (let i = 0; i <= 5; i++) {
+    const t = new Date(minD + (maxD - minD) * (i / 5));
+    const x = (PAD.left + ((t.getTime() - minD) / (maxD - minD || 1)) * cW).toFixed(1);
+    g += `<text x="${x}" y="${H - PAD.bottom + 18}" fill="#444" font-size="9" font-family="DM Mono,monospace" text-anchor="middle">${mos[t.getMonth()]} '${String(t.getFullYear()).slice(2)}</text>`;
+  }
+
+  const color  = cfg.color;
+  const gradId = `grad-${playerId}`;
+  // Crosshair elements appended programmatically after innerHTML so they survive re-render
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="${color}" stop-opacity="0.10"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${g}
+    <path d="${areaD}" fill="url(#${gradId})"/>
+    <path d="${makePath(rawPts)}" fill="none" stroke="${color}" stroke-width="1" opacity="0.2" stroke-linejoin="round"/>
+    <path d="${makePath(maPts)}"  fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+    <g id="pi-crosshair" style="display:none;pointer-events:none">
+      <line id="pi-ch-v" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"
+            y1="${PAD.top}" y2="${PAD.top + cH}"/>
+      <circle id="pi-ch-dot" r="4" fill="${color}" stroke="#080808" stroke-width="2"/>
+    </g>
+    <rect id="pi-hit-area" x="${PAD.left}" y="${PAD.top}" width="${cW}" height="${cH}"
+          fill="transparent" style="cursor:crosshair"/>
+  `;
+
+  // Store scale data on svg for hover handler
+  svg._piData = { tl, rawPts, xS, yS, PAD, cH, W, windowStart: tl[0].value };
+
+  // Wire hover
+  const hitArea = document.getElementById('pi-hit-area');
+  const ch      = document.getElementById('pi-crosshair');
+  const chV     = document.getElementById('pi-ch-v');
+  const chDot   = document.getElementById('pi-ch-dot');
+  const tt      = document.getElementById('pi-tooltip');
+
+  hitArea.addEventListener('mousemove', e => {
+    const rect   = svg.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const mx     = (e.clientX - rect.left) * scaleX;
+
+    let nearest = null, minDist = Infinity;
+    for (const pt of rawPts) {
+      const d = Math.abs(pt[0] - mx);
+      if (d < minDist) { minDist = d; nearest = pt; }
+    }
+    if (!nearest) return;
+    const idx = rawPts.indexOf(nearest);
+    const t   = tl[idx];
+
+    ch.style.display = '';
+    chV.setAttribute('x1', nearest[0]); chV.setAttribute('x2', nearest[0]);
+    chV.setAttribute('y1', PAD.top);    chV.setAttribute('y2', PAD.top + cH);
+    chDot.setAttribute('cx', nearest[0]); chDot.setAttribute('cy', nearest[1]);
+
+    const windowStart = svg._piData.windowStart;
+    const chg = ((t.value - windowStart) / windowStart) * 100;
+    document.getElementById('pi-tt-date').textContent   = fmtDate(t.date);
+    document.getElementById('pi-tt-val').textContent    = t.value.toFixed(1);
+    document.getElementById('pi-tt-val').style.color    = color;
+    const ttC = document.getElementById('pi-tt-change');
+    ttC.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%'
+      + (detailRange === 'all' ? ' from inception' : ` past ${detailRange}D`);
+    ttC.style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
+
+    tt.classList.add('visible');
+    tt.style.left = Math.min(e.clientX + 16, window.innerWidth - 180) + 'px';
+    tt.style.top  = Math.max(e.clientY - 60, 10) + 'px';
+  });
+
+  hitArea.addEventListener('mouseleave', () => {
+    ch.style.display = 'none';
+    tt.classList.remove('visible');
+  });
+}
+
+// ── Player card summary ───────────────────────────────────────────────────────
+function renderPlayerCard(playerId) {
+  const data = indexData[playerId];
+  const cfg  = PLAYERS[playerId];
+  if (!data || !data.timeline.length) return;
+
+  const tl       = data.timeline;
+  const current  = tl[tl.length - 1];
+  const totalChg = ((current.value - 1000) / 1000) * 100;
+  const lastDates = data.components.map(c => c.last_date).filter(Boolean);
+  const lastDate  = lastDates.length
+    ? new Date(Math.max(...lastDates.map(d => d.getTime()))) : null;
+  const totalSales = data.components.reduce((s, c) => s + c.sale_count, 0);
+
+  document.getElementById(`val-${playerId}`).textContent = current.value.toFixed(1);
+
+  const chgEl = document.getElementById(`chg-${playerId}`);
+  chgEl.textContent = fmtPct(totalChg) + ' since first sale';
+  chgEl.className   = 'pc-change ' + (totalChg > 0 ? 'up' : totalChg < 0 ? 'down' : 'flat');
+
+  document.getElementById(`cards-${playerId}`).textContent   = data.components.length;
+  document.getElementById(`sales-${playerId}`).textContent   = totalSales;
+  document.getElementById(`updated-${playerId}`).textContent = fmtDate(lastDate);
+
+  renderSparkline(`spark-${playerId}`, tl, cfg.color);
+}
+
+// ── Stat strip ────────────────────────────────────────────────────────────────
+function renderStatStrip(playerId) {
+  const data = indexData[playerId];
+  if (!data || !data.timeline.length) return;
+
+  // Use windowed timeline so stats reflect the active range toggle
+  const tl      = getDetailTimeline(playerId);
+  const vals    = tl.map(t => t.value);
+  const high    = Math.max(...vals);
+  const low     = Math.min(...vals);
+  const highPt  = tl.find(t => t.value === high);
+  const lowPt   = tl.find(t => t.value === low);
+  const current = tl[tl.length - 1];
+  const windowStart = tl[0].value;
+  const chg     = ((current.value - windowStart) / windowStart) * 100;
+  const staleCnt = data.components.filter(c => c.is_stale).length;
+  const totalSales = data.components.reduce((s, c) => s + c.sale_count, 0);
+
+  // Dynamic labels based on active range
+  const isAll = detailRange === 'all';
+  document.getElementById('stat-high-label').textContent      = isAll ? 'All-time high' : 'Period high';
+  document.getElementById('stat-low-label').textContent       = isAll ? 'All-time low'  : 'Period low';
+  document.getElementById('stat-inception-label').textContent = isAll ? 'Since first sale' : `Past ${detailRange}D`;
+
+  document.getElementById('stat-high').textContent      = high.toFixed(1);
+  document.getElementById('stat-high-date').textContent = fmtDate(highPt?.date);
+  document.getElementById('stat-low').textContent       = low.toFixed(1);
+  document.getElementById('stat-low-date').textContent  = fmtDate(lowPt?.date);
+
+  const incEl = document.getElementById('stat-inception');
+  incEl.textContent = fmtPct(chg);
+  incEl.className   = 'strip-val ' + (chg > 0 ? 'up' : chg < 0 ? 'down' : 'neutral');
+  document.getElementById('stat-inception-sub').textContent = isAll
+    ? 'since ' + fmtDate(data.inceptionDate)
+    : 'from ' + fmtDate(tl[0].date);
+
+  document.getElementById('stat-cards').textContent = data.components.length;
+  document.getElementById('stat-stale').textContent = `${staleCnt} stale (>60d)`;
+
+  document.getElementById('stat-total-sales').textContent = totalSales.toLocaleString();
+}
+
+// ── Components table ──────────────────────────────────────────────────────────
+function renderTable(playerId) {
+  const data = indexData[playerId];
+  const cfg  = PLAYERS[playerId];
+  if (!data) return;
+
+  const fmtChg = v => {
+    if (v == null) return '<span style="color:var(--muted)">—</span>';
+    const s   = (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+    const cls = v > 1 ? 'chg-up' : v < -1 ? 'chg-down' : 'chg-flat';
+    return `<span class="${cls}">${s}</span>`;
+  };
+
+  const rows = data.components.map((c, i) => `
+    <tr>
+      <td class="td-num">${i + 1}</td>
+      <td>
+        <span class="v-tag ${variantClass(c.variant)}">${c.variant}</span>
+        <div class="td-set">${c.set_name}</div>
+      </td>
+      <td class="td-price" style="color:${cfg.color}">${fmt$(c.last_price)}</td>
+      <td>${fmtChg(c.change_pct)}</td>
+      <td>${fmtChg(c.change_30d)}</td>
+      <td style="color:var(--muted)">${c.sale_count}</td>
+      <td style="color:var(--muted)">${fmtDate(c.last_date)}</td>
+      <td>${c.is_stale
+        ? '<span class="stale-badge">● stale</span>'
+        : '<span class="fresh-badge">● fresh</span>'}</td>
+    </tr>`).join('');
+
+  document.getElementById('table-wrap').innerHTML = `
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th class="td-num">#</th>
+          <th>Variant · Set</th>
+          <th>Last Sale</th>
+          <th>vs Inception</th>
+          <th>30D</th>
+          <th>Sales</th>
+          <th>Last Sold</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows || '<tr><td colspan="8" style="color:var(--muted);padding:24px 0;text-align:center">no sales data</td></tr>'}
+      </tbody>
+    </table>`;
+}
+
+// ── Player selection ──────────────────────────────────────────────────────────
+function selectPlayer(playerId) {
+  activePlayer = playerId;
+
+  // Card borders
+  Object.keys(PLAYERS).forEach(id => {
+    document.getElementById(`card-${id}`).style.borderColor =
+      id === playerId ? PLAYERS[id].color : 'var(--border)';
+  });
+
+  // Tabs
+  document.getElementById('tab-clark').className  = 'd-tab' + (playerId === 'clark'  ? ' active' : '');
+  document.getElementById('tab-ohtani').className = 'd-tab' + (playerId === 'ohtani' ? ' active' : '');
+
+  // Reset detail chart
+  document.getElementById('detail-svg').style.display     = 'none';
+  document.getElementById('detail-loading').style.display = 'block';
+  document.getElementById('detail-loading').textContent   = 'loading...';
+
+  if (indexData[playerId]) {
+    renderStatStrip(playerId);
+    renderDetailChart(playerId);
+    renderTable(playerId);
+  }
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+async function main() {
+  try {
+    // Fetch sets for name mapping + both players' sales in parallel
+    const [, clarkSales, ohtaniSales] = await Promise.all([
+      fetchSets(),
+      fetchPlayerSales('Caitlin Clark'),
+      fetchPlayerSales('Shohei Ohtani'),
+    ]);
+
+    indexData.clark  = computePlayerIndex(clarkSales);
+    indexData.ohtani = computePlayerIndex(ohtaniSales);
+
+    // Render player summary cards
+    renderPlayerCard('clark');
+    renderPlayerCard('ohtani');
+
+    // Comparison chart
+    renderComparisonChart();
+
+    // Default: Ohtani detail view
+    document.getElementById('card-ohtani').style.borderColor = PLAYERS.ohtani.color;
+    document.getElementById('card-clark').style.borderColor  = 'var(--border)';
+    activePlayer = 'ohtani';
+    renderStatStrip('ohtani');
+    renderDetailChart('ohtani');
+    renderTable('ohtani');
+
+  } catch (err) {
+    console.error('Player Index error:', err);
+    ['compare-loading', 'detail-loading'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = 'Failed to load data';
+    });
+  }
+}
+
+main();
+</script>
+</body>
+</html>
