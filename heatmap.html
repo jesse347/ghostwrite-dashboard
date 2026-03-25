@@ -674,6 +674,10 @@ function renderHeatmap() {
   const prodVariants  = [...new Set(setProducts.map(p => p.variant).filter(Boolean))];
   const allVariantSet = [...new Set([...mathVariants, ...prodVariants])];
   const knownVariants = VARIANT_ORDER.filter(v => allVariantSet.includes(v));
+  // Sort by total population ascending (lowest pop = rarest first)
+  const popByVariant = {};
+  mathRows.forEach(r => { if (r.variant) popByVariant[r.variant] = (popByVariant[r.variant] || 0) + (r.population || 0); });
+  knownVariants.sort((a, b) => (popByVariant[a] || 0) - (popByVariant[b] || 0));
   const extraVariants = allVariantSet.filter(v => !VARIANT_ORDER.includes(v));
   const spIdx = knownVariants.indexOf('SP');
   const variants = spIdx >= 0

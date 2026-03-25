@@ -227,6 +227,44 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   padding: 24px 0; border-top: 1px solid var(--border); margin-top: 32px;
 }
 .methodology strong { color: var(--text); }
+
+/* ── Base price scatter cards ── */
+.base-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-top: 36px;
+}
+.base-card {
+  background: var(--s1); border: 1px solid var(--border);
+  padding: 0;
+}
+.base-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px 12px; border-bottom: 1px solid var(--border2);
+}
+.base-card-title {
+  font-family: var(--display); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+}
+.base-card-player {
+  font-family: var(--display); font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-left: 8px;
+}
+.base-chart-wrap { padding: 12px 20px 8px; position: relative; }
+.base-chart-wrap svg { width: 100%; display: block; }
+.base-stat-row {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 10px 24px 16px; border-top: 1px solid var(--border2);
+}
+.base-stat-label {
+  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted);
+}
+.base-stat-val {
+  font-family: var(--display); font-size: 20px; letter-spacing: 0.5px;
+}
+.base-stat-sub {
+  font-size: 9px; color: var(--muted); margin-left: 4px;
+}
 </style>
 </head>
 <body>
@@ -257,8 +295,8 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
       <div class="eyebrow">ghostladder market indexes</div>
       <div class="page-title">Player <em>Indexes</em></div>
       <div class="page-tagline">
-        Price-weighted performance tracking for individual superstar players —<br>
-        every card, every set, with rare variants carrying more weight than cheap ones.
+        Equal-weighted performance tracking for individual superstar players —<br>
+        every card, every set, every variant contributing equally.
       </div>
     </div>
   </div>
@@ -410,16 +448,76 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   <div class="methodology">
     <strong>Methodology:</strong>
     Each player index tracks all ghostwrite figures for that player across every active set and variant tier.
-    The index uses a <strong>price-weighted chained-return methodology</strong> — normalized to
+    The index uses an <strong>equal-weighted chained-return methodology</strong> — normalized to
     <strong>1,000</strong> at the date of the player's first recorded sale.
-    Each card's influence is proportional to the <strong>square root of its price</strong>: a Fire at $10,000
-    moves the index more than a Base at $80, but no single card dominates entirely. This reflects the reality
-    that rare, high-value variants are stronger signals of a player's market health than high-volume cheap ones.
+    Every card contributes its percentage return equally: a 10% move in a Fire counts the same as a 10% move
+    in a Base. This treats each card as an equal signal of a player's market direction regardless of absolute price.
     New cards enter after a <em>warm-up period</em> (averaged over their first few sales) to prevent a single
     outlier sale from anchoring the baseline.
     Cards with no sale in the past <strong>180 days</strong> are excluded from return calculations.
     A card is flagged <strong>stale</strong> in the table when its last sale is older than 60 days.
     All prices sourced from verified eBay completed sales.
+  </div>
+
+  <div style="border-top: 1px solid var(--border); margin-top: 32px; padding-top: 28px;">
+    <div style="font-family: var(--display); font-size: 32px; letter-spacing: 2px; color: var(--text);">BASE ONLY</div>
+  </div>
+
+  <!-- Base Price Scatter Cards -->
+  <div class="base-grid">
+
+    <div class="base-card" id="base-card-ohtani">
+      <div class="base-card-header">
+        <div style="display:flex;align-items:baseline">
+          <span class="base-card-title">Base Price Over Time</span>
+          <span class="base-card-player" style="color:var(--chrome)">Shohei Ohtani</span>
+        </div>
+        <div class="range-tabs">
+          <button class="range-tab active" data-brange="all" onclick="setBaseRange('ohtani','all')">All-time</button>
+          <button class="range-tab" data-brange="90" onclick="setBaseRange('ohtani','90')">90D</button>
+          <button class="range-tab" data-brange="30" onclick="setBaseRange('ohtani','30')">30D</button>
+        </div>
+      </div>
+      <div class="base-chart-wrap">
+        <svg id="base-svg-ohtani" viewBox="0 0 420 180" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="base-stat-row">
+        <div>
+          <div class="base-stat-label" id="base-stat-label-ohtani">Since first 30D</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div class="base-stat-val" id="base-stat-val-ohtani" style="color:var(--chrome)">—</div>
+            <div class="base-stat-sub" id="base-stat-sub-ohtani">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="base-card" id="base-card-clark">
+      <div class="base-card-header">
+        <div style="display:flex;align-items:baseline">
+          <span class="base-card-title">Base Price Over Time</span>
+          <span class="base-card-player" style="color:var(--accent)">Caitlin Clark</span>
+        </div>
+        <div class="range-tabs">
+          <button class="range-tab active" data-brange="all" onclick="setBaseRange('clark','all')">All-time</button>
+          <button class="range-tab" data-brange="90" onclick="setBaseRange('clark','90')">90D</button>
+          <button class="range-tab" data-brange="30" onclick="setBaseRange('clark','30')">30D</button>
+        </div>
+      </div>
+      <div class="base-chart-wrap">
+        <svg id="base-svg-clark" viewBox="0 0 420 180" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="base-stat-row">
+        <div>
+          <div class="base-stat-label" id="base-stat-label-clark">Since first 30D</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div class="base-stat-val" id="base-stat-val-clark" style="color:var(--accent)">—</div>
+            <div class="base-stat-sub" id="base-stat-sub-clark">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -591,13 +689,12 @@ function computePlayerIndex(allSales) {
       return (dCurrent - lastSale) <= STALE_MS;
     });
     if (contKeys.length > 0) {
-      // √price-weighted geometric mean.
-      // Weight each card by √(last known price) so expensive/rare cards
-      // (Fire, Chrome) influence the index more than cheap ones (Base),
-      // without letting a single high-value sale dominate entirely.
-      const totalW       = contKeys.reduce((s, k) => s + Math.sqrt(prevSnap[k]), 0);
+      // Equal-weighted geometric mean of per-card returns.
+      // Every card contributes its percentage return equally,
+      // regardless of absolute price level.
+      const n            = contKeys.length;
       const avgLogReturn = contKeys.reduce((s, k) =>
-        s + (Math.sqrt(prevSnap[k]) / totalW) * Math.log(lastPrice[k] / prevSnap[k]), 0);
+        s + Math.log(lastPrice[k] / prevSnap[k]), 0) / n;
       indexValue = indexValue * Math.exp(avgLogReturn);
     }
 
@@ -1089,6 +1186,12 @@ async function main() {
     renderDetailChart('ohtani');
     renderTable('ohtani');
 
+    // Base price scatter plots
+    baseSalesData.ohtani = extractBaseSales(ohtaniSales);
+    baseSalesData.clark  = extractBaseSales(clarkSales);
+    renderBaseScatter('ohtani');
+    renderBaseScatter('clark');
+
   } catch (err) {
     console.error('Player Index error:', err);
     ['compare-loading', 'detail-loading'].forEach(id => {
@@ -1096,6 +1199,172 @@ async function main() {
       if (el) el.textContent = 'Failed to load data';
     });
   }
+}
+
+// ── Base price scatter plots ─────────────────────────────────────────────────
+let baseSalesData  = {};  // { ohtani: [{date,price},...], clark: [...] }
+let baseRangeState = { ohtani: 'all', clark: 'all' };
+
+function extractBaseSales(allSales) {
+  return allSales
+    .filter(s => (s.variant || '').toLowerCase() === 'base')
+    .map(s => ({ date: parseDate(s.date), price: +s.price }))
+    .filter(s => s.date)
+    .sort((a, b) => a.date - b.date);
+}
+
+function getBaseWindow(playerId) {
+  const full = baseSalesData[playerId] || [];
+  if (!full.length) return [];
+  const range = baseRangeState[playerId];
+  if (range === 'all') return full;
+  const days   = range === '30' ? 30 : 90;
+  const cutoff = new Date(Date.now() - days * 86400000);
+  return full.filter(s => s.date >= cutoff);
+}
+
+function computeBaseChange(playerId) {
+  const range = baseRangeState[playerId];
+  const sales = getBaseWindow(playerId);
+  if (sales.length < 2) return { pct: null, label: 'Since first 30D', sub: '—' };
+
+  if (range === 'all') {
+    // First 30 calendar days avg vs last 30 calendar days avg
+    const firstDate = sales[0].date.getTime();
+    const lastDate  = sales[sales.length - 1].date.getTime();
+    const d30       = 30 * 86400000;
+    const early     = sales.filter(s => s.date.getTime() - firstDate <= d30);
+    const late      = sales.filter(s => lastDate - s.date.getTime() <= d30);
+    if (!early.length || !late.length) return { pct: null, label: 'Since first 30D', sub: '—' };
+    const avgEarly = early.reduce((s, r) => s + r.price, 0) / early.length;
+    const avgLate  = late.reduce((s, r) => s + r.price, 0) / late.length;
+    const pct = ((avgLate - avgEarly) / avgEarly) * 100;
+    return {
+      pct,
+      label: 'Since first 30D',
+      sub: `${fmt$(avgEarly)} → ${fmt$(avgLate)}`,
+    };
+  } else {
+    // 3-sale rolling avg at start vs 5-sale rolling avg at end
+    if (sales.length < 5) return { pct: null, label: `Past ${range}D`, sub: 'not enough sales' };
+    const startAvg = sales.slice(0, 3).reduce((s, r) => s + r.price, 0) / 3;
+    const endAvg   = sales.slice(-5).reduce((s, r) => s + r.price, 0) / 5;
+    const pct = ((endAvg - startAvg) / startAvg) * 100;
+    return {
+      pct,
+      label: `Past ${range}D`,
+      sub: `${fmt$(startAvg)} → ${fmt$(endAvg)}`,
+    };
+  }
+}
+
+function renderBaseScatter(playerId) {
+  const cfg   = PLAYERS[playerId];
+  const svg   = document.getElementById(`base-svg-${playerId}`);
+  const sales = getBaseWindow(playerId);
+
+  if (!svg || sales.length < 2) {
+    const range = baseRangeState[playerId];
+    const msg = sales.length === 0
+      ? `no base sales in ${range === 'all' ? 'dataset' : 'past ' + range + ' days'}`
+      : `only 1 base sale in past ${range} days`;
+    if (svg) svg.innerHTML = `<text x="210" y="95" fill="#444" font-size="10" font-family="DM Mono,monospace" text-anchor="middle">${msg}</text>`;
+    // Still update the stat row
+    const chg = computeBaseChange(playerId);
+    const valEl   = document.getElementById(`base-stat-val-${playerId}`);
+    const labelEl = document.getElementById(`base-stat-label-${playerId}`);
+    const subEl   = document.getElementById(`base-stat-sub-${playerId}`);
+    labelEl.textContent = chg.label;
+    subEl.textContent   = chg.sub;
+    valEl.textContent   = '—';
+    valEl.style.color   = PLAYERS[playerId].color;
+    return;
+  }
+
+  const W = 420, H = 180;
+  const PAD = { top: 14, right: 16, bottom: 30, left: 44 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top  - PAD.bottom;
+
+  const prices = sales.map(s => s.price);
+  const minP   = Math.min(...prices) * 0.9;
+  const maxP   = Math.max(...prices) * 1.1;
+  const minD   = sales[0].date.getTime();
+  const maxD   = sales[sales.length - 1].date.getTime();
+
+  const xS = d => PAD.left + ((d.getTime() - minD) / (maxD - minD || 1)) * cW;
+  const yS = v => PAD.top  + (1 - (v - minP) / (maxP - minP || 1)) * cH;
+
+  // Grid lines
+  let g = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = minP + (maxP - minP) * (i / 4);
+    const y = yS(v).toFixed(1);
+    g += `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="#181818" stroke-width="1"/>`;
+    g += `<text x="${PAD.left - 4}" y="${(+y + 3).toFixed(1)}" fill="#444" font-size="8" font-family="DM Mono,monospace" text-anchor="end">$${Math.round(v)}</text>`;
+  }
+
+  // X labels
+  const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const numLabels = Math.min(5, sales.length);
+  for (let i = 0; i <= numLabels; i++) {
+    const t = new Date(minD + (maxD - minD) * (i / numLabels));
+    const x = xS(t).toFixed(1);
+    g += `<text x="${x}" y="${H - PAD.bottom + 14}" fill="#444" font-size="8" font-family="DM Mono,monospace" text-anchor="middle">${mos[t.getMonth()]} '${String(t.getFullYear()).slice(2)}</text>`;
+  }
+
+  // Scatter dots
+  const color = cfg.color;
+  let dots = '';
+  for (const s of sales) {
+    const cx = xS(s.date).toFixed(1);
+    const cy = yS(s.price).toFixed(1);
+    dots += `<circle cx="${cx}" cy="${cy}" r="3" fill="${color}" opacity="0.55"/>`;
+  }
+
+  // Linear regression trendline
+  const n   = sales.length;
+  const xs  = sales.map(s => s.date.getTime());
+  const ys  = sales.map(s => s.price);
+  const mx  = xs.reduce((a, b) => a + b, 0) / n;
+  const my  = ys.reduce((a, b) => a + b, 0) / n;
+  const num = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+  const den = xs.reduce((s, x) => s + (x - mx) * (x - mx), 0);
+  const slope = den ? num / den : 0;
+  const intercept = my - slope * mx;
+  const y0 = slope * minD + intercept;
+  const y1 = slope * maxD + intercept;
+  const trend = `<line x1="${xS(sales[0].date).toFixed(1)}" y1="${yS(y0).toFixed(1)}"
+    x2="${xS(sales[sales.length-1].date).toFixed(1)}" y2="${yS(y1).toFixed(1)}"
+    stroke="${color}" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>`;
+
+  svg.innerHTML = g + dots + trend;
+
+  // Update stat
+  const chg = computeBaseChange(playerId);
+  const valEl   = document.getElementById(`base-stat-val-${playerId}`);
+  const labelEl = document.getElementById(`base-stat-label-${playerId}`);
+  const subEl   = document.getElementById(`base-stat-sub-${playerId}`);
+
+  labelEl.textContent = chg.label;
+  subEl.textContent   = chg.sub;
+
+  if (chg.pct != null) {
+    valEl.textContent = fmtPct(chg.pct);
+    valEl.style.color = chg.pct >= 0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    valEl.textContent = '—';
+    valEl.style.color = cfg.color;
+  }
+}
+
+function setBaseRange(playerId, range) {
+  baseRangeState[playerId] = range;
+  const card = document.getElementById(`base-card-${playerId}`);
+  card.querySelectorAll('.range-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.brange === range)
+  );
+  renderBaseScatter(playerId);
 }
 
 main();
