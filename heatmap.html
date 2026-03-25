@@ -674,15 +674,16 @@ function renderHeatmap() {
   const prodVariants  = [...new Set(setProducts.map(p => p.variant).filter(Boolean))];
   const allVariantSet = [...new Set([...mathVariants, ...prodVariants])];
   const knownVariants = VARIANT_ORDER.filter(v => allVariantSet.includes(v));
-  // Sort by total population ascending (lowest pop = rarest first)
+  // Sort by total population ascending (lowest pop = rarest first), but keep SP out of the sort
+  const hasSP = knownVariants.includes('SP');
+  const sortable = hasSP ? knownVariants.filter(v => v !== 'SP') : knownVariants;
   const popByVariant = {};
   mathRows.forEach(r => { if (r.variant) popByVariant[r.variant] = (popByVariant[r.variant] || 0) + (r.population || 0); });
-  knownVariants.sort((a, b) => (popByVariant[a] || 0) - (popByVariant[b] || 0));
+  sortable.sort((a, b) => (popByVariant[a] || 0) - (popByVariant[b] || 0));
   const extraVariants = allVariantSet.filter(v => !VARIANT_ORDER.includes(v));
-  const spIdx = knownVariants.indexOf('SP');
-  const variants = spIdx >= 0
-    ? [...knownVariants.slice(0, spIdx), ...extraVariants, 'SP']
-    : [...knownVariants, ...extraVariants];
+  const variants = hasSP
+    ? [...sortable, ...extraVariants, 'SP']
+    : [...sortable, ...extraVariants];
 
   // Player list: union of set_math and products, alphabetical
   const mathPlayers = [...new Set(mathRows.map(r => r.player).filter(p => p && p !== 'Unknown'))];
