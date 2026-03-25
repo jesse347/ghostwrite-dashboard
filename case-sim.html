@@ -183,7 +183,7 @@ body::after {
   overflow: hidden;
 }
 .box-card-figure {
-  height: 85%; width: auto; max-width: 100%;
+  height: 95%; width: auto; max-width: 100%;
   object-fit: contain; object-position: bottom center;
   display: block;
   filter: drop-shadow(0 6px 20px rgba(0,0,0,0.85));
@@ -1145,6 +1145,36 @@ function bestPriceFull(p) {
 // SIMULATION — guaranteed hit mechanic
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ── Unique-player base picker ────────────────────────────────────────────
+// Selects `count` base cards where every card belongs to a different player.
+// Excludes `hitPlayer` so the hit and a base can't share the same player.
+// Falls back to the full remainingPool if unique players run out.
+function pickUniqueBasePulls(remainingPool, hitPlayer, count) {
+  const baseOnly = remainingPool.filter(f => f.variant === 'Base');
+  // Group by player
+  const byPlayer = {};
+  baseOnly.forEach(card => {
+    if (!byPlayer[card.player]) byPlayer[card.player] = [];
+    byPlayer[card.player].push(card);
+  });
+  delete byPlayer[hitPlayer]; // prevent hit player from appearing as a base
+  // Shuffle player list for random selection
+  const playerKeys = Object.keys(byPlayer).sort(() => Math.random() - 0.5);
+  const result = [];
+  for (let i = 0; i < count; i++) {
+    const playerName = playerKeys[i];
+    if (playerName) {
+      const cards = byPlayer[playerName];
+      // Pick one card from this player's entries (population-weighted within player)
+      result.push(cards[Math.floor(Math.random() * cards.length)]);
+    } else {
+      // Fallback: set has fewer unique base players than slots needed
+      result.push(remainingPool[Math.floor(Math.random() * remainingPool.length)]);
+    }
+  }
+  return result;
+}
+
 function runSimulation() {
   if (isAnimating) return;
   isAnimating = true;
@@ -1166,10 +1196,12 @@ function runSimulation() {
   }
 
   const pulls = [];
-  pulls.push({ ...hitPool[Math.floor(Math.random()*hitPool.length)], slotIndex:0, isGuaranteed:true });
-  for (let i=1; i<cfg.casePack; i++) {
-    pulls.push({ ...remainingPool[Math.floor(Math.random()*remainingPool.length)], slotIndex:i, isGuaranteed:false });
-  }
+  // Step 1: pick one fully-random hit (non-base card)
+  const hitCard = { ...hitPool[Math.floor(Math.random() * hitPool.length)], slotIndex: 0, isGuaranteed: true };
+  pulls.push(hitCard);
+  // Step 2: pick unique players from base pool — no player appears twice in the grid
+  const basePulls = pickUniqueBasePulls(remainingPool, hitCard.player, cfg.casePack - 1);
+  basePulls.forEach((card, i) => pulls.push({ ...card, slotIndex: i + 1, isGuaranteed: false }));
 
   lastPulls = pulls;
 
@@ -1672,14 +1704,15 @@ function simulateOneCase500(setName) {
   const { hitPool, remainingPool } = buildSplitPools(setName);
   if (!hitPool.length) return null;
   const pulls = [];
-  const hitTpl = hitPool[Math.floor(Math.random()*hitPool.length)];
-  const hitCv  = CONF_CV[hitTpl.isEstimated ? (hitTpl.confidence||'set-avg') : 'real'];
-  pulls.push({ ...hitTpl, drawnPrice: samplePrice(hitTpl.price, hitCv), slotIndex:0, isGuaranteed:true });
-  for (let i=1; i<cfg.casePack; i++) {
-    const t  = remainingPool[Math.floor(Math.random()*remainingPool.length)];
-    const cv = CONF_CV[t.isEstimated ? (t.confidence||'set-avg') : 'real'];
-    pulls.push({ ...t, drawnPrice: samplePrice(t.price, cv), slotIndex:i, isGuaranteed:false });
-  }
+  const hitTpl = hitPool[Math.floor(Math.random() * hitPool.length)];
+  const hitCv  = CONF_CV[hitTpl.isEstimated ? (hitTpl.confidence || 'set-avg') : 'real'];
+  pulls.push({ ...hitTpl, drawnPrice: samplePrice(hitTpl.price, hitCv), slotIndex: 0, isGuaranteed: true });
+  // Use unique-player base picks so the case breakdown grid shows no duplicate players
+  const basePulls500 = pickUniqueBasePulls(remainingPool, hitTpl.player, cfg.casePack - 1);
+  basePulls500.forEach((t, i) => {
+    const cv = CONF_CV[t.isEstimated ? (t.confidence || 'set-avg') : 'real'];
+    pulls.push({ ...t, drawnPrice: samplePrice(t.price, cv), slotIndex: i + 1, isGuaranteed: false });
+  });
   const totalValue  = Math.round(pulls.reduce((s,p)=>s+p.drawnPrice,0));
   const estFraction = pulls.filter(p=>p.isEstimated).length / pulls.length;
   return { totalValue, pulls, estFraction };
