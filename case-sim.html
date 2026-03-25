@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ghostwrite · case simulator</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<title>ghostladder · case simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
 <style>
 :root {
   --bg: #080808;
@@ -16,46 +18,34 @@
   --text: #efefef;
   --muted: #666;
   --muted2: #444;
-  --mono: 'Space Mono', monospace;
-  --display: 'Unbounded', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
   --green: #3ddc84;
   --red: #ff4455;
   --orange: #ff9f43;
-  --fire: #ff2d2d;
-  --chrome: #a8c8ff;
-  --gold: #ffd700;
-  --emerald: #2ecc71;
-  --victory: #e8ff47;
-  --base: #555;
-  --sp: #c084fc;
-  --vides: #ff9f43;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { background: var(--bg); min-height: 100vh; }
 body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
-.nav {
-  display: flex; align-items: center;
-  padding: 14px 32px; border-bottom: 1px solid var(--border);
-  gap: 24px; position: sticky; top: 0; background: var(--bg); z-index: 50;
+/* Grain overlay */
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999;
 }
-.nav-logo { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 2px; text-decoration: none; }
-.nav-links { display: flex; gap: 20px; margin-left: auto; }
-.nav-link { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.15s; }
-.nav-link:hover { color: var(--text); }
-.nav-link.active { color: var(--text); }
 
 .page { max-width: 1100px; margin: 0 auto; padding: 32px; }
-.page-header { margin-bottom: 28px; }
-.page-title { font-family: var(--display); font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; }
+.page-header { margin-bottom: 28px; position: relative; }
+.page-title { font-family: var(--display); font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; }
 .page-title em { color: var(--accent); font-style: normal; }
 .page-sub { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 
 .set-selector { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
 .set-btn {
-  font-family: var(--display); font-size: 9px; font-weight: 700;
+  font-family: var(--display); font-size: 11px; font-weight: 700;
   letter-spacing: 1px; text-transform: uppercase;
-  padding: 8px 16px; cursor: pointer;
+  padding: 10px 20px; cursor: pointer;
   background: var(--s2); border: 1px solid var(--border);
   color: var(--muted); transition: all 0.15s;
 }
@@ -92,66 +82,148 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 }
 .reset-btn:hover { color: var(--text); border-color: var(--muted2); }
 
-.case-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 20px; }
+/* Case grid outer wrapper — provides relative context for ghost overlay */
+.case-grid-outer { position: relative; margin-bottom: 20px; }
+.case-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 
-.box-slot {
-  aspect-ratio: 1;
-  background: var(--s2); border: 1px solid var(--border);
+/* ── Case ghost: sealed-box image superimposed on empty grid ── */
+.case-ghost {
+  position: absolute; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 8px; position: relative;
-  transition: border-color 0.2s, background 0.2s;
+  pointer-events: none; z-index: 10;
+  transition: opacity 0.4s ease; gap: 10px;
+}
+.case-ghost.hidden { opacity: 0; }
+.case-ghost-img {
+  max-height: 62%; max-width: 48%;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 64px rgba(0,0,0,0.9));
+  opacity: 0.88;
+}
+.case-ghost-name {
+  font-family: var(--display); font-size: 32px; letter-spacing: 4px;
+  color: rgba(255,255,255,0.07); text-align: center; line-height: 1;
+}
+.case-ghost-hint {
+  font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted2);
+}
+
+/* ── Box slot — 3D flip container ── */
+.box-slot {
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  position: relative;
+  perspective: 800px;
   cursor: default;
+  transition: border-color 0.2s;
 }
-.box-slot.is-hit { cursor: pointer; }
-.box-slot.is-hit:hover { filter: brightness(1.12); }
+.box-slot.is-hit.revealed { cursor: pointer; }
+.box-slot.is-hit.revealed:hover .box-face-back { filter: brightness(1.14); }
+.box-slot.is-hit.revealed:hover .box-card-figure { transform: translateY(-5px) scale(1.04); }
 
-.box-slot.revealed { animation: reveal 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-@keyframes reveal {
-  0%   { transform: scale(0.8) rotateY(90deg); opacity: 0; }
-  60%  { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
+/* Flip inner wrapper — this is what rotates */
+.box-flip-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+.box-slot.revealed .box-flip-inner { transform: rotateY(180deg); }
+
+/* Shared face styles */
+.box-face-front, .box-face-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-.box-slot.is-fire    { border-color: var(--fire);    background: rgba(255,45,45,0.07); }
-.box-slot.is-chrome  { border-color: var(--chrome);  background: rgba(168,200,255,0.05); }
-.box-slot.is-gold    { border-color: var(--gold);    background: rgba(255,215,0,0.06); }
-.box-slot.is-emerald { border-color: var(--emerald); background: rgba(46,204,113,0.05); }
-.box-slot.is-victory { border-color: var(--victory); background: rgba(232,255,71,0.04); }
-.box-slot.is-sp      { border-color: var(--sp);      background: rgba(192,132,252,0.05); }
-.box-slot.is-vides   { border-color: var(--vides);   background: rgba(255,159,67,0.05); }
+/* Front face: sealed slot */
+.box-face-front {
+  background: var(--s2);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+/* Back face: figure card */
+.box-face-back {
+  transform: rotateY(180deg);
+  overflow: hidden;
+  background: #07090e;
+}
+
+.box-slot.is-fire         { border-color: var(--fire);         background: rgba(255,45,45,0.07); }
+.box-slot.is-chrome       { border-color: var(--chrome);       background: rgba(168,200,255,0.05); }
+.box-slot.is-gold         { border-color: var(--gold);         background: rgba(255,215,0,0.06); }
+.box-slot.is-emerald      { border-color: var(--emerald);      background: rgba(46,204,113,0.05); }
+.box-slot.is-victory      { border-color: var(--victory);      background: rgba(232,255,71,0.04); }
+.box-slot.is-sp           { border-color: var(--sp);           background: rgba(192,132,252,0.05); }
+.box-slot.is-vides        { border-color: var(--vides);        background: rgba(255,159,67,0.05); }
+.box-slot.is-bet-on-women { border-color: var(--bet-on-women); background: rgba(255,110,180,0.06); }
 
 .box-slot.guaranteed-slot:not(.revealed) { border-color: var(--muted2); border-style: dashed; }
 
+/* Front face internals */
 .box-num { position: absolute; top: 5px; left: 7px; font-size: 7px; color: var(--muted2); letter-spacing: 1px; }
 .box-empty-icon { font-size: 18px; opacity: 0.12; }
 
-.box-variant-badge {
-  font-family: var(--display); font-size: 7px; font-weight: 700;
-  letter-spacing: 1px; text-transform: uppercase;
-  padding: 2px 5px; margin-bottom: 4px;
+/* ── Figure card (back face) layers ── */
+.box-card-base    { position: absolute; inset: 0; background: #07090e; }
+.box-card-glow    { position: absolute; inset: 0; }
+.box-card-geo     { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.06; }
+.box-card-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 38%, transparent 22%, rgba(0,0,0,0.65) 100%);
 }
-.box-player {
-  font-size: 7px; color: var(--text); text-align: center;
-  line-height: 1.3; max-width: 100%;
-  overflow: hidden; display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-.box-price { font-family: var(--display); font-size: 12px; font-weight: 700; margin-top: 3px; }
-.box-price.estimated { color: var(--muted); }
 
-.box-est-badge {
-  position: absolute; top: 4px; right: 4px;
-  font-size: 6px; font-family: var(--display); font-weight: 700;
-  letter-spacing: 0.5px; padding: 1px 4px;
-  color: var(--accent); background: rgba(232,255,71,0.12);
-  border: 1px solid rgba(232,255,71,0.3);
+/* Figure image */
+.box-card-figure-area {
+  position: absolute; inset: 0;
+  display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden;
 }
-.box-click-hint {
-  position: absolute; bottom: 4px; right: 5px;
-  font-size: 6px; color: var(--muted2); opacity: 0; transition: opacity 0.15s;
+.box-card-figure {
+  height: 85%; width: auto; max-width: 100%;
+  object-fit: contain; object-position: bottom center;
+  display: block;
+  filter: drop-shadow(0 6px 20px rgba(0,0,0,0.85));
+  transition: transform 0.28s ease;
 }
-.box-slot.is-hit:hover .box-click-hint { opacity: 1; }
+
+/* Bottom info overlay */
+.box-card-info {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 3;
+  background: linear-gradient(to top, rgba(4,6,12,0.97) 40%, rgba(4,6,12,0.6) 70%, transparent 100%);
+  padding: 6px 6px 5px;
+}
+.box-card-variant {
+  font-family: var(--display); font-size: 6.5px; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 1px;
+}
+.box-card-player {
+  font-family: var(--display); font-size: 9px; letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.92); line-height: 1.1; margin-bottom: 2px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.box-card-price {
+  font-family: var(--display); font-size: 13px; line-height: 1;
+  background: linear-gradient(145deg, #f7e98e 0%, #d4a017 35%, #f7e98e 65%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.box-card-price.is-base {
+  background: none; -webkit-text-fill-color: var(--muted); color: var(--muted);
+}
+
+/* Badges on back face */
+.box-card-est-badge {
+  position: absolute; top: 4px; right: 4px; z-index: 5;
+  font-size: 5px; font-family: var(--display); letter-spacing: 0.5px; padding: 1px 3px;
+  color: var(--accent); background: rgba(232,255,71,0.12); border: 1px solid rgba(232,255,71,0.3);
+}
+.box-card-star {
+  position: absolute; top: 4px; left: 6px; z-index: 5;
+  font-size: 7px; color: var(--accent); opacity: 0.7;
+}
 
 .result-bar { display: none; border-top: 1px solid var(--border); padding-top: 20px; align-items: center; gap: 32px; flex-wrap: wrap; }
 .result-bar.visible { display: flex; }
@@ -217,6 +289,55 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .ai-override-note { background: rgba(176,240,255,0.06); border: 1px solid rgba(176,240,255,0.2); padding: 10px 12px; margin-top: 10px; font-size: 9px; color: #b0f0ff; line-height: 1.5; }
 .ai-override-note strong { display: block; margin-bottom: 4px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
 
+/* ── Estimate drawer — method badges ── */
+.method-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 9px; border-radius: 2px; margin-bottom: 12px; font-weight: 700; }
+.method-badge.direct { background: rgba(232,255,71,0.12); color: var(--accent);   border: 1px solid rgba(232,255,71,0.35); }
+.method-badge.blend  { background: rgba(79,209,255,0.10); color: var(--chrome);  border: 1px solid rgba(79,209,255,0.30); }
+.method-badge.range  { background: rgba(255,179,71,0.10); color: #ffb347;        border: 1px solid rgba(255,179,71,0.30); }
+.method-badge.ratio  { background: rgba(168,200,255,0.10); color: #a8c8ff;       border: 1px solid rgba(168,200,255,0.25); }
+.method-headline { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 6px; }
+.method-sub { font-size: 10px; color: var(--muted2); line-height: 1.65; margin-bottom: 12px; }
+/* Comp figure cards */
+.comp-figures { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.comp-fig-card { background: var(--s2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; flex: 1; min-width: 150px; }
+.comp-fig-set   { font-size: 9px; color: var(--muted2); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-fig-price { font-family: var(--display); font-size: 16px; color: var(--text); }
+.comp-fig-meta  { font-size: 9px; color: var(--muted); margin-top: 2px; }
+/* Anchor rows (within-set ratio blend) */
+.anchor-row { display: flex; align-items: center; gap: 8px; background: var(--s2); border: 1px solid var(--border); padding: 10px 12px; margin-bottom: 6px; border-radius: 4px; }
+.anchor-src { flex: 1; min-width: 0; }
+.anchor-eq  { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; }
+.anchor-result { font-family: var(--display); font-size: 15px; color: var(--accent); white-space: nowrap; }
+/* Reference range viz */
+.range-viz { background: var(--s2); border: 1px solid var(--border); border-radius: 4px; padding: 14px; margin-bottom: 8px; }
+.range-viz-bar { position: relative; height: 4px; background: var(--border); border-radius: 2px; margin: 10px 0 8px; }
+.range-viz-fill { position: absolute; height: 100%; background: linear-gradient(to right, #4fd1ff, #ffb347); border-radius: 2px; left: 0; right: 0; }
+.range-viz-marker { position: absolute; top: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--s2); transform: translateX(-50%); box-shadow: 0 0 0 3px rgba(232,255,71,0.3); }
+/* Player rank bar */
+.rank-bar-wrap { position: relative; height: 5px; background: var(--s3); border-radius: 3px; margin: 8px 0 6px; }
+.rank-bar-fill { height: 100%; background: rgba(232,255,71,0.2); border-radius: 3px; }
+.rank-bar-dot  { position: absolute; top: -4px; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); border: 2px solid var(--s1); transform: translateX(-50%); }
+
+/* ── Estimate mode toggle ── */
+.estimate-toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.estimate-toggle-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.estimate-toggle { display: flex; background: var(--s2); border: 1px solid var(--border); }
+.tog-btn {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 6px 14px; cursor: pointer;
+  background: transparent; color: var(--muted); border: none; transition: all 0.15s;
+}
+.tog-btn:hover { color: var(--text); }
+.tog-btn.active { background: var(--s3); color: var(--accent); }
+/* Model estimate badge on box card */
+.box-model-badge {
+  position: absolute; top: 4px; right: 4px;
+  font-size: 6px; font-family: var(--display); font-weight: 700;
+  letter-spacing: 0.5px; padding: 1px 4px;
+  color: #b0f0ff; background: rgba(176,240,255,0.12);
+  border: 1px solid rgba(176,240,255,0.3);
+}
+
 .sales-hero { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 16px; text-align: center; margin-bottom: 20px; }
 .sales-hero-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
 .sales-hero-val { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--accent); }
@@ -235,6 +356,16 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .afa-badge { font-size: 8px; color: #ffd700; }
 .no-listings { font-size: 9px; color: var(--muted2); letter-spacing: 1px; padding: 16px 0; text-align: center; }
 
+.hit-tooltip {
+  position: fixed; z-index: 300;
+  background: var(--s1); border: 1px solid var(--border);
+  padding: 14px 16px; max-width: 300px; font-size: 9px;
+  color: var(--muted); line-height: 1.8; letter-spacing: 0.3px;
+  display: none; pointer-events: none;
+}
+.hit-tooltip strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 10px; letter-spacing: 1px; }
+.hit-tooltip .formula { font-family: var(--mono); color: var(--accent); font-size: 8px; margin: 6px 0; line-height: 1.6; background: var(--s2); padding: 6px 8px; }
+.hit-tooltip .divider { border-top: 1px solid var(--border); margin: 8px 0; }
 @media (max-width: 700px) {
   .page { padding: 16px; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
@@ -242,24 +373,137 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   .nav { padding: 12px 16px; }
   .drawer { width: 100%; }
 }
+
+/* ── Distribution chart (500-case mode) ─────────────────────────────────── */
+.dist-svg { width: 100%; overflow: visible; display: block; }
+.chart-area { padding: 28px 24px 20px; position: relative; min-height: 280px; }
+.chart-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 220px; gap: 12px;
+}
+.chart-empty-icon { font-size: 32px; opacity: 0.08; }
+.chart-empty-text { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.chart-legend {
+  display: flex; gap: 20px; padding: 0 24px 20px; flex-wrap: wrap; align-items: center;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 8px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.legend-swatch { width: 10px; height: 10px; border-radius: 1px; flex-shrink: 0; }
+.legend-divider { width: 1px; height: 14px; background: var(--muted2); }
+.sim-summary {
+  border-top: 1px solid var(--border); padding: 16px 24px;
+  display: none; align-items: center; gap: 32px; flex-wrap: wrap;
+}
+.sim-summary.visible { display: flex; }
+.sim-sum-label { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.sim-sum-val { font-family: var(--display); font-size: 20px; font-weight: 700; }
+.sim-sum-val.green { color: var(--green); }
+.sim-sum-val.red   { color: var(--red); }
+.sim-sum-note { font-size: 8px; color: var(--muted); margin-left: auto; line-height: 1.7; text-align: right; }
+/* Bin colors */
+:root {
+  --bin-real:  #e8ff47;
+  --bin-mixed: #ffb347;
+  --bin-est:   #7c6fff;
+}
+.chart-tooltip {
+  position: fixed; pointer-events: none; z-index: 200;
+  background: var(--s2); border: 1px solid var(--border);
+  padding: 10px 14px; min-width: 160px;
+  opacity: 0; transition: opacity 0.1s;
+}
+.chart-tooltip.visible { opacity: 1; }
+.tt-val { font-family: var(--display); font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+.tt-row { font-size: 8px; color: var(--muted); margin-bottom: 2px; letter-spacing: 0.5px; }
+.tt-row span { color: var(--text); }
+/* Two-button sim controls */
+.sim-btn-open {
+  font-family: var(--display); font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 10px 22px; cursor: pointer;
+  background: var(--accent); color: #000; border: none; transition: all 0.15s;
+}
+.sim-btn-open:hover { background: #fff; }
+.sim-btn-open:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
+.sim-btn-500 {
+  font-family: var(--display); font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 10px 22px; cursor: pointer;
+  background: transparent; color: var(--accent);
+  border: 1px solid var(--accent); transition: all 0.15s;
+}
+.sim-btn-500:hover { background: rgba(232,255,71,0.1); }
+.sim-btn-500:disabled { border-color: var(--muted2); color: var(--muted); cursor: not-allowed; }
+
+/* ── Jackpot flash popup ── */
+.jackpot-popup {
+  position: fixed; bottom: 36px; left: 50%;
+  transform: translateX(-50%) translateY(140%);
+  z-index: 2000; min-width: 360px; max-width: 500px;
+  background: var(--s1); border: 1px solid var(--accent);
+  box-shadow: 0 0 48px rgba(232,255,71,0.18), 0 12px 40px rgba(0,0,0,0.85);
+  opacity: 0; cursor: pointer; overflow: hidden;
+  transition: transform 0.42s cubic-bezier(0.34,1.4,0.64,1), opacity 0.3s;
+}
+.jackpot-popup.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.jp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(232,255,71,0.07); border-bottom: 1px solid rgba(232,255,71,0.18);
+  padding: 12px 16px;
+}
+.jp-title {
+  font-family: var(--display); font-size: 24px; letter-spacing: 3px; color: var(--accent);
+}
+.jp-badge {
+  font-family: var(--display); font-size: 9px; letter-spacing: 2px;
+  background: var(--accent); color: #000; padding: 3px 10px;
+}
+.jp-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 11px; }
+.jp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.jp-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
+.jp-val { font-family: var(--display); font-size: 16px; letter-spacing: 0.5px; color: var(--accent); text-align: right; }
+.jp-val.hit { color: var(--text); font-size: 13px; }
+.jp-dismiss { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted2); text-align: center; padding-bottom: 10px; }
+.jp-progress {
+  height: 2px; background: var(--accent); transform-origin: left;
+  box-shadow: 0 0 6px rgba(232,255,71,0.6);
+}
 </style>
+<script src="estimate-engine.js"></script>
 </head>
 <body>
 
-<nav class="nav">
-  <a href="index.html" class="nav-logo">ghostwrite</a>
-  <div class="nav-links">
-    <a href="index.html" class="nav-link">dashboard</a>
-    <a href="guide.html" class="nav-link">price guide</a>
-    <a href="heatmap.html" class="nav-link">heat map</a>
-    <a href="case-sim.html" class="nav-link active">case sim</a>
-  </div>
-</nav>
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html" class="active">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+</header>
 
 <div class="page">
   <div class="page-header">
-    <div class="page-title">case <em>simulator</em></div>
-    <div class="page-sub">guaranteed hit mechanic · real + projected values · click any hit to inspect</div>
+    <div class="page-title">case <em>simulator</em>
+      <button class="explainer-btn" onclick="toggleExplainer()" title="What is this?">?</button>
+    </div>
+    <div class="page-sub">open one case · or run 500 monte carlo simulations · click any hit to inspect</div>
+    <div class="explainer-panel" id="explainer-panel">
+      <button class="explainer-close" onclick="toggleExplainer()">✕</button>
+      <p>Simulate opening cases from any set in the roster. Each pull is weighted by the real drop-rate math — so you can test your luck or run 500 Monte Carlo trials to see the expected value distribution.</p>
+      <p>Click any hit to inspect its market price against what you "paid" per case.</p>
+    </div>
   </div>
   <div id="main-content">
     <div class="loading-state">
@@ -277,7 +521,115 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 </div>
 
 <script>
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, {headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+// Parse a date string in local time (avoids UTC midnight rollback)
+// Handles both YYYY-MM-DD and full ISO timestamps from Supabase
+function parseDate(str) {
+  if (!str) return null;
+  // Strip any time component — take only the YYYY-MM-DD part
+  const datePart = String(str).substring(0, 10);
+  // Append local midnight so JS treats it as local time, not UTC
+  const d = new Date(datePart + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Figure image helpers (mirrors sales-feed.html)
+// ─────────────────────────────────────────────────────────────────────────────
+function slugify(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\./g, '').replace(/[^a-z0-9\s]/g, '')
+    .trim().replace(/\s+/g, '_');
+}
+function slugifySet(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-');
+}
+function normalizeVariantSlug(v) {
+  if (!v) return 'base';
+  const l = v.toLowerCase();
+  if (l.includes('fire'))    return 'fire';
+  if (l.includes('chrome'))  return 'chrome';
+  if (l.includes('gold'))    return 'gold';
+  if (l.includes('emerald')) return 'emerald';
+  if (l.includes('victory')) return 'victory';
+  if (l.includes('vides'))   return 'vides';
+  if (l.includes('bet'))     return 'bet-on-women';
+  if (l.includes('sp'))      return 'sp';
+  return 'base';
+}
+function figureUrl(player, variant, setName) {
+  const file = `${slugify(player)}_${normalizeVariantSlug(variant)}.png`;
+  const setSlug = slugifySet(setName || '');
+  return setSlug ? `assets/figures/${setSlug}/${file}` : `assets/figures/${file}`;
+}
+
+// Variant glow gradients (for back-face figure cards)
+const CARD_GLOWS = {
+  base:    'radial-gradient(circle at 25% 68%, rgba(28,65,200,0.55) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(0,155,155,0.45) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(95,25,158,0.45) 0%, transparent 48%)',
+  victory: 'radial-gradient(circle at 25% 68%, rgba(70,20,195,0.55) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(115,0,195,0.42) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(158,25,110,0.42) 0%, transparent 48%)',
+  emerald: 'radial-gradient(circle at 25% 68%, rgba(0,118,55,0.60) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(0,175,115,0.48) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(25,95,25,0.48) 0%, transparent 48%)',
+  gold:    'radial-gradient(circle at 25% 68%, rgba(175,108,0,0.62) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(208,158,0,0.48) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(148,68,0,0.48) 0%, transparent 48%)',
+  chrome:  'radial-gradient(circle at 25% 68%, rgba(55,108,178,0.55) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(128,168,198,0.42) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(65,88,138,0.42) 0%, transparent 48%)',
+  fire:    'radial-gradient(circle at 25% 68%, rgba(198,28,0,0.65) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(208,108,0,0.52) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(158,0,0,0.52) 0%, transparent 48%)',
+  vides:   'radial-gradient(circle at 25% 68%, rgba(255,159,67,0.55) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(255,200,100,0.42) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(200,120,0,0.42) 0%, transparent 48%)',
+  sp:      'radial-gradient(circle at 25% 68%, rgba(192,132,252,0.55) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(220,170,255,0.42) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(140,80,220,0.42) 0%, transparent 48%)',
+  'bet-on-women': 'radial-gradient(circle at 25% 68%, rgba(255,110,180,0.55) 0%, transparent 52%), radial-gradient(circle at 78% 22%, rgba(255,160,210,0.42) 0%, transparent 44%), radial-gradient(circle at 62% 88%, rgba(200,60,140,0.42) 0%, transparent 48%)',
+};
+
+// Geometric mandala SVG for figure card background texture
+const GEO_SVG_MINI = `<svg class="box-card-geo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice">
+  <g fill="none" stroke="white" stroke-width="0.75">
+    <circle cx="200" cy="215" r="88"/><circle cx="200" cy="127" r="88"/>
+    <circle cx="276" cy="171" r="88"/><circle cx="276" cy="259" r="88"/>
+    <circle cx="200" cy="303" r="88"/><circle cx="124" cy="259" r="88"/>
+    <circle cx="124" cy="171" r="88"/>
+  </g>
+</svg>`;
+
+// Shared helper: build the figure card HTML for a back face
+function buildFigureCardHTML(player, variant, price, isEstimated, isGuaranteed, setName) {
+  const vNorm = normalizeVariantSlug(variant);
+  const glow  = CARD_GLOWS[vNorm] || CARD_GLOWS.base;
+  const color = VARIANT_COLORS[variant] || 'var(--muted)';
+  const isBase = variant === 'Base';
+  const imgSrc = figureUrl(player, variant, setName);
+  const estBadge = (isEstimated && !isBase)
+    ? '<span class="box-card-est-badge">MODEL</span>' : '';
+  const starBadge = isGuaranteed
+    ? '<span class="box-card-star">★</span>' : '';
+  return `
+    <div class="box-card-base"></div>
+    <div class="box-card-glow" style="background:${glow}"></div>
+    ${GEO_SVG_MINI}
+    <div class="box-card-vignette"></div>
+    <div class="box-card-figure-area">
+      <img class="box-card-figure" src="${imgSrc}" alt="${player}"
+        onerror="this.style.display='none'">
+    </div>
+    ${estBadge}${starBadge}
+    <div class="box-card-info">
+      <div class="box-card-variant" style="color:${color}">${variant}</div>
+      <div class="box-card-player">${player}</div>
+      <div class="box-card-price${isBase ? ' is-base' : ''}">$${Math.round(price).toLocaleString()}</div>
+    </div>`;
+}
 
 const SET_CONFIG = [
   { match: ['nba', 'game face', '2024'],  casePrice: 500, casePack: 12, hitRatio: 1.02, label: 'NBA 2024–25'  },
@@ -286,6 +638,9 @@ const SET_CONFIG = [
 ];
 
 function getSetConfig(setName) {
+  if (allData && allData.sbSetConfig && allData.sbSetConfig[setName]) {
+    return allData.sbSetConfig[setName];
+  }
   const lower = (setName || '').toLowerCase();
   const ordered = [...SET_CONFIG].sort((a, b) => b.match.join('').length - a.match.join('').length);
   for (const cfg of ordered) {
@@ -294,22 +649,26 @@ function getSetConfig(setName) {
   return null;
 }
 
-const VARIANT_ORDER = ['Base','Victory','Vides','Emerald','Gold','Chrome','Fire','SP'];
+const VARIANT_ORDER = ['Fire','Bet On Women','Chrome','Gold','Emerald','Vides','Victory','Base','SP'];
+
+function shortSetName(n) {
+  return n
+    .replace('Game Face', '')
+    .replace('2024-25', '24-25')
+    .replace('2025-26', '25-26')
+    .replace('2026-27', '26-27')
+    .replace(/\b(20\d\d)\b/, (m, y) => "'" + y.slice(2))
+    .trim();
+}
+function shortVariantName(v) {
+  return v === 'Bet On Women' ? 'BET' : v;
+}
 const VARIANT_COLORS = {
   Base: 'var(--base)', Victory: 'var(--victory)', Vides: 'var(--vides)',
   Emerald: 'var(--emerald)', Gold: 'var(--gold)', Chrome: 'var(--chrome)',
-  Fire: 'var(--fire)', SP: 'var(--sp)',
+  Fire: 'var(--fire)', 'Bet On Women': 'var(--bet-on-women)', SP: 'var(--sp)',
 };
-const VARIANT_PROXIMITY = {
-  'Base':    {'Victory':0.9,'Vides':0.85,'Emerald':0.85,'Gold':0.75,'Chrome':0.6,'Fire':0.4,'SP':0.8},
-  'Victory': {'Base':0.9,'Vides':0.9,'Emerald':0.9,'Gold':0.8,'Chrome':0.65,'Fire':0.45,'SP':0.85},
-  'Emerald': {'Base':0.85,'Victory':0.9,'Vides':0.95,'Gold':0.9,'Chrome':0.7,'Fire':0.5,'SP':0.8},
-  'Vides':   {'Base':0.85,'Victory':0.9,'Emerald':0.95,'Gold':0.9,'Chrome':0.7,'Fire':0.5,'SP':0.8},
-  'Gold':    {'Base':0.75,'Victory':0.8,'Emerald':0.9,'Vides':0.9,'Chrome':0.85,'Fire':0.65,'SP':0.7},
-  'Chrome':  {'Base':0.6,'Victory':0.65,'Emerald':0.7,'Vides':0.7,'Gold':0.85,'Fire':0.8,'SP':0.6},
-  'Fire':    {'Base':0.4,'Victory':0.45,'Emerald':0.5,'Vides':0.5,'Gold':0.65,'Chrome':0.8,'SP':0.4},
-  'SP':      {'Base':0.8,'Victory':0.85,'Emerald':0.8,'Vides':0.8,'Gold':0.7,'Chrome':0.6,'Fire':0.4},
-};
+// VARIANT_PROXIMITY removed — cross-set observed ratios used instead
 const POP_DEFAULTS = { Fire:1, Chrome:5, Gold:10, Emerald:25, Vides:25, Victory:50, SP:50, Base:1000 };
 
 let allData = null;
@@ -317,13 +676,73 @@ let activeSet = null;
 let simHistory = [];
 let isAnimating = false;
 let lastPulls = [];
+// 500-case mode state
+let simResults  = [];
+let selectedBin = null;
+let activePulls500 = null;
+const N_SIMS   = 500;
+const BIN_SIZE = 25;
+// Confidence interval CV (price variance by data quality)
+const CONF_CV = {
+  'real': 0.12, 'High': 0.15, 'Medium-High': 0.22, 'Medium': 0.30,
+  'Medium-Low': 0.40, 'Low': 0.55, 'Very Low': 0.70, 'No Data': 0.85, 'set-avg': 0.50,
+  'AI Calibrated': 0.20,
+};
+// Estimate mode: 'sales-only' | 'model-blend' | 'full-model'
+let estimateMode = 'model-blend';
 
 // ── Load ─────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const res = await fetch(DATA_URL, { method: 'GET', redirect: 'follow' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    allData = JSON.parse(await res.text());
+    const [pi, recentSales, setsData, setMathData, paramsData, gradedSalesData] = await Promise.all([
+      rpc('get_price_intelligence'),
+      rpc('get_recent_sales', {limit_rows: 500}),
+      sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true'),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+    ]);
+    const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
+      set: r.set_name, player: r.player, variant: r.variant,
+      totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+      avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+      avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+      lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+    }));
+
+    // Normalize product averages to remove graded-sale inflation so the
+    // engine uses accurate ungraded-equivalent prices when building comps.
+    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
+    applyGradingNorm(products, gradedNormMap);
+    const allListings = recentSales.filter(r => r.player && r.player !== 'Unknown').map(r => ({
+      set: r.set_name, player: r.player, variant: r.variant,
+      price: +r.price || 0, date: r.date, image: r.image_url,
+      url: r.ebay_url, afa: r.afa_grade, title: '',
+    }));
+    // Build set_id -> name lookup
+    const setIdToName = {};
+    setsData.forEach(s => { setIdToName[s.id] = s.name; });
+    // Build set -> league map (used by estimate engine for same-league comp weighting)
+    const setLeagueMap = {};
+    setsData.forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
+    // Build set config from Supabase
+    const sbSetConfig = {};
+    setsData.forEach(s => {
+      sbSetConfig[s.name] = { casePrice: +s.case_price || 500, casePack: +s.figures_per_case || 12, hitRatio: +s.hit_ratio || 1.02 };
+    });
+    // Build set_math: set_name -> [{player, variant, population}]
+    const setMath = {};
+    setMathData.forEach(row => {
+      const setName = setIdToName[row.set_id];
+      if (!setName) return;
+      if (!setMath[setName]) setMath[setName] = [];
+      setMath[setName].push({ player: row.player, variant: row.variant, population: +row.population });
+    });
+    const activeWeights = (paramsData || [])[0] || null;
+    // Build setName -> image_url map for the case ghost overlay
+    const setImageMap = {};
+    setsData.forEach(s => { if (s.image_url) setImageMap[s.name] = s.image_url; });
+    allData = { products, allListings, sbSetConfig, setMath, signalMap: {}, activeWeights, setLeagueMap, setImageMap };
     initPage();
   } catch(e) {
     document.getElementById('main-content').innerHTML =
@@ -332,33 +751,81 @@ async function loadData() {
 }
 
 function initPage() {
-  const allSetNames = [...new Set((allData.products||[])
+  const setsWithMath = Object.keys(allData.setMath || {});
+  const setsWithPI   = [...new Set((allData.products||[])
     .filter(p => p.player && p.player !== 'Unknown' && p.set).map(p => p.set))];
-  const availableSets = allSetNames.filter(s => getSetConfig(s) !== null);
+  const availableSets = setsWithMath.filter(s =>
+    setsWithPI.includes(s) || (allData.sbSetConfig && allData.sbSetConfig[s])
+  );
   if (!availableSets.length) {
     document.getElementById('main-content').innerHTML =
-      '<div class="loading-state" style="color:#ff4455">no matching sets found<br>' +
-      '<span style="font-size:9px;color:#666;margin-top:8px;display:block">sets: ' + allSetNames.slice(0,8).join(', ') + '</span></div>';
+      '<div class="loading-state" style="color:#ff4455">no sets found with roster data</div>';
     return;
   }
-  activeSet = availableSets[0];
+  activeSet = availableSets.find(s => setsWithPI.includes(s)) || availableSets[0];
   renderPage(availableSets);
 }
 
 function renderPage(sets) {
   document.getElementById('main-content').innerHTML = `
     <div class="set-selector" id="set-selector"></div>
+    <div class="estimate-toggle-row">
+      <span class="estimate-toggle-label">estimate mode</span>
+      <div class="estimate-toggle">
+        <button id="tog-sales" class="tog-btn" onclick="setEstimateMode('sales-only')">sales only</button>
+        <button id="tog-blend" class="tog-btn active" onclick="setEstimateMode('model-blend')">model blend</button>
+        <button id="tog-full"  class="tog-btn" onclick="setEstimateMode('full-model')">full model</button>
+      </div>
+    </div>
     <div class="stats-row" id="stats-row"></div>
     <div class="sim-area">
       <div class="sim-header">
-        <div class="sim-title">open a case</div>
+        <div class="sim-title" id="sim-title">open a case</div>
         <div class="sim-controls">
-          <button class="reset-btn" onclick="resetSim()">reset</button>
-          <button class="pull-btn" id="pull-btn" onclick="runSimulation()">▶ open case</button>
+          <button class="reset-btn" onclick="resetAll()">reset</button>
+          <button class="sim-btn-500" id="btn-500" onclick="run500()">◈ open 500 cases</button>
+          <button class="sim-btn-open" id="btn-one" onclick="runSimulation()">▶ open a case</button>
         </div>
       </div>
-      <div class="case-grid" id="case-grid"></div>
-      <div class="result-bar" id="result-bar"></div>
+      <!-- Single-case grid (shown in open-one mode) -->
+      <div id="single-case-wrap">
+        <div class="case-grid-outer" id="case-grid-outer">
+          <div class="case-grid" id="case-grid"></div>
+          <div class="case-ghost" id="case-ghost">
+            <img class="case-ghost-img" id="case-ghost-img" src="" alt=""
+              onerror="this.style.display='none'; document.getElementById('case-ghost-name').style.display='block'">
+            <div class="case-ghost-name" id="case-ghost-name" style="display:none"></div>
+            <div class="case-ghost-hint">OPEN A CASE TO BEGIN</div>
+          </div>
+        </div>
+        <div class="result-bar" id="result-bar"></div>
+      </div>
+      <!-- Distribution chart (shown in 500-case mode) -->
+      <div id="dist-wrap" style="display:none">
+        <div class="chart-area" id="chart-area">
+          <div class="chart-empty">
+            <div class="chart-empty-icon">◈</div>
+            <div class="chart-empty-text">running simulations...</div>
+          </div>
+        </div>
+        <div class="chart-legend" id="chart-legend" style="display:none">
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--bin-real)"></div>all real data</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--bin-mixed)"></div>mixed</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--bin-est)"></div>mostly estimated</div>
+          <div class="legend-divider"></div>
+          <div class="legend-item"><div style="width:10px;height:2px;background:var(--accent);border-radius:1px"></div>retail price</div>
+          <div class="legend-item"><div style="width:10px;height:2px;background:rgba(232,255,71,0.3);border-radius:1px"></div>p10 · median · p90</div>
+        </div>
+        <div class="sim-summary" id="sim-summary"></div>
+        <!-- Case grid populated when bar is clicked -->
+        <div id="dist-case-section" style="display:none">
+          <div style="padding:12px 0 8px;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border);margin-top:4px">
+            case breakdown · <span id="dist-case-meta" style="color:var(--muted2)">click a bar to inspect</span>
+          </div>
+          <div class="case-grid" id="dist-case-grid"></div>
+        </div>
+      </div>
+      <!-- Prob row: hidden after sim runs -->
       <div class="prob-row" id="prob-row"></div>
     </div>
     <div class="history-section" id="history-section" style="display:none">
@@ -375,18 +842,27 @@ function renderPage(sets) {
 }
 
 function renderSetSelector(sets) {
-  document.getElementById('set-selector').innerHTML = sets.map(s =>
-    `<button class="set-btn ${s===activeSet?'active':''}" onclick="switchSet('${s.replace(/'/g,"\\'")}')">
-      ${(getSetConfig(s)||{label:s}).label}
-    </button>`).join('');
+  const sorted = [...sets].sort((a, b) => shortSetName(b).localeCompare(shortSetName(a)));
+  document.getElementById('set-selector').innerHTML = sorted.map(s =>
+    `<button class="set-btn ${s===activeSet?'active':''}" onclick="switchSet('${s.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
+      ${shortSetName(s).toUpperCase()}
+    </button>`
+  ).join('');
 }
 
 function switchSet(s) {
-  activeSet = s; simHistory = []; lastPulls = [];
-  const allSetNames = [...new Set((allData.products||[])
+  activeSet = s; simHistory = []; lastPulls = []; simResults = [];
+  selectedBin = null; activePulls500 = null;
+  updateCaseGhostImage();
+  const setsWithMath2 = Object.keys(allData.setMath || {});
+  const setsWithPI2   = [...new Set((allData.products||[])
     .filter(p => p.player && p.player!=='Unknown' && p.set).map(p=>p.set))];
-  renderSetSelector(allSetNames.filter(s=>getSetConfig(s)!==null));
+  const sets2 = setsWithMath2.filter(s2 =>
+    setsWithPI2.includes(s2) || (allData.sbSetConfig && allData.sbSetConfig[s2])
+  );
+  renderSetSelector(sets2);
   renderStats(); renderEmptyGrid(); renderProbabilities();
+  showSingleCaseMode();
   document.getElementById('result-bar').classList.remove('visible');
   document.getElementById('history-section').style.display = 'none';
 }
@@ -396,37 +872,44 @@ function renderStats() {
   const cfg = getSetConfig(activeSet) || { casePrice:500, casePack:12, hitRatio:1.02 };
   const products = (allData.products||[]).filter(p => p.set===activeSet && p.player && p.player!=='Unknown');
 
-  const basePrices = products.filter(p => p.variant==='Base' && p.avgPrice>0).map(p => p.avgPrice);
+  const basePrices = products.filter(p => p.variant==='Base').map(p => bestPriceSim(p)).filter(Boolean);
   const avgBase = basePrices.length ? Math.round(basePrices.reduce((a,b)=>a+b,0)/basePrices.length) : 0;
 
-  // Population-weighted avg hit value across all parallels (real + projected)
-  const { projections } = buildProjections(activeSet, products);
-  let wSum = 0, wTotal = 0;
-  VARIANT_ORDER.filter(v => v!=='Base').forEach(variant => {
-    const pop = POP_DEFAULTS[variant]; if (!pop) return;
-    const seen = new Set();
-    const prices = [];
-    products.filter(p => p.variant===variant && p.avgPrice>0).forEach(p => { seen.add(p.player); prices.push(p.avgPrice); });
-    products.forEach(p => {
-      if (seen.has(p.player)) return;
-      const proj = projections[p.player+'|||'+variant];
-      if (proj && proj.price>0) { seen.add(p.player); prices.push(proj.price); }
-    });
-    if (!prices.length) return;
-    const avg = prices.reduce((a,b)=>a+b,0)/prices.length;
-    wSum += avg * pop; wTotal += pop;
+  // Avg hit value — two versions using set_math as population source
+  const { estimates: projections, refreshedEstimates: refreshed } = estimateMode !== 'sales-only'
+    ? buildEstimates(activeSet, products, allData.activeWeights)
+    : { estimates: {}, refreshedEstimates: {} };
+  const mathRows = (allData.setMath && allData.setMath[activeSet]) || [];
+  const nonBaseMath = mathRows.filter(r => r.variant !== 'Base' && r.population > 0);
+  let realGMV = 0, realPop = 0, fullGMV = 0, fullPop = 0;
+  nonBaseMath.forEach(({ player, variant, population }) => {
+    const pi = products.find(p => p.player===player && p.variant===variant);
+    const realPrice = pi ? bestPriceSim(pi) : null;
+    if (realPrice) { realGMV += population * realPrice; realPop += population; }
+    // Full Model: prefer refreshed estimate (freshness blend) over real price
+    const ref = refreshed?.[player+'|||'+variant];
+    const proj = projections[player+'|||'+variant];
+    const usePrice = estimateMode === 'full-model'
+      ? (ref?.price || proj?.price || realPrice || null)
+      : (realPrice || (proj && proj.price>0 ? proj.price : null));
+    if (usePrice) { fullGMV += population * usePrice; fullPop += population; }
   });
-  const avgHit = wTotal>0 ? Math.round(wSum/wTotal) : 0;
+  const avgHitReal = realPop>0 ? Math.round(realGMV/realPop) : 0;
+  const avgHitFull = fullPop>0 ? Math.round(fullGMV/fullPop) : 0;
+  const hitRealCombos = nonBaseMath.filter(({player,variant}) => {
+    const pi2 = products.find(p => p.player===player && p.variant===variant);
+    return pi2 && bestPriceSim(pi2);
+  }).length;
+  const hitTotalCombos = nonBaseMath.length;
 
-  // Expected value using guaranteed-hit pool math
-  const { hitPool, fullPool } = buildSplitPools(activeSet);
+  // Actuarial formula: hitRatio guaranteed hits × avgHit + (casePack − hitRatio) bases × avgBase
+  const hitRatio = cfg.hitRatio || 1.02;
+  const avgHitForCalc = estimateMode === 'sales-only' ? avgHitReal : avgHitFull;
   let expectedValue = 0;
-  if (hitPool.length && fullPool.length) {
-    const hitAvg = hitPool.reduce((s,f)=>s+f.price,0)/hitPool.length;
-    const fullAvg = fullPool.reduce((s,f)=>s+f.price,0)/fullPool.length;
-    expectedValue = Math.round(hitAvg + fullAvg*(cfg.casePack-1));
+  if (avgBase > 0 && avgHitForCalc > 0 && cfg.casePrice > 0) {
+    expectedValue = Math.round((cfg.casePack - hitRatio) * avgBase + hitRatio * avgHitForCalc);
   }
-  const avgRoi = expectedValue>0 ? Math.round(((expectedValue-cfg.casePrice)/cfg.casePrice)*100) : 0;
+  const avgRoi = expectedValue > 0 ? Math.round(((expectedValue - cfg.casePrice) / cfg.casePrice) * 100) : 0;
 
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card">
@@ -437,12 +920,21 @@ function renderStats() {
     <div class="stat-card">
       <div class="stat-label">avg base value</div>
       <div class="stat-value accent">$${avgBase||'—'}</div>
-      <div class="stat-sub">${basePrices.length} players w/ data</div>
+      <div class="stat-sub">90d avg · ${basePrices.length} players</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">avg hit value</div>
-      <div class="stat-value" style="color:var(--gold)">$${avgHit||'—'}</div>
-      <div class="stat-sub">population-weighted</div>
+      <div class="stat-label">avg hit value
+        <span style="font-size:8px;color:var(--muted);cursor:default;user-select:none" onmouseenter="showHitTooltip(event)" onmouseleave="hideHitTooltip()"> ⓘ</span>
+      </div>
+      ${(() => {
+        const isSalesOnly = estimateMode === 'sales-only';
+        const val   = isSalesOnly ? avgHitReal : avgHitFull;
+        const color = isSalesOnly ? 'var(--gold)' : 'var(--orange)';
+        const combos = isSalesOnly ? hitRealCombos : hitTotalCombos;
+        const modeLabel = estimateMode === 'full-model' ? 'full model' : estimateMode === 'model-blend' ? 'model blend' : 'real';
+        return `<div class="stat-value" style="color:${color}">${val ? '$'+val.toLocaleString() : '—'}</div>
+        <div class="stat-sub">${modeLabel} · ${combos} combos</div>`;
+      })()}
     </div>
     <div class="stat-card">
       <div class="stat-label">expected case ROI</div>
@@ -453,46 +945,58 @@ function renderStats() {
 
 // ── Empty grid ────────────────────────────────────────────────────────────────
 function renderEmptyGrid() {
-  const cfg = getSetConfig(activeSet)||{casePack:12};
+  const cfg = getSetConfig(activeSet) || { casePack: 12 };
   let html = '';
-  for (let i=0; i<cfg.casePack; i++) {
-    const g = i===0 ? 'guaranteed-slot' : '';
-    html += `<div class="box-slot ${g}" id="slot-${i}">
-      <span class="box-num">${i+1}</span>
-      ${i===0
-        ? '<span class="box-empty-icon" style="color:var(--accent);opacity:0.25">★</span>'
-        : '<span class="box-empty-icon">◻</span>'}
+  for (let i = 0; i < cfg.casePack; i++) {
+    const isGuaranteed = i === 0;
+    html += `<div class="box-slot${isGuaranteed ? ' guaranteed-slot' : ''}" id="slot-${i}">
+      <div class="box-flip-inner">
+        <div class="box-face-front">
+          <span class="box-num">${i + 1}</span>
+          ${isGuaranteed
+            ? '<span class="box-empty-icon" style="color:var(--accent);opacity:0.28">★</span>'
+            : '<span class="box-empty-icon">◻</span>'}
+        </div>
+        <div class="box-face-back"></div>
+      </div>
     </div>`;
   }
   document.getElementById('case-grid').innerHTML = html;
+  updateCaseGhostImage();
+  showCaseGhost();
 }
 
 // ── Probabilities ─────────────────────────────────────────────────────────────
 function renderProbabilities() {
-  const { hitPool, fullPool } = buildSplitPools(activeSet);
-  if (!hitPool.length) return;
+  const mathRows = (allData.setMath && allData.setMath[activeSet]) || [];
+  if (!mathRows.length) return;
   const cfg = getSetConfig(activeSet) || { casePack: 12 };
+  const casePack = cfg.casePack || 12;
 
-  // Total cases = total population / figures per case
-  const totalCases = fullPool.length / cfg.casePack;
+  // Deterministic totals from set_math — no simulation involved
+  const totalCards = mathRows.reduce((s, r) => s + (r.population || 0), 0);
+  const totalCases = Math.round(totalCards / casePack);
+  if (!totalCases) return;
 
+  // Sum populations by variant (non-Base only)
   const byV = {};
-  hitPool.forEach(f => { byV[f.variant] = (byV[f.variant]||0)+1; });
-  const variants = VARIANT_ORDER.filter(v => v!=='Base' && byV[v]);
+  mathRows.filter(r => r.variant !== 'Base').forEach(r => {
+    byV[r.variant] = (byV[r.variant] || 0) + (r.population || 0);
+  });
+  const variants = VARIANT_ORDER.filter(v => v !== 'Base' && byV[v])
+    .sort((a, b) => (byV[b] || 0) - (byV[a] || 0));
 
   document.getElementById('prob-row').innerHTML = `
     <div class="prob-title">guaranteed hit · variant distribution per case</div>
     <div class="prob-bars">
       ${variants.map(v => {
-        const n = byV[v]||0;
-        // pct = how many of these variants exist per 100 cases
+        const n = byV[v] || 0;
         const pct = n / totalCases * 100;
-        const dp = pct<0.1 ? pct.toFixed(3) : pct<1 ? pct.toFixed(2) : pct.toFixed(1);
-        // odds = 1 in X cases contains this variant
-        const oddsN = n>0 ? (totalCases/n) : 0;
-        const oddsStr = oddsN >= 10 ? '1:' + Math.round(oddsN).toLocaleString() + ' cases' : oddsN.toFixed(1) + ' per case';
+        const dp = pct < 0.1 ? pct.toFixed(3) : pct < 1 ? pct.toFixed(2) : pct.toFixed(1);
+        const oddsN = n > 0 ? totalCases / n : 0;
+        const oddsStr = '1:' + (oddsN >= 10 ? Math.round(oddsN).toLocaleString() : oddsN.toFixed(1)) + ' cases';
         return `<div class="prob-item">
-          <span class="prob-variant" style="color:${VARIANT_COLORS[v]||'var(--muted)'}">${v}</span>
+          <span class="prob-variant" style="color:${VARIANT_COLORS[v]||'var(--muted)'}">${shortVariantName(v)}</span>
           <div class="prob-bar-wrap">
             <div class="prob-bar" style="width:${Math.min(100,pct)}%;background:${VARIANT_COLORS[v]||'var(--muted)'}"></div>
           </div>
@@ -533,26 +1037,44 @@ function buildSplitPools(setName) {
 
 function buildPool(setName) {
   const products = (allData.products||[]).filter(p => p.set===setName && p.player && p.player!=='Unknown');
-  const { projections } = buildProjections(setName, products);
+  const { estimates: projections, refreshedEstimates: refreshed } = estimateMode !== 'sales-only'
+    ? buildEstimates(setName, products, allData.activeWeights)
+    : { estimates: {}, refreshedEstimates: {} };
   const pool = []; const poolByVariant = {};
-  [...new Set(products.map(p=>p.player))].forEach(player => {
-    products.filter(p=>p.player===player).forEach(pv => {
-      const pop = POP_DEFAULTS[pv.variant]; if (!pop) return;
-      const price = getPrice(player, pv.variant, products, projections); if (!price) return;
-      for (let i=0; i<pop; i++) {
-        pool.push({ player, variant: pv.variant, price: price.value,
-          isEstimated: price.estimated, confidence: price.confidence,
-          projData: price.projData||null, realData: price.realData||null });
-      }
-      poolByVariant[pv.variant] = (poolByVariant[pv.variant]||0)+pop;
-    });
+  // Use set_math as sole source of truth for roster + populations
+  const mathRows = (allData.setMath && allData.setMath[setName]) || [];
+  if (!mathRows.length) {
+    console.warn('No set_math data for', setName);
+    return { pool, poolByVariant, totalPop: 0 };
+  }
+  mathRows.forEach(({ player, variant, population }) => {
+    if (!player || player === 'Unknown' || !population) return;
+    const price = getPrice(player, variant, products, projections, refreshed); if (!price) return;
+    for (let i=0; i<population; i++) {
+      pool.push({ player, variant, price: price.value,
+        isEstimated: price.estimated, confidence: price.confidence,
+        projData: price.projData||null, realData: price.realData||null });
+    }
+    poolByVariant[variant] = (poolByVariant[variant]||0)+population;
   });
   return { pool, poolByVariant, totalPop: pool.length };
 }
 
-function getPrice(player, variant, products, projections) {
+function getPrice(player, variant, products, projections, refreshed) {
+  // Full Model: freshness-blended estimate takes priority over real data
+  if (estimateMode === 'full-model') {
+    const ref = refreshed?.[player+'|||'+variant];
+    if (ref && ref.price > 0) return { value: ref.price, estimated: true, confidence: ref.confidence, projData: ref };
+    const proj = projections[player+'|||'+variant];
+    if (proj && proj.price > 0) return { value: proj.price, estimated: true, confidence: proj.confidence, projData: proj };
+    const vp = products.filter(p=>p.variant===variant).map(p=>bestPriceSim(p)).filter(Boolean);
+    if (vp.length) return { value: Math.round(vp.reduce((a,b)=>a+b,0)/vp.length), estimated: true, confidence: 'set-avg' };
+    return null;
+  }
+  // Model Blend / Sales Only: real data takes precedence
   const real = products.find(p => p.player===player && p.variant===variant);
   if (real) { const p=bestPriceSim(real); if (p) return {value:p,estimated:false,confidence:'real',realData:real}; }
+  if (estimateMode === 'sales-only') return null;
   const proj = projections[player+'|||'+variant];
   if (proj && proj.price>0) return {value:proj.price,estimated:true,confidence:proj.confidence,projData:proj};
   const vp = products.filter(p=>p.variant===variant&&p.avgPrice>0).map(p=>p.avgPrice);
@@ -561,102 +1083,55 @@ function getPrice(player, variant, products, projections) {
 }
 
 function bestPriceSim(p) {
+  // 90d-first priority — matches sets.html default (recencyLevel 1)
+  // so Avg Base, Avg Hit Value, Expected ROI, and pool pricing all use the same timeframe
   if (!p) return null;
-  if (p.avg30d  && p.sales30d  >= 1) return p.avg30d;
   if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
   if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+  if (p.lastSalePrice > 0) return p.lastSalePrice;
   return null;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PROJECTION ENGINE (full, with anchors for drawer)
-// ═══════════════════════════════════════════════════════════════════════════
-
-function buildProjections(setName, setProducts) {
-  const aiMults = {}, aiOverrides = {};
-  if (allData.aiModelOutput) {
-    (allData.aiModelOutput.adjustedMultipliers||[]).filter(m=>m.set===setName)
-      .forEach(m => { aiMults[m.variant] = {mult:m.recommendedMultiplier,reasoning:m.reasoning}; });
-    (allData.aiModelOutput.playerOverrides||[]).filter(o=>o.set===setName)
-      .forEach(o => { aiOverrides[o.player+'|||'+o.variant] = o; });
-  }
-
-  const byPlayer = {};
-  setProducts.forEach(p => { if (!byPlayer[p.player]) byPlayer[p.player]={}; byPlayer[p.player][p.variant]=p; });
-
-  const allVariants = [...new Set(setProducts.map(p=>p.variant))];
-  const crossRatios = {};
-  allVariants.forEach(vA => allVariants.forEach(vB => {
-    if (vA===vB) return;
-    crossRatios[vA+'|||'+vB] = [];
-    Object.values(byPlayer).forEach(pv => {
-      const dA = bestPriceFull(pv[vA]), dB = bestPriceFull(pv[vB]);
-      if (dA && dB && dA.price>0 && dB.price>0)
-        crossRatios[vA+'|||'+vB].push({ratio:dA.price/dB.price,salesA:dA.sales,salesB:dB.sales});
-    });
-  }));
-
-  function weightedMedianRatio(pairs) {
-    if (!pairs.length) return null;
-    const s = [...pairs].sort((a,b)=>a.ratio-b.ratio);
-    const tw = s.reduce((t,p)=>t+Math.min(p.salesA||1,p.salesB||1),0);
-    let cw=0;
-    for (const p of s) { cw+=Math.min(p.salesA||1,p.salesB||1); if (cw>=tw/2) return {ratio:p.ratio,n:pairs.length}; }
-    return {ratio:s[Math.floor(s.length/2)].ratio,n:pairs.length};
-  }
-
-  const setRatios = {};
-  Object.entries(crossRatios).forEach(([k,p]) => { const r=weightedMedianRatio(p); if(r) setRatios[k]=r; });
-
-  const projections = {};
-  Object.entries(byPlayer).forEach(([player,variants]) => {
-    const known = Object.keys(variants).filter(v=>variants[v]?.avgPrice>0);
-    if (!known.length) return;
-    allVariants.forEach(tv => {
-      if (variants[tv]?.avgPrice>0) return;
-      if (!setProducts.some(p=>p.variant===tv)) return;
-      const ov = aiOverrides[player+'|||'+tv];
-      const am = aiMults[tv];
-      const anchors = [];
-      known.forEach(sv => {
-        const rd = setRatios[tv+'|||'+sv]; if (!rd) return;
-        const sp = bestPriceFull(variants[sv]); if (!sp) return;
-        const prox = (VARIANT_PROXIMITY[tv]||{})[sv]||0.5;
-        const rf = sp.recency==='30d'?1.0:sp.recency==='90d'?0.7:0.4;
-        anchors.push({
-          sourceVariant:sv, sourcePrice:Math.round(sp.price), sourceRecency:sp.recency,
-          sourceSales:sp.sales, ratio:Math.round(rd.ratio*100)/100, ratioN:rd.n,
-          impliedPrice:Math.round(sp.price*rd.ratio), proximity:prox, recencyFactor:rf,
-          weight:prox*rf*Math.sqrt(sp.sales),
-        });
-      });
-      if (!anchors.length && !ov) return;
-      let pp, pt;
-      if (ov) {
-        pp = Math.round(ov.overrideMultiplier*(bestPriceFull(variants['Base'])?.price||1)); pt='ai';
-      } else {
-        const tw=anchors.reduce((s,a)=>s+a.weight,0);
-        pp = tw>0 ? Math.round(anchors.reduce((s,a)=>s+a.impliedPrice*a.weight,0)/tw) : Math.round(anchors[0].impliedPrice);
-        pt = am?'ai':'est';
-      }
-      const h30=anchors.some(a=>a.sourceRecency==='30d'), h90=anchors.some(a=>a.sourceRecency==='90d');
-      const hp=anchors.filter(a=>a.proximity>=0.8).length;
-      let conf,cs;
-      if (anchors.length>=3&&h30&&hp>=2)          {conf='High';cs=90;}
-      else if (anchors.length>=2&&(h30||h90))      {conf='Medium';cs=65;}
-      else if (anchors.length>=2)                  {conf='Medium-Low';cs=45;}
-      else if (anchors.length===1&&anchors[0].sourceSales>=10) {conf='Low';cs=30;}
-      else                                         {conf='Very Low';cs=15;}
-      if (ov||am) {conf='AI Calibrated';cs=Math.min(95,cs+20);}
-      projections[player+'|||'+tv] = {
-        price:pp, projType:pt, confidence:conf, confidenceScore:cs,
-        anchors, aiOverride:ov||null, aiAdjusted:am||null,
-        playerBasePrice:Math.round(bestPriceFull(variants['Base'])?.price||0),
-      };
-    });
-  });
-  return { projections, byPlayer };
+// ── Estimate mode toggle ─────────────────────────────────────────────────────
+function setEstimateMode(mode) {
+  estimateMode = mode;
+  const ts = document.getElementById('tog-sales');
+  const tb = document.getElementById('tog-blend');
+  const tf = document.getElementById('tog-full');
+  if (ts) ts.classList.toggle('active', mode === 'sales-only');
+  if (tb) tb.classList.toggle('active', mode === 'model-blend');
+  if (tf) tf.classList.toggle('active', mode === 'full-model');
+  renderStats();
 }
+
+// ── Case ghost (sealed-box overlay before opening) ────────────────────────────
+function updateCaseGhostImage() {
+  if (!allData) return;
+  const imgEl  = document.getElementById('case-ghost-img');
+  const nameEl = document.getElementById('case-ghost-name');
+  if (!imgEl || !nameEl) return;
+  const url = allData.setImageMap && allData.setImageMap[activeSet];
+  if (url) {
+    imgEl.src = url;
+    imgEl.style.display = '';
+    nameEl.style.display = 'none';
+  } else {
+    imgEl.src = '';
+    imgEl.style.display = 'none';
+    nameEl.textContent = (activeSet || '').toUpperCase();
+    nameEl.style.display = 'block';
+  }
+}
+function showCaseGhost() {
+  const g = document.getElementById('case-ghost');
+  if (g) g.classList.remove('hidden');
+}
+function hideCaseGhost() {
+  const g = document.getElementById('case-ghost');
+  if (g) g.classList.add('hidden');
+}
+
+// Estimate engine is in estimate-engine.js (shared with heatmap.html and sets.html)
 
 function bestPriceFull(p) {
   if (!p) return null;
@@ -673,7 +1148,12 @@ function bestPriceFull(p) {
 function runSimulation() {
   if (isAnimating) return;
   isAnimating = true;
-  document.getElementById('pull-btn').disabled = true;
+  hideCaseGhost();
+  showSingleCaseMode();
+  document.getElementById('prob-row').style.display = 'none';
+  const b1 = document.getElementById('btn-one'), b5 = document.getElementById('btn-500');
+  if(b1) b1.disabled = true;
+  if(b5) b5.disabled = true;
 
   const cfg = getSetConfig(activeSet)||{casePrice:500,casePack:12,hitRatio:1.02};
   const { hitPool, remainingPool } = buildSplitPools(activeSet);
@@ -681,17 +1161,12 @@ function runSimulation() {
   if (!hitPool.length) {
     alert('Not enough parallel data to simulate this set yet.');
     isAnimating = false;
-    document.getElementById('pull-btn').disabled = false;
+    enableBtns();
     return;
   }
 
   const pulls = [];
-
-  // Slot 0 — GUARANTEED HIT from parallel-only pool
   pulls.push({ ...hitPool[Math.floor(Math.random()*hitPool.length)], slotIndex:0, isGuaranteed:true });
-
-  // Slots 1–(n-1) — remaining pool after 1 parallel allocated per case
-  // Base cards dominate; leftover parallels make second hits correctly rare (~2%)
   for (let i=1; i<cfg.casePack; i++) {
     pulls.push({ ...remainingPool[Math.floor(Math.random()*remainingPool.length)], slotIndex:i, isGuaranteed:false });
   }
@@ -705,7 +1180,7 @@ function runSimulation() {
         setTimeout(() => {
           showResults(pulls, cfg);
           isAnimating = false;
-          document.getElementById('pull-btn').disabled = false;
+          enableBtns();
         }, 300);
       }
     }, i*110);
@@ -713,28 +1188,24 @@ function runSimulation() {
 }
 
 function revealSlot(i, pull) {
-  const slot = document.getElementById('slot-'+i);
-  const vLow = pull.variant.toLowerCase();
+  const slot = document.getElementById('slot-' + i);
+  const vSlug = pull.variant.toLowerCase().replace(/\s+/g, '-');
   const isHit = pull.variant !== 'Base';
 
-  const estBadge = (isHit && pull.isEstimated)
-    ? `<span class="box-est-badge">EST</span>` : '';
-  const clickHint = isHit ? `<span class="box-click-hint">↗ details</span>` : '';
-
-  slot.className = `box-slot revealed${isHit?' is-hit is-'+vLow:''}${pull.isGuaranteed?' guaranteed-slot':''}`;
+  // Set variant border + class (border color change visible mid-flip)
+  slot.className = `box-slot${pull.isGuaranteed ? ' guaranteed-slot' : ''}${isHit ? ' is-hit is-' + vSlug : ''}`;
   if (isHit) slot.setAttribute('onclick', `openHitDrawer(${i})`);
+  else slot.removeAttribute('onclick');
 
-  slot.innerHTML = `
-    <span class="box-num">${i+1}${pull.isGuaranteed?' ★':''}</span>
-    ${estBadge}
-    <span class="box-variant-badge" style="color:${VARIANT_COLORS[pull.variant]||'var(--muted)'}">
-      ${pull.variant}
-    </span>
-    <span class="box-player">${pull.player}</span>
-    <span class="box-price${pull.isEstimated?' estimated':''}">
-      $${Math.round(pull.price).toLocaleString()}
-    </span>
-    ${clickHint}`;
+  // Populate the back face with the figure card
+  const back = slot.querySelector('.box-face-back');
+  if (back) back.innerHTML = buildFigureCardHTML(
+    pull.player, pull.variant, pull.price,
+    pull.isEstimated, pull.isGuaranteed, activeSet
+  );
+
+  // Trigger the 3D flip
+  slot.classList.add('revealed');
 }
 
 // ── Drawer ────────────────────────────────────────────────────────────────────
@@ -743,7 +1214,7 @@ function openHitDrawer(i) {
   if (!pull || pull.variant==='Base') return;
   document.getElementById('d-player').textContent = pull.player;
   document.getElementById('d-variant').textContent =
-    pull.variant + (pull.isEstimated ? ' · Projected Value' : ' · Sales History');
+    pull.variant + (pull.isEstimated ? ' · Model Estimate' : ' · Sales History');
   if (pull.isEstimated) renderProjectionBody(pull);
   else renderSalesBody(pull);
   document.getElementById('overlay').classList.add('visible');
@@ -756,90 +1227,317 @@ function closeDrawer() {
 }
 
 function renderProjectionBody(pull) {
-  const products = (allData.products||[]).filter(p=>p.set===activeSet&&p.player!=='Unknown');
-  const { projections, byPlayer } = buildProjections(activeSet, products);
-  const proj = projections[pull.player+'|||'+pull.variant];
-  if (!proj) { document.getElementById('d-body').innerHTML='<div style="color:var(--muted);padding:20px 0;font-size:10px">No projection data.</div>'; return; }
-
-  // Known data for this player
-  const pv = byPlayer[pull.player]||{};
-  const known = Object.entries(pv).filter(([,d])=>d.avgPrice>0)
-    .sort((a,b)=>{const o={'Base':0,'Victory':1,'Vides':2,'Emerald':3,'Gold':4,'Chrome':5,'Fire':6,'SP':7};return (o[a[0]]??99)-(o[b[0]]??99);})
-    .map(([v,d]) => {
-      const bp=bestPriceFull(d);
-      return `<div class="d-stat"><span class="d-stat-label">${v}</span>
-        <span class="d-stat-val accent">$${Math.round(d.avgPrice)} · ${d.totalSales} sales${bp?` <span style="font-size:8px;color:var(--muted)">(${bp.recency})</span>`:''}</span></div>`;
-    }).join('');
-
-  // Anchors
-  const anchors = proj.anchors||[];
-  const tw = anchors.reduce((s,a)=>s+a.weight,0);
-  let anchorsHtml = '';
-  if (anchors.length) {
-    anchorsHtml = `<div class="d-section-title">Anchors · ${anchors.length}</div>`
-      + anchors.map(a => {
-          const wp = tw>0?Math.round(a.weight/tw*100):0;
-          const rc = a.sourceRecency==='30d'?'var(--accent)':a.sourceRecency==='90d'?'#ffb347':'var(--muted)';
-          return `<div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-bottom:4px">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
-              <span style="font-size:10px">${a.sourceVariant} → ${pull.variant}</span>
-              <span style="font-family:var(--display);font-size:12px;color:var(--accent)">$${a.impliedPrice}</span>
-            </div>
-            <div style="font-size:9px;color:var(--muted);line-height:1.7">
-              $${a.sourcePrice} × ${a.ratio}× = $${a.impliedPrice}<br>
-              <span style="color:${rc}">${a.sourceRecency}</span> · ${a.sourceSales} sales · proximity ${Math.round(a.proximity*100)}%
-            </div>
-            <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
-              <div style="flex:1;height:3px;background:var(--border)">
-                <div style="width:${Math.max(4,wp)}%;height:100%;background:var(--accent);opacity:0.6"></div>
-              </div>
-              <span style="font-size:8px;color:var(--muted)">${wp}%</span>
-            </div>
-          </div>`;
-        }).join('')
-      + `<div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-top:4px;font-size:9px;color:var(--muted);line-height:1.8">
-          Weighted avg:<br><span style="font-family:var(--mono)">${anchors.map(a=>`  $${a.impliedPrice} (${a.sourceVariant}) × ${tw>0?Math.round(a.weight/tw*100):0}%`).join('<br>')}</span>
-        </div>`;
-  } else if (proj.aiOverride) {
-    anchorsHtml = `<div class="d-section-title">AI Override</div>
-      <div class="ai-override-note">${proj.aiOverride.reasoning||'Player-specific AI adjustment.'}</div>`;
+  const est = pull.projData;
+  if (!est) {
+    document.getElementById('d-body').innerHTML =
+      '<div style="color:var(--muted);padding:20px 0;font-size:10px">No estimate data available.</div>';
+    return;
   }
 
-  const sc = proj.confidenceScore||0;
-  const cc = sc>=70?'#6fcf97':sc>=40?'#ffb347':'#ff6b6b';
-  const h30=anchors.some(a=>a.sourceRecency==='30d'), h90=anchors.some(a=>a.sourceRecency==='90d');
-  const rn = h30?'Using 30-day prices — recent data.':h90?'Using 90-day prices.':anchors.length?'Using all-time averages.':'';
-  const aiNote = proj.aiAdjusted
-    ? `<div class="ai-override-note"><strong>AI Calibrated</strong>${proj.aiAdjusted.reasoning||'Set-level AI adjustment.'}</div>` : '';
+  const player  = pull.player;
+  const variant = pull.variant;
+  const fmt     = v => (v && +v > 0) ? '$' + Math.round(+v).toLocaleString() : '—';
 
-  document.getElementById('d-body').innerHTML = `
+  // ── Method routing ──────────────────────────────────────────────────────────
+  const evPct      = est.evidenceWeight ?? 0;
+  const anchors    = est.anchors || [];
+  const hasAnchors = anchors.length > 0 && est.ratioEstimate != null;
+  const isComp     = est.compUsed && est.compData;
+  const hasRef     = !!est.refDist;
+  const isRefreshed = !!est.isRefreshed;
+
+  // ── Confidence ──────────────────────────────────────────────────────────────
+  const CONF_SCORES = { 'High': 95, 'Medium-High': 82, 'Medium': 65, 'Medium-Low': 45, 'Low': 30, 'Very Low': 15, 'No Data': 5 };
+  const confidence  = est.confidence || 'Very Low';
+  const score       = CONF_SCORES[confidence] || 20;
+  const confColor   = score >= 80 ? '#4caf50' : score >= 60 ? '#ffb347' : score >= 35 ? '#ff6b35' : '#ff6b6b';
+
+  const confHtml = `
     <div class="d-section">
       <div class="d-section-title">Confidence</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:10px">
         <div style="flex:1;height:5px;background:var(--border);border-radius:3px">
-          <div style="width:${sc}%;height:100%;background:${cc};border-radius:3px"></div>
+          <div style="width:${score}%;height:100%;background:${confColor};border-radius:3px"></div>
         </div>
-        <span style="font-family:var(--display);font-size:10px;color:${cc};white-space:nowrap">${proj.confidence}</span>
+        <span style="font-family:var(--display);font-size:11px;color:${confColor};white-space:nowrap">${confidence}</span>
       </div>
-      ${rn?`<div style="font-size:9px;color:var(--muted)">${rn}</div>`:''}
-    </div>
-    <div class="d-section">${anchorsHtml}${aiNote}</div>
+    </div>`;
+
+  // ── Player rank (compact — no Implied Base) ─────────────────────────────────
+  const pvsInfo = est.pvs;
+  let rankHtml = '';
+  if (pvsInfo) {
+    const displayRank = pvsInfo.nPlayers - pvsInfo.rank + 1;
+    const rankPct     = pvsInfo.percentilePct;
+    const rankLabel   = rankPct >= 95 ? 'highest value in this set'
+                      : rankPct >= 80 ? `top ${100 - rankPct}%`
+                      : rankPct <= 5  ? 'lowest value in this set'
+                      : rankPct <= 20 ? `bottom ${rankPct}%`
+                      : `${rankPct}th percentile`;
+    rankHtml = `
+      <div class="d-section">
+        <div class="d-section-title">${player} · Value Rank</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-family:var(--display);font-size:22px;color:var(--text)">#${displayRank} of ${pvsInfo.nPlayers}</span>
+          <span style="font-size:11px;color:var(--muted2)">${rankLabel}</span>
+        </div>
+        <div class="rank-bar-wrap">
+          <div class="rank-bar-fill" style="width:${rankPct}%"></div>
+          <div class="rank-bar-dot" style="left:${rankPct}%"></div>
+        </div>
+      </div>`;
+  }
+
+  // ── Anchor row builder ──────────────────────────────────────────────────────
+  const anchorRow = a => {
+    const clr = a.ratioSource === 'sales'     ? 'var(--accent)'
+              : a.ratioSource === 'cross-set' ? '#a8c8ff'
+              : '#ffb347';
+    const lbl = a.ratioSource === 'sales'     ? 'set ratio'
+              : a.ratioSource === 'cross-set' ? 'cross-set ratio'
+              : 'pop-adjusted';
+    return `<div class="anchor-row">
+      <div class="anchor-src">
+        <div style="font-size:10px;color:var(--text)">${a.sourceVariant} → ${variant}</div>
+        <div style="font-size:9px;color:${clr};margin-top:2px">${lbl}${a.ratioN > 0 ? ` · ${a.ratioN} player${a.ratioN !== 1 ? 's' : ''}` : ''}</div>
+      </div>
+      <div class="anchor-eq">${fmt(a.sourcePrice)} × ${a.ratio}×</div>
+      <div class="anchor-result">${fmt(a.impliedPrice)}</div>
+    </div>`;
+  };
+
+  // ── METHOD HERO ─────────────────────────────────────────────────────────────
+  let methodHtml = '';
+
+  // ── A: Direct Comp ──────────────────────────────────────────────────────────
+  if (isComp) {
+    const comps  = est.compData.comps || [];
+    const league = (allData.setLeagueMap || {})[activeSet] || '';
+    const figCards = comps.slice(0, 3).map(c => {
+      const sameLeague = league && (allData.setLeagueMap || {})[c.set] === league;
+      return `<div class="comp-fig-card">
+        <img src="${figureUrl(player, variant, c.set)}" alt=""
+          onerror="this.style.display='none'"
+          style="width:48px;height:60px;object-fit:cover;border-radius:2px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div class="comp-fig-set">${c.set}</div>
+          <div class="comp-fig-price">${fmt(c.price)}</div>
+          <div class="comp-fig-meta">
+            ${c.sales} sale${c.sales !== 1 ? 's' : ''} ·
+            <span style="color:${sameLeague ? 'var(--accent)' : 'var(--muted2)'}">
+              ${sameLeague ? 'same league' : 'diff. league'}
+            </span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge direct">⚡ Direct Match</span>
+        <div class="method-headline">Found ${est.compData.n} real sale${est.compData.n !== 1 ? 's' : ''} of ${player}'s ${variant}</div>
+        <div class="method-sub">
+          ${player} has a real market history for this variant in other sets —
+          the strongest signal available, no extrapolation needed.
+        </div>
+        <div class="comp-figures">${figCards}</div>
+      </div>`;
+
+  // ── B: Blend Dominant (≥60% within-set ratios) ──────────────────────────────
+  } else if (hasAnchors && evPct >= 60) {
+    const rangePct = 100 - evPct;
+    const rangeSupplement = hasRef && est.rangeEstimate ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+                  display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:10px;color:var(--muted2)">
+          + ${rangePct}% reference range · <strong style="color:var(--text)">${est.refDist.refSets.join(', ')}</strong>
+        </span>
+        <span style="font-family:var(--display);font-size:13px;color:var(--muted)">${fmt(est.rangeEstimate)}</span>
+      </div>` : '';
+
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge blend">↔ Parallel Sales Blend</span>
+        <div class="method-headline">${evPct}% driven by within-set pricing</div>
+        <div class="method-sub">
+          This set has real sales across multiple variants — we used the price
+          relationships between them to extrapolate directly.
+        </div>
+        ${anchors.map(anchorRow).join('')}
+        ${rangeSupplement}
+      </div>`;
+
+  // ── C: Ratio Only (no ref dist) ─────────────────────────────────────────────
+  } else if (!hasRef && hasAnchors) {
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge ratio">↗ Cross-Variant Ratios</span>
+        <div class="method-headline">Extrapolated from ${player}'s known variants</div>
+        <div class="method-sub">
+          No cross-set reference data yet. Estimate based on pricing ratios within this set.
+        </div>
+        ${anchors.map(anchorRow).join('')}
+      </div>`;
+
+  // ── D: Reference Range ───────────────────────────────────────────────────────
+  } else if (hasRef) {
+    const rd        = est.refDist;
+    const setList   = rd.refSets.join(', ');
+    const leagueStr = rd.sameLeague ? 'same-league' : 'cross-league';
+    const pct       = pvsInfo ? pvsInfo.percentilePct : 50;
+    const rm        = rd.rangeMin, rM = rd.rangeMax;
+
+    const extNote = rd.extrapolated
+      ? `<div style="font-size:10px;color:#ffb347;margin-top:8px">
+           ⚠ ${player} falls ${rd.extrapolatedUp ? 'above' : 'below'} the reference range — price extrapolated.
+         </div>` : '';
+
+    const rangeViz = `
+      <div class="range-viz">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+          <span style="font-size:9px;color:var(--muted)">${rm?.player || 'lowest'}</span>
+          <span style="font-size:9px;color:var(--accent)">${player}</span>
+          <span style="font-size:9px;color:var(--muted)">${rM?.player || 'highest'}</span>
+        </div>
+        <div class="range-viz-bar">
+          <div class="range-viz-fill"></div>
+          <div class="range-viz-marker" style="left:${pct}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div>
+            <div style="font-family:var(--display);font-size:15px;color:#4fd1ff">${fmt(rm?.price)}</div>
+            <div style="font-size:9px;color:var(--muted)">${rm ? Math.round(rm.percentile * 100) : 0}th pct</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--display);font-size:18px;color:var(--accent)">${fmt(est.rangeEstimate)}</div>
+            <div style="font-size:9px;color:var(--muted2)">${pct}th pct</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--display);font-size:15px;color:#ffb347">${fmt(rM?.price)}</div>
+            <div style="font-size:9px;color:var(--muted)">${rM ? Math.round(rM.percentile * 100) : 100}th pct</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--muted2)">
+          ${rd.nPoints} data point${rd.nPoints !== 1 ? 's' : ''} ·
+          ${leagueStr} match from <strong style="color:var(--text)">${setList}</strong>
+        </div>
+        ${extNote}
+      </div>`;
+
+    let blendSupplement = '';
+    if (hasAnchors && evPct > 0) {
+      const rangePct = 100 - evPct;
+      blendSupplement = `
+        <div style="padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:4px;margin-top:8px">
+          <div style="font-size:9px;color:var(--chrome);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">
+            + ${evPct}% blended from within-set ratios
+          </div>
+          ${anchors.map(a => {
+            const clr = a.ratioSource === 'sales' ? 'var(--accent)' : a.ratioSource === 'cross-set' ? '#a8c8ff' : '#ffb347';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:10px;color:var(--muted2)">${a.sourceVariant} → ${variant} × ${a.ratio}×</span>
+              <span style="font-family:var(--display);font-size:13px;color:${clr}">${fmt(a.impliedPrice)}</span>
+            </div>`;
+          }).join('')}
+          <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;
+                      display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:10px;color:var(--muted)">${rangePct}% range + ${evPct}% blend</span>
+            <span style="font-family:var(--display);font-size:14px;color:var(--accent)">${fmt(est.price)}</span>
+          </div>
+        </div>`;
+    }
+
+    const headline = evPct >= 60
+      ? `${evPct}% within-set + ${100-evPct}% reference`
+      : est.rangeEstimate != null
+      ? `${player} at ${pct}th percentile → ${fmt(est.rangeEstimate)}`
+      : `Reference range · ${pvsInfo ? pct + 'th percentile' : 'mapped position'}`;
+
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge range">📊 Reference Range</span>
+        <div class="method-headline">${headline}</div>
+        <div class="method-sub">
+          We found where ${player} sits on ${setList}'s pricing curve for
+          ${variant} (${leagueStr}, ${rd.nPoints} data point${rd.nPoints !== 1 ? 's' : ''}).
+        </div>
+        ${rangeViz}
+        ${blendSupplement}
+      </div>`;
+
+  // ── E: Fallback ──────────────────────────────────────────────────────────────
+  } else {
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge ratio">Model Estimate</span>
+        <div class="method-headline">Limited data — rough estimate only</div>
+        <div class="method-sub">No cross-set reference or within-set ratio data available. Use with caution.</div>
+      </div>`;
+  }
+
+  // ── Freshness blend (Full Model only) ───────────────────────────────────────
+  let freshnessHtml = '';
+  if (isRefreshed) {
+    const fp = est.freshness;
+    const fc = fp >= 70 ? 'var(--accent)' : fp >= 30 ? '#ffb347' : '#ff6b6b';
+    freshnessHtml = `
+      <div class="d-section">
+        <div class="d-section-title">Full Model · Freshness Blend</div>
+        <div style="font-size:11px;color:var(--muted2);line-height:1.65;margin-bottom:10px">
+          This card has real sales data. We blend the last known price with the
+          model estimate, weighted by data freshness.
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="flex:1;height:4px;background:var(--border);border-radius:2px">
+            <div style="width:${fp}%;height:100%;background:${fc};border-radius:2px"></div>
+          </div>
+          <span style="font-size:10px;color:${fc};white-space:nowrap">${fp}% fresh</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">LAST SOLD</div>
+            <div style="font-family:var(--display);font-size:16px;color:var(--text)">$${est.ownPrice.toLocaleString()}</div>
+          </div>
+          <div style="font-size:16px;color:var(--muted)">→</div>
+          <div style="flex:1;background:rgba(232,255,71,0.06);border:1px solid rgba(232,255,71,0.2);border-radius:4px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">BLENDED</div>
+            <div style="font-family:var(--display);font-size:16px;color:var(--accent)">$${est.price.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Method note for final box ────────────────────────────────────────────────
+  const methodNote = isComp
+    ? `Direct comp: ${est.compData.n} real sale${est.compData.n !== 1 ? 's' : ''} across ${est.compData.n > 1 ? 'multiple sets' : 'another set'}.`
+    : hasAnchors && evPct >= 60
+    ? `${evPct}% within-set ratio blend${hasRef ? ` + ${100-evPct}% reference range.` : '.'}`
+    : hasRef && !est.refDist?.extrapolated
+    ? `${est.refDist.sameLeague ? 'Same-league' : 'Cross-league'} reference range${hasAnchors && evPct > 0 ? ` + ${evPct}% within-set blend.` : '.'}`
+    : hasRef && est.refDist?.extrapolated
+    ? `Extrapolated ${est.refDist.extrapolatedUp ? 'above' : 'below'} reference range.`
+    : hasAnchors
+    ? 'Cross-variant ratio estimate.'
+    : 'Limited data — model estimate only.';
+
+  document.getElementById('d-body').innerHTML = `
+    ${confHtml}
+    ${methodHtml}
+    ${rankHtml}
+    ${freshnessHtml}
     <div class="proj-final">
-      <div class="proj-final-label">Projected Value</div>
-      <div class="proj-final-val">$${proj.price}</div>
-      <div class="proj-final-note">
-        ${anchors.length>1?`Weighted avg of ${anchors.length} anchors.`:anchors.length===1?`Based on ${anchors[0].sourceVariant} only.`:'AI override.'}
-        Actual price will vary.
-      </div>
+      <div class="proj-final-label">Estimate</div>
+      <div class="proj-final-val">$${est.price.toLocaleString()}</div>
+      <div class="proj-final-note">${methodNote}<br>Actual sale price will vary.</div>
     </div>
-    ${known?`<div class="d-section" style="margin-top:16px"><div class="d-section-title">Known data for ${pull.player}</div>${known}</div>`:''}`;
+  `;
 }
 
 function renderSalesBody(pull) {
   const rd = pull.realData;
   const listings = (allData.allListings||[])
     .filter(l => l.set===activeSet && l.player===pull.player && l.variant===pull.variant)
-    .sort((a,b) => new Date(b.date)-new Date(a.date));
+    .sort((a,b) => parseDate(b.date)-parseDate(a.date));
   const dp = bestPriceSim(rd)||rd?.avgPrice||0;
   const sl = rd?.sales30d ? `${rd.sales30d} sales in last 30d · ${rd.totalSales||0} all-time` : `${rd?.totalSales||0} total sales`;
 
@@ -859,7 +1557,7 @@ function renderSalesBody(pull) {
     <div class="d-section">
       <div class="d-section-title">Recent sales (${listings.length})</div>
       ${listings.length ? listings.slice(0,20).map(l => {
-        const ds = l.date ? new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—';
+        const ds = l.date ? parseDate(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—';
         const img = l.image
           ? `<img class="listing-img" src="${l.image}" alt="" loading="lazy" onerror="this.style.display='none'">`
           : `<div class="listing-img-ph">👻</div>`;
@@ -923,15 +1621,395 @@ function renderHistory() {
 
 function resetSim() {
   simHistory=[]; lastPulls=[];
-  renderEmptyGrid();
+  renderEmptyGrid(); // also calls showCaseGhost()
   document.getElementById('result-bar').classList.remove('visible');
   document.getElementById('history-section').style.display='none';
   isAnimating=false;
-  document.getElementById('pull-btn').disabled=false;
+  enableBtns();
   closeDrawer();
 }
 
+function resetAll() {
+  simResults=[]; selectedBin=null; activePulls500=null;
+  resetSim();
+  showSingleCaseMode();
+}
+
+function showSingleCaseMode() {
+  document.getElementById('single-case-wrap').style.display = '';
+  document.getElementById('dist-wrap').style.display = 'none';
+  document.getElementById('prob-row').style.display = '';
+  const t = document.getElementById('sim-title'); if(t) t.textContent = 'open a case';
+}
+
+function showDistMode() {
+  document.getElementById('single-case-wrap').style.display = 'none';
+  document.getElementById('dist-wrap').style.display = '';
+  document.getElementById('prob-row').style.display = 'none';
+  const t = document.getElementById('sim-title'); if(t) t.textContent = 'outcome distribution · 500 simulations';
+}
+
+function enableBtns() {
+  const b1 = document.getElementById('btn-one'), b5 = document.getElementById('btn-500');
+  if(b1) { b1.disabled=false; b1.textContent='▶ open a case'; }
+  if(b5) { b5.disabled=false; b5.textContent='◈ open 500 cases'; }
+}
+
+// ── Log-normal price sampler ───────────────────────────────────────────────
+function samplePrice(centralPrice, cv) {
+  if (cv <= 0) return centralPrice;
+  const sigma2 = Math.log(1 + cv*cv);
+  const sigma  = Math.sqrt(sigma2);
+  const mu     = Math.log(centralPrice) - sigma2/2;
+  const u1 = Math.random(), u2 = Math.random();
+  const z  = Math.sqrt(-2*Math.log(u1)) * Math.cos(2*Math.PI*u2);
+  return Math.max(centralPrice * 0.2, Math.round(Math.exp(mu + sigma*z)));
+}
+
+// ── Simulate one case with price sampling ─────────────────────────────────
+function simulateOneCase500(setName) {
+  const cfg = getSetConfig(setName) || { casePack: 12 };
+  const { hitPool, remainingPool } = buildSplitPools(setName);
+  if (!hitPool.length) return null;
+  const pulls = [];
+  const hitTpl = hitPool[Math.floor(Math.random()*hitPool.length)];
+  const hitCv  = CONF_CV[hitTpl.isEstimated ? (hitTpl.confidence||'set-avg') : 'real'];
+  pulls.push({ ...hitTpl, drawnPrice: samplePrice(hitTpl.price, hitCv), slotIndex:0, isGuaranteed:true });
+  for (let i=1; i<cfg.casePack; i++) {
+    const t  = remainingPool[Math.floor(Math.random()*remainingPool.length)];
+    const cv = CONF_CV[t.isEstimated ? (t.confidence||'set-avg') : 'real'];
+    pulls.push({ ...t, drawnPrice: samplePrice(t.price, cv), slotIndex:i, isGuaranteed:false });
+  }
+  const totalValue  = Math.round(pulls.reduce((s,p)=>s+p.drawnPrice,0));
+  const estFraction = pulls.filter(p=>p.isEstimated).length / pulls.length;
+  return { totalValue, pulls, estFraction };
+}
+
+// ── Run 500 simulations ────────────────────────────────────────────────────
+function run500() {
+  const b5 = document.getElementById('btn-500');
+  const b1 = document.getElementById('btn-one');
+  if(b5) { b5.disabled=true; b5.textContent='running...'; }
+  if(b1)   b1.disabled=true;
+  showDistMode();
+  document.getElementById('chart-legend').style.display = 'none';
+  document.getElementById('sim-summary').classList.remove('visible');
+  document.getElementById('dist-case-section').style.display = 'none';
+  setTimeout(() => {
+    simResults = [];
+    for (let i=0; i<N_SIMS; i++) {
+      const r = simulateOneCase500(activeSet);
+      if (r) simResults.push(r);
+    }
+    if (!simResults.length) { enableBtns(); return; }
+    renderDistribution();
+    document.getElementById('chart-legend').style.display = 'flex';
+    enableBtns();
+  }, 20);
+}
+
+// ── Distribution chart ─────────────────────────────────────────────────────
+function renderDistribution() {
+  const cfg = getSetConfig(activeSet) || { casePrice: 500 };
+  const values = simResults.map(r => r.totalValue);
+  const sorted = [...values].sort((a,b)=>a-b);
+  const TAIL_PCT = 0.95;
+  const tailCutoff = sorted[Math.floor(sorted.length * TAIL_PCT)];
+  const mainValues = values.filter(v => v <= tailCutoff);
+  const tailSims   = simResults.filter(r => r.totalValue > tailCutoff);
+  showJackpotPopup(tailSims);
+  const binMin = Math.floor(Math.min(...mainValues)/BIN_SIZE)*BIN_SIZE;
+  const binMax = Math.ceil(tailCutoff/BIN_SIZE)*BIN_SIZE;
+  const numBins = Math.ceil((binMax-binMin)/BIN_SIZE);
+  const bins = Array.from({length:numBins},(_,i)=>({lo:binMin+i*BIN_SIZE,hi:binMin+(i+1)*BIN_SIZE,sims:[],count:0,estSum:0}));
+  simResults.forEach(r => {
+    if (r.totalValue > tailCutoff) return;
+    const idx = Math.min(Math.floor((r.totalValue-binMin)/BIN_SIZE),numBins-1);
+    if (idx>=0&&idx<bins.length){bins[idx].sims.push(r);bins[idx].count++;bins[idx].estSum+=r.estFraction;}
+  });
+  const p10=sorted[Math.floor(sorted.length*0.10)],p50=sorted[Math.floor(sorted.length*0.50)],p90=sorted[Math.floor(sorted.length*0.90)];
+  const mean=Math.round(values.reduce((a,b)=>a+b,0)/values.length);
+  const pctAbove=Math.round(values.filter(v=>v>=cfg.casePrice).length/values.length*100);
+  const maxCount=Math.max(...bins.map(b=>b.count),tailSims.length);
+  const W=940,H=200,PAD={top:16,right:80,bottom:36,left:48};
+  const chartW=W-PAD.left-PAD.right,chartH=H-PAD.top-PAD.bottom;
+  const mainW=chartW*0.82,gapW=chartW*0.04,overflowW=chartW*0.10;
+  const overflowX=PAD.left+mainW+gapW;
+  const barW=mainW/numBins;
+  const xPos=val=>PAD.left+(val-binMin)/(binMax-binMin)*mainW;
+  const yH=count=>(count/maxCount)*chartH;
+  function binColor(b){if(!b.count)return 'transparent';const a=b.estSum/b.count;return a<0.25?'var(--bin-real)':a<0.60?'var(--bin-mixed)':'var(--bin-est)';}
+  let barsSvg='';
+  bins.forEach((b,i)=>{
+    if(!b.count)return;
+    const x=PAD.left+i*barW,h=yH(b.count),y=PAD.top+chartH-h;
+    const isSel=selectedBin===i,op=selectedBin===null?0.85:(isSel?1.0:0.25);
+    barsSvg+=`<rect class="dist-bar" data-bin="${i}" x="${x+1}" y="${y}" width="${Math.max(1,barW-2)}" height="${h}" fill="${binColor(b)}" opacity="${op}" style="cursor:pointer;transition:opacity 0.15s" onmouseenter="barHover(event,${i})" onmouseleave="barLeave()" onclick="selectBin500(${i})"/>`;
+  });
+  const overflowH=yH(tailSims.length),overflowY=PAD.top+chartH-overflowH;
+  if(tailSims.length>0){
+    barsSvg+=`<defs><pattern id="jackpot-stripe" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#e8ff47" stroke-width="2" opacity="0.5"/></pattern></defs>`;
+    const isSel=selectedBin==='overflow',op=selectedBin===null?0.75:(isSel?1.0:0.25);
+    barsSvg+=`<rect class="dist-bar" data-bin="overflow" x="${overflowX}" y="${overflowY}" width="${overflowW}" height="${overflowH}" fill="url(#jackpot-stripe)" opacity="${op}" style="cursor:pointer;transition:opacity 0.15s" onmouseenter="barHover(event,'overflow')" onmouseleave="barLeave()" onclick="selectBin500('overflow')"/>`;
+    barsSvg+=`<rect x="${overflowX}" y="${overflowY}" width="${overflowW}" height="${overflowH}" fill="none" stroke="#e8ff47" stroke-width="1" opacity="0.3"/>`;
+    const om=overflowX+overflowW/2;
+    barsSvg+=`<text x="${om}" y="${PAD.top+chartH+14}" text-anchor="middle" fill="#555" font-size="7" font-family="Space Mono">jackpot</text>`;
+    barsSvg+=`<text x="${om}" y="${PAD.top+chartH+23}" text-anchor="middle" fill="#444" font-size="7" font-family="Space Mono">top 5%</text>`;
+    barsSvg+=`<text x="${om}" y="${overflowY-4}" text-anchor="middle" fill="#666" font-size="7" font-family="Space Mono">${tailSims.length}</text>`;
+    const bx=PAD.left+mainW+gapW/2;
+    barsSvg+=`<path d="M${bx-3},${PAD.top} L${bx+3},${PAD.top+chartH/3} L${bx-3},${PAD.top+chartH*2/3} L${bx+3},${PAD.top+chartH}" stroke="#333" stroke-width="1.5" fill="none"/>`;
+  }
+  let yAxis='';
+  [0,0.25,0.5,0.75,1.0].forEach(t=>{const y=PAD.top+chartH-t*chartH,c=Math.round(t*maxCount);yAxis+=`<line x1="${PAD.left-4}" y1="${y}" x2="${PAD.left}" y2="${y}" stroke="#333" stroke-width="1"/><text x="${PAD.left-8}" y="${y+4}" text-anchor="end" fill="#444" font-size="8" font-family="Space Mono">${c}</text>`;});
+  let xAxis='';
+  for(let v=Math.ceil(binMin/100)*100;v<=binMax;v+=100){const x=xPos(v);if(x>PAD.left&&x<PAD.left+mainW){xAxis+=`<line x1="${x}" y1="${PAD.top+chartH}" x2="${x}" y2="${PAD.top+chartH+4}" stroke="#333" stroke-width="1"/><text x="${x}" y="${PAD.top+chartH+14}" text-anchor="middle" fill="#444" font-size="8" font-family="Space Mono">$${v}</text>`;}}
+  let grid='';[0.25,0.5,0.75,1.0].forEach(t=>{const y=PAD.top+chartH-t*chartH;grid+=`<line x1="${PAD.left}" y1="${y}" x2="${W-PAD.right+60}" y2="${y}" stroke="#171717" stroke-width="1"/>`;});
+  const ciX1=Math.max(PAD.left,xPos(p10)),ciX2=Math.min(PAD.left+mainW,xPos(Math.min(p90,tailCutoff)));
+  const ci50X1=Math.max(PAD.left,xPos(sorted[Math.floor(sorted.length*0.25)])),ci50X2=Math.min(PAD.left+mainW,xPos(Math.min(sorted[Math.floor(sorted.length*0.75)],tailCutoff)));
+  const ciShade=`<rect x="${ciX1}" y="${PAD.top}" width="${ciX2-ciX1}" height="${chartH}" fill="rgba(232,255,71,0.04)"/>`;
+  const ci50=`<rect x="${ci50X1}" y="${PAD.top}" width="${ci50X2-ci50X1}" height="${chartH}" fill="rgba(232,255,71,0.05)"/>`;
+  function vLine(val,color,label,dashed=false){const x=xPos(val);if(x<PAD.left||x>PAD.left+mainW)return '';const dash=dashed?'stroke-dasharray="4,3"':'';return `<line x1="${x}" y1="${PAD.top}" x2="${x}" y2="${PAD.top+chartH}" stroke="${color}" stroke-width="1" ${dash} opacity="0.7"/><text x="${x+3}" y="${PAD.top+10}" fill="${color}" font-size="7" font-family="Space Mono" opacity="0.85">${label}</text>`;}
+  const svg=`<svg class="dist-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${ciShade}${ci50}${barsSvg}${vLine(cfg.casePrice,'#e8ff47','retail')}${vLine(p10,'rgba(232,255,71,0.4)','p10',true)}${vLine(p50,'rgba(232,255,71,0.6)','med',true)}${vLine(Math.min(p90,tailCutoff),'rgba(232,255,71,0.4)',p90>tailCutoff?'p90+':'p90',true)}${yAxis}${xAxis}<line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+chartH}" stroke="#2a2a2a" stroke-width="1"/><line x1="${PAD.left}" y1="${PAD.top+chartH}" x2="${W-PAD.right+60}" y2="${PAD.top+chartH}" stroke="#2a2a2a" stroke-width="1"/></svg>`;
+  document.getElementById('chart-area').innerHTML=svg;
+  const meanRoi=Math.round((mean-cfg.casePrice)/cfg.casePrice*100);
+  const sumEl=document.getElementById('sim-summary');
+  sumEl.className='sim-summary visible';
+  sumEl.innerHTML=`<div><div class="sim-sum-label">median</div><div class="sim-sum-val ${p50>=cfg.casePrice?'green':'red'}">$${p50.toLocaleString()}</div></div><div><div class="sim-sum-label">mean</div><div class="sim-sum-val ${mean>=cfg.casePrice?'green':'red'}">$${mean.toLocaleString()}</div></div><div><div class="sim-sum-label">p10 – p90</div><div class="sim-sum-val" style="font-size:14px;color:var(--text)">$${p10.toLocaleString()} – $${p90.toLocaleString()}</div></div><div><div class="sim-sum-label">% above retail</div><div class="sim-sum-val ${pctAbove>=50?'green':'red'}">${pctAbove}%</div></div><div class="sim-sum-note">median roi: <strong style="color:${meanRoi>=0?'var(--green)':'var(--red)'}">${meanRoi>=0?'+':''}${meanRoi}%</strong><br>${N_SIMS} sims · $${BIN_SIZE} bins<br>click a bar to inspect that case</div>`;
+}
+
+// ── Bin helpers ────────────────────────────────────────────────────────────
+function getBins500() {
+  if (!simResults.length) return [];
+  const values=simResults.map(r=>r.totalValue),sorted=[...values].sort((a,b)=>a-b);
+  const tailCutoff=sorted[Math.floor(sorted.length*0.95)];
+  const binMin=Math.floor(Math.min(...values)/BIN_SIZE)*BIN_SIZE,binMax=Math.ceil(tailCutoff/BIN_SIZE)*BIN_SIZE;
+  const numBins=Math.ceil((binMax-binMin)/BIN_SIZE);
+  const bins=Array.from({length:numBins},(_,i)=>({lo:binMin+i*BIN_SIZE,hi:binMin+(i+1)*BIN_SIZE,sims:[],count:0,estSum:0}));
+  const overflow={lo:tailCutoff,hi:Infinity,sims:[],count:0,estSum:0,isOverflow:true};
+  simResults.forEach(r=>{if(r.totalValue>tailCutoff){overflow.sims.push(r);overflow.count++;overflow.estSum+=r.estFraction;}else{const idx=Math.min(Math.floor((r.totalValue-binMin)/BIN_SIZE),numBins-1);if(idx>=0&&idx<bins.length){bins[idx].sims.push(r);bins[idx].count++;bins[idx].estSum+=r.estFraction;}}});
+  bins.push(overflow);
+  return bins;
+}
+
+function selectBin500(binIdx) {
+  let b;
+  if (binIdx==='overflow'){const all=getBins500();b=all.find(x=>x.isOverflow);}
+  else{b=getBins500()[binIdx];}
+  if(!b||!b.count)return;
+  selectedBin=binIdx;
+  document.querySelectorAll('.dist-bar').forEach(el=>{const idx=el.dataset.bin;el.setAttribute('opacity',String(idx)===String(binIdx)?'1.0':'0.25');});
+  const sortedSims=[...b.sims].sort((a,b)=>a.totalValue-b.totalValue);
+  const medSim=sortedSims[Math.floor(sortedSims.length/2)];
+  activePulls500=medSim.pulls;
+  populateCaseGrid500(medSim);
+}
+
+function populateCaseGrid500(sim) {
+  const cfg=getSetConfig(activeSet)||{casePrice:500};
+  const tv=sim.totalValue,roi=Math.round((tv-cfg.casePrice)/cfg.casePrice*100);
+  const estCount=sim.pulls.filter(p=>p.isEstimated).length;
+  document.getElementById('dist-case-meta').innerHTML=
+    `value: <strong style="color:${tv>=cfg.casePrice?'var(--green)':'var(--red)'}">$${tv.toLocaleString()}</strong> · roi: <strong style="color:${roi>=0?'var(--green)':'var(--red)'}">${roi>=0?'+':''}${roi}%</strong> · ${estCount} projected`;
+  document.getElementById('dist-case-section').style.display='';
+  const grid=document.getElementById('dist-case-grid');
+  const cfg2=getSetConfig(activeSet)||{casePack:12};
+  // Ensure grid has the right number of slots
+  if(grid.children.length!==cfg2.casePack){
+    grid.innerHTML='';
+    for(let i=0;i<cfg2.casePack;i++){const d=document.createElement('div');d.className='box-slot';d.id='dslot-'+i;grid.appendChild(d);}
+  }
+  sim.pulls.forEach((pull, i) => {
+    const slot = document.getElementById('dslot-' + i); if (!slot) return;
+    const vSlug = pull.variant.toLowerCase().replace(/\s+/g, '-');
+    const isHit = pull.variant !== 'Base';
+    slot.className = `box-slot${isHit ? ' is-hit is-' + vSlug : ''}${pull.isGuaranteed ? ' guaranteed-slot' : ''}`;
+    slot.style.animationDelay = '';
+    if (isHit) slot.setAttribute('onclick', `openHitDrawer500(${i})`);
+    else slot.removeAttribute('onclick');
+    // Render figure card directly (no flip — these are already "opened")
+    slot.innerHTML = `<div class="box-flip-inner" style="transform:rotateY(180deg)">
+      <div class="box-face-front"></div>
+      <div class="box-face-back">${buildFigureCardHTML(
+        pull.player, pull.variant, pull.drawnPrice,
+        pull.isEstimated, pull.isGuaranteed, activeSet
+      )}</div>
+    </div>`;
+  });
+}
+
+function openHitDrawer500(i) {
+  if(!activePulls500)return;
+  const pull=activePulls500[i];
+  if(!pull||pull.variant==='Base')return;
+  document.getElementById('d-player').textContent=pull.player;
+  document.getElementById('d-variant').textContent=pull.variant+(pull.isEstimated?' · Projected Value':' · Sales History');
+  if(pull.isEstimated)renderProjectionBody(pull);
+  else renderSalesBody(pull);
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('drawer').classList.add('open');
+}
+
+// ── Jackpot popup ─────────────────────────────────────────────────────────────
+let _jackpotTimer = null;
+
+function showJackpotPopup(tailSims) {
+  if (!tailSims || !tailSims.length) return;
+
+  // Value range across jackpot cases
+  const vals = tailSims.map(s => s.totalValue);
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+
+  // Best non-Base hit (highest drawnPrice) across all jackpot cases
+  let topHit = null;
+  tailSims.forEach(sim => {
+    (sim.pulls || []).forEach(pull => {
+      if (pull.variant !== 'Base' && (!topHit || pull.drawnPrice > topHit.drawnPrice))
+        topHit = pull;
+    });
+  });
+
+  document.getElementById('jp-range').textContent =
+    lo === hi ? `$${lo.toLocaleString()}` : `$${lo.toLocaleString()} – $${hi.toLocaleString()}`;
+  document.getElementById('jp-hit').textContent = topHit
+    ? `${topHit.player}  ·  ${topHit.variant}  ·  ${activeSet}`
+    : '—';
+
+  const popup    = document.getElementById('jackpot-popup');
+  const progress = document.getElementById('jp-progress');
+  const DURATION = 5000;
+
+  // Reset progress bar instantly, then animate it
+  if (_jackpotTimer) clearTimeout(_jackpotTimer);
+  progress.style.transition = 'none';
+  progress.style.transform  = 'scaleX(1)';
+  popup.classList.add('visible');
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    progress.style.transition = `transform ${DURATION}ms linear`;
+    progress.style.transform  = 'scaleX(0)';
+  }));
+
+  _jackpotTimer = setTimeout(hideJackpotPopup, DURATION);
+}
+
+function hideJackpotPopup() {
+  document.getElementById('jackpot-popup').classList.remove('visible');
+  if (_jackpotTimer) { clearTimeout(_jackpotTimer); _jackpotTimer = null; }
+}
+
+// ── Bar interaction ────────────────────────────────────────────────────────
+function barHover(event, binIdx) {
+  let b;
+  if(binIdx==='overflow'){const all=getBins500();b=all.find(x=>x.isOverflow);}
+  else{b=getBins500()[binIdx];}
+  if(!b||!b.count)return;
+  const cfg=getSetConfig(activeSet)||{casePrice:500};
+  const avgEst=b.count>0?b.estSum/b.count:0;
+  const quality=avgEst<0.25?'real data':avgEst<0.60?'mixed':'mostly projected';
+  const tt=document.getElementById('chart-tooltip');
+  if(b.isOverflow){
+    const av=Math.round(b.sims.reduce((s,r)=>s+r.totalValue,0)/b.sims.length);
+    const ar=Math.round((av-cfg.casePrice)/cfg.casePrice*100);
+    document.getElementById('tt-val').textContent='jackpot — top 5%';
+    document.getElementById('tt-count').textContent=`${b.count} of ${N_SIMS} (${Math.round(b.count/N_SIMS*100)}%)`;
+    document.getElementById('tt-roi').textContent=`avg ${ar>=0?'+':''}${ar}%`;
+  } else {
+    const mid=(b.lo+b.hi)/2,roi=Math.round((mid-cfg.casePrice)/cfg.casePrice*100);
+    document.getElementById('tt-val').textContent=`$${b.lo.toLocaleString()} – $${b.hi.toLocaleString()}`;
+    document.getElementById('tt-count').textContent=`${b.count} of ${N_SIMS} (${Math.round(b.count/N_SIMS*100)}%)`;
+    document.getElementById('tt-roi').textContent=`${roi>=0?'+':''}${roi}%`;
+  }
+  document.getElementById('tt-quality').textContent=quality;
+  tt.classList.add('visible');
+  positionTooltip(event);
+}
+function barLeave(){document.getElementById('chart-tooltip').classList.remove('visible');}
+function positionTooltip(e){const tt=document.getElementById('chart-tooltip');tt.style.left=Math.min(e.clientX+16,window.innerWidth-200)+'px';tt.style.top=Math.max(10,e.clientY-60)+'px';}
+document.addEventListener('mousemove',e=>{if(document.getElementById('chart-tooltip').classList.contains('visible'))positionTooltip(e);});
+
+// ── Hit value tooltip ─────────────────────────────────────────────────────────
+function showHitTooltip(e) {
+  let tt = document.getElementById('hit-tooltip');
+  if (!tt) {
+    tt = document.createElement('div');
+    tt.id = 'hit-tooltip';
+    tt.className = 'hit-tooltip';
+    tt.innerHTML = `
+      <strong>How Avg Hit Value is calculated</strong>
+      For each non-Base player/variant combo in Set Math:<br>
+      multiply its <em>population</em> by its <em>price</em>,<br>
+      sum all products, divide by total non-Base population.
+      <div class="formula">
+        Σ (population × price)<br>
+        ────────────────────────<br>
+        Σ (population)
+      </div>
+      <div class="divider"></div>
+      <strong style="font-size:9px">Real data only (gold)</strong>
+      Only combos with verified eBay sales. Conservative.
+      <div class="divider"></div>
+      <strong style="font-size:9px">Incl. projected (orange)</strong>
+      Adds estimated prices for combos with no sales yet.<br>
+      Covers the full roster but carries more uncertainty.
+    `;
+    document.body.appendChild(tt);
+  }
+  tt.style.display = 'block';
+  const x = Math.min(e.clientX + 12, window.innerWidth - 320);
+  tt.style.left = x + 'px';
+  tt.style.top  = (e.clientY + 16) + 'px';
+}
+function hideHitTooltip() {
+  const tt = document.getElementById('hit-tooltip');
+  if (tt) tt.style.display = 'none';
+}
+
 loadData();
+
+function toggleExplainer() {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  const isOpen = panel.classList.contains('visible');
+  panel.classList.toggle('visible', !isOpen);
+  if (btn) btn.classList.toggle('open', !isOpen);
+}
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  if (panel && panel.classList.contains('visible')) {
+    if (!panel.contains(e.target) && (!btn || !btn.contains(e.target))) {
+      panel.classList.remove('visible');
+      if (btn) btn.classList.remove('open');
+    }
+  }
+});
 </script>
+
+<!-- Jackpot flash popup -->
+<div class="jackpot-popup" id="jackpot-popup" onclick="hideJackpotPopup()">
+  <div class="jp-header">
+    <span class="jp-title">⚡ JACKPOT</span>
+    <span class="jp-badge">TOP 5%</span>
+  </div>
+  <div class="jp-body">
+    <div class="jp-row">
+      <span class="jp-label">Est. Case Value</span>
+      <span class="jp-val" id="jp-range"></span>
+    </div>
+    <div class="jp-row">
+      <span class="jp-label">Top Hit</span>
+      <span class="jp-val hit" id="jp-hit"></span>
+    </div>
+  </div>
+  <div class="jp-dismiss">click to dismiss</div>
+  <div class="jp-progress" id="jp-progress"></div>
+</div>
+
+<div class="chart-tooltip" id="chart-tooltip">
+  <div class="tt-val" id="tt-val"></div>
+  <div class="tt-row">simulations: <span id="tt-count"></span></div>
+  <div class="tt-row">roi vs retail: <span id="tt-roi"></span></div>
+  <div class="tt-row">data quality: <span id="tt-quality"></span></div>
+</div>
 </body>
 </html>
