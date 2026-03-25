@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ghostwrite · market intel</title>
+<title>ghostladder · market intel</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -46,27 +46,8 @@ body::after {
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(8,8,8,0.94);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
-  padding: 0 32px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
-.logo {
-  font-family: var(--display);
-  font-size: 20px;
-  letter-spacing: 3px;
-  color: var(--text);
-}
-.logo em { color: var(--accent); font-style: normal; }
+.
 
 .header-right {
   display: flex;
@@ -132,7 +113,7 @@ header {
 /* ── Stat cards ─────────────────────────────────────────────────────────────── */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
@@ -197,9 +178,9 @@ header {
   border: 1px solid var(--border);
   color: var(--muted2);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.5px;
-  padding: 5px 12px;
+  padding: 10px 20px;
   cursor: pointer;
   text-transform: uppercase;
   transition: all 0.12s;
@@ -273,12 +254,8 @@ header {
   border: 1px solid;
   margin-bottom: 14px;
 }
-.v-fire    { border-color: #ff4040; color: #ff4040; }
-.v-chrome  { border-color: #a0c4ff; color: #a0c4ff; }
-.v-gold    { border-color: #ffd700; color: #ffd700; }
-.v-emerald { border-color: #3ddc84; color: #3ddc84; }
-.v-victory { border-color: #c084fc; color: #c084fc; }
-.v-base    { border-color: var(--muted); color: var(--muted); }
+/* .v-* variant classes come from variants.css */
+.v-base    { border-color: var(--base); color: var(--base); }
 
 .product-card-price {
   font-family: var(--display);
@@ -544,7 +521,6 @@ header {
   padding-top: 6px;
 }
 
-
 /* ── Movers + Top Players tables ──────────────────────────────────────────── */
 .movers-table, .top-players-table { width: 100%; border-collapse: collapse; }
 .movers-table th, .top-players-table th {
@@ -581,31 +557,6 @@ header {
 /* ── League tab filter bar ───────────────────────────────────────────────────── */
 .filter-bar { margin-bottom: 0; }
 
-
-/* ── Power Rankings ──────────────────────────────────────────────────────────── */
-.power-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-.power-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
-  border-radius: 2px; transition: border-color 0.15s; cursor: default;
-}
-.power-row:hover { border-color: var(--muted2); }
-.power-rank {
-  font-family: var(--display); font-size: 16px; color: var(--muted2);
-  width: 22px; flex-shrink: 0; text-align: right;
-}
-.power-rank.top3 { color: var(--accent); }
-.power-info { flex: 1; min-width: 0; }
-.power-name { font-size: 11px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.power-meta { font-size: 8px; color: var(--muted); letter-spacing: 0.5px; margin-top: 1px; }
-.power-score-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
-.power-score { font-family: var(--display); font-size: 15px; color: var(--accent); }
-.power-bar-bg { width: 60px; height: 2px; background: var(--border); border-radius: 1px; }
-.power-bar-fill { height: 100%; background: var(--accent); border-radius: 1px; transition: width 0.4s ease; }
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -622,16 +573,38 @@ header {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ══════════════════════════════════════════════════
+   SHARED NAV + PAGE HEADER SYSTEM
+   ══════════════════════════════════════════════════ */
+
+/* ── Sticky header ── */
+
+/* ── Wordmark ── */
+
 </style>
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
 </head>
 <body>
 
 <header>
-  <div class="logo">ghost<em>write</em> <span style="font-size:11px;color:var(--muted);letter-spacing:2px;font-family:var(--mono);font-weight:300">market intel</span></div>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html" class="active">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
   <div class="header-right">
-    <a href="guide.html" style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border:1px solid var(--border);padding:5px 10px;border-radius:2px;transition:all 0.15s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">price guide →</a>
-    <a href="heatmap.html" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none">heat map →</a>
-    <a href="case-sim.html" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none">case sim →</a>
     <div class="live-badge"><span class="live-dot"></span> <span id="fetch-time">loading</span></div>
     <button class="refresh-btn" onclick="loadData()">↺ refresh</button>
   </div>
@@ -639,12 +612,25 @@ header {
 
 <div class="page">
 
-  <!-- Stats row -->
+  
+<div class="page-header-block">
+  <div class="page-header-title">
+    SALES INTEL
+    <button class="explainer-btn" onclick="toggleExplainer()" title="What is this?">?</button>
+  </div>
+  <div class="page-header-sub">completed ebay sales · ai-classified · all sets & variants</div>
+  <div class="explainer-panel" id="explainer-panel">
+    <button class="explainer-close" onclick="toggleExplainer()">✕</button>
+    <p>All-time record of completed eBay sales, AI-cleaned and matched against our set roster. This is the ground truth on what figures actually sell for — not what sellers are asking.</p><p>For <em>active listings</em> currently on eBay, see <a href="listings.html">Listings Intel →</a></p>
+  </div>
+</div>
+<!-- Stats row -->
   <div class="stats-grid" id="stats-grid">
-    <div class="stat-card"><div class="stat-label">Avg Chase Value</div><div class="stat-value" id="stat-parallel">—</div><div class="stat-sub">last 30 days · non-base variants</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Hit Value</div><div class="stat-value" id="stat-parallel">—</div><div class="stat-sub">population weighted · non-base</div></div>
     <div class="stat-card"><div class="stat-label">Total Sales (30 Days)</div><div class="stat-value" id="stat-weekly">—</div><div class="stat-sub">last 30 days · all variants</div></div>
     <div class="stat-card"><div class="stat-label">Total Sales (All-Time)</div><div class="stat-value" id="stat-alltime">—</div><div class="stat-sub">all sets · all variants</div></div>
     <div class="stat-card"><div class="stat-label">Products Tracked</div><div class="stat-value" id="stat-products">—</div><div class="stat-sub">all-time · set · player · variant</div></div>
+    <div class="stat-card"><div class="stat-label">Total GMV (All Time)</div><div class="stat-value" id="stat-gmv">—</div><div class="stat-sub">All Sets · All Variants</div></div>
   </div>
 
   <!-- Variant averages by league + Base price by player -->
@@ -667,11 +653,11 @@ header {
     </div>
   </div>
 
-  <!-- Price over time chart -->
+  <!-- 90d sales by set chart -->
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title">avg parallel price over time <span style="color:var(--muted);font-size:8px">last 6 months · non-base · monthly</span></div>
-      <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+      <div class="panel-title">90-day sales by set <span style="color:var(--muted);font-size:8px">non-base · last 90 days</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="salesBySetChart"></canvas></div>
     </div>
     <div class="panel">
       <div class="panel-title">avg sales per week <span style="color:var(--muted);font-size:8px">full weeks only</span></div>
@@ -682,20 +668,6 @@ header {
   <!-- Recent sales feed -->
   <div class="section-label">top sales · last 30 days <span id="recent-count" style="margin-left:8px;color:var(--muted2);font-size:9px;letter-spacing:1px;text-transform:none"></span></div>
   <div class="sales-feed" id="recent-sales"><div class="loading" style="grid-column:1/-1"></div></div>
-
-
-  <!-- Power Rankings -->
-  <div class="panel" style="margin-bottom:24px">
-    <div class="panel-title">power rankings <span style="color:var(--muted);font-size:8px">variant-normalized score · top 20 players · all sets</span>
-      <span style="float:right;display:flex;gap:6px" id="power-league-tabs">
-        <button class="chip active" data-league="ALL" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">ALL</button>
-        <button class="chip" data-league="NBA" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">NBA</button>
-        <button class="chip" data-league="WNBA" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">WNBA</button>
-        <button class="chip" data-league="MLB" onclick="switchPowerLeague(this)" style="font-size:8px;padding:3px 8px">MLB</button>
-      </span>
-    </div>
-    <div id="power-rankings"><div class="loading"></div></div>
-  </div>
 
   <!-- Movers + Top Players -->
   <div class="two-col" style="margin-bottom:32px">
@@ -738,23 +710,73 @@ header {
 
 </div>
 
-<footer class="footer" id="footer">ghostwrite market intel · internal use only · data sourced from eBay</footer>
+<footer class="footer" id="footer">ghostladder market intel · internal use only · data sourced from eBay</footer>
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// CONFIG — paste your Apps Script web app URL here after deploying
+// Supabase config
 // ─────────────────────────────────────────────────────────────────────────────
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, {headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+// Parse a date string in local time (avoids UTC midnight rollback)
+// Handles both YYYY-MM-DD and full ISO timestamps from Supabase
+function parseDate(str) {
+  if (!str) return null;
+  // Strip any time component — take only the YYYY-MM-DD part
+  const datePart = String(str).substring(0, 10);
+  // Append local midnight so JS treats it as local time, not UTC
+  const d = new Date(datePart + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Normalize PI row → product object (v1 field names)
+function normProduct(r) {
+  const setStr = (r.set_name || '').toUpperCase();
+  const league = setStr.includes('WNBA') ? 'WNBA' : setStr.includes('NBA') ? 'NBA' : setStr.includes('MLB') ? 'MLB' : '';
+  return {
+    set: r.set_name, player: r.player, variant: r.variant,
+    totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+    avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+    avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+    lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+    retail: +r.retail_price || 0,
+    multiplier: (r.retail_price && r.avg_price) ? Math.round(+r.avg_price / +r.retail_price * 10) / 10 : 0,
+    league,
+  };
+}
+
+// Normalize recent sale row
+function normSale(r) {
+  return {
+    set: r.set_name, player: r.player, variant: r.variant,
+    price: +r.price || 0, date: r.date,
+    image: r.image_url, url: r.ebay_url, afa: r.afa_grade,
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // State
 // ─────────────────────────────────────────────────────────────────────────────
 let allProducts = [];
 let allProductsData = []; // full unfiltered for league tabs
+let allSetMath = {};      // { setName: { player: { variant: population } } }
 let activeSet = 'all';
 let activeVariant = 'all';
 let searchQuery = '';
-let priceChart = null;
+let salesBySetChart = null;
 let activeLeague = 'NBA';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -762,65 +784,63 @@ let activeLeague = 'NBA';
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadData() {
   document.getElementById('fetch-time').textContent = 'fetching...';
-  const data = await fetchLiveData();
-  renderAll(data);
-}
-
-async function fetchLiveData() {
   try {
-    const res = await fetch(DATA_URL, {
-      method: 'GET',
-      redirect: 'follow',
+    const [pi, sales, setMathData, setsData] = await Promise.all([
+      rpc('get_price_intelligence'),
+      rpc('get_recent_sales', {limit_rows: 300}),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('sets', 'select=id,name,active&active=eq.true'),
+    ]);
+    const cleanProducts = pi.filter(r => r.player && r.player !== 'Unknown').map(normProduct);
+    const cleanSales = sales.filter(r => r.player && r.player !== 'Unknown').map(normSale);
+
+    // Build setId → name map
+    const setIdToName = {};
+    (setsData || []).forEach(s => { setIdToName[s.id] = s.name; });
+
+    // Build setMath: { setName → { player → { variant → population } } }
+    const setMath = {};
+    (setMathData || []).forEach(r => {
+      const sn = setIdToName[r.set_id];
+      if (!sn) return;
+      if (!setMath[sn]) setMath[sn] = {};
+      if (!setMath[sn][r.player]) setMath[sn][r.player] = {};
+      setMath[sn][r.player][r.variant] = +r.population || 0;
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch(e) {
-      console.error('Failed to parse JSON:', text.substring(0, 300));
-      throw new Error('Invalid JSON response');
-    }
+    allSetMath = setMath;
+
+    renderAllSB(cleanProducts, cleanSales);
   } catch(e) {
     console.error('FETCH FAILED:', e.message, e);
     document.getElementById('fetch-time').textContent = 'fetch error: ' + e.message;
-    return { fetchedAt: new Date().toISOString(), products: [], recentSales: [], variantAverages: [], setVariantAverages: [], sets: [], players: [], weeklySalesCount: 0, totalProducts: 0 };
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Render everything
 // ─────────────────────────────────────────────────────────────────────────────
-function renderAll(data) {
-  console.log('renderAll called, products:', (data.products||[]).length, 'source:', data._source || 'unknown');
-  // Filter out Unknown players globally — don't show on dashboard at all
-  const cleanProducts = (data.products || []).filter(p => p.player && p.player !== 'Unknown');
-  allProducts = cleanProducts;
-  allProductsData = cleanProducts;
+function renderAllSB(products, sales) {
+  allProducts = products;
+  allProductsData = products;
 
-  renderStats(data);
-  renderSetFilters(data.sets || []);
-  renderVariantAverages(data.variantAverages || []);
-  renderMonthlySalesChart(data.allListings || data.recentSales || [], data.products || []);
-  renderSetVariantTable(data.setVariantAverages || []);
-  renderRecentSales(data.recentSales || []);
-  renderPriceChart(data.allListings || data.recentSales || []);
-  renderMovers(data.products || []);
-  renderTopPlayers(data.products || []);
-  renderPowerRankings(data.products || [], 'ALL');
+  renderStats({products, recentSales: sales});
+  renderSetFilters([...new Set(products.map(p => p.set).filter(Boolean))].sort());
+  renderVariantAverages([]);
+  renderMonthlySalesChart(sales, products);
+  renderSetVariantTable([]);
+  renderRecentSales(sales);
+  renderSalesBySetChart(products);
+  renderMovers(products);
+  renderTopPlayers(products);
   renderProducts();
 
-  // Show most recent sale date from the actual data
-  const allDates = (data.allListings || data.recentSales || [])
-    .map(s => s.date ? new Date(s.date) : null)
-    .filter(Boolean);
+  const allDates = sales.map(s => s.date ? parseDate(s.date) : null).filter(Boolean);
   if (allDates.length) {
     const latestSale = new Date(Math.max(...allDates));
     document.getElementById('fetch-time').textContent =
       'last sale: ' + latestSale.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
   } else {
-    const t = new Date(data.fetchedAt);
-    document.getElementById('fetch-time').textContent =
-      'updated ' + t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('fetch-time').textContent = 'updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   }
 }
 
@@ -831,28 +851,29 @@ function renderStats(data) {
   const products = data.products || [];
   const sales = data.recentSales || [];
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const recentValid = sales.filter(s => s.date && parseDate(s.date) >= thirtyDaysAgo && s.price > 0);
 
-  // Last 30 days
-  const recentValid = sales.filter(s => s.date && new Date(s.date) >= thirtyDaysAgo && s.price > 0);
+  // Population-weighted avg hit value across all non-base variants
+  let hitNum = 0, hitDen = 0;
+  products.forEach(p => {
+    if (!p.player || p.player === 'Unknown' || p.variant === 'Base' || !p.avgPrice) return;
+    const pop = (allSetMath[p.set]?.[p.player]?.[p.variant]) || 0;
+    if (pop > 0) { hitNum += pop * p.avgPrice; hitDen += pop; }
+  });
+  const hitValue = hitDen > 0 ? Math.round(hitNum / hitDen) : 0;
+  document.getElementById('stat-parallel').textContent = hitValue ? '$' + hitValue.toLocaleString() : '—';
 
-  // Avg chase value (parallels only — non-base) — last 30 days
-  const parallelPrices = recentValid
-    .filter(s => s.variant && s.variant !== 'Base')
-    .map(s => s.price);
-  const parallelAvg = parallelPrices.length
-    ? Math.round(parallelPrices.reduce((a,b) => a+b, 0) / parallelPrices.length)
-    : 0;
-  document.getElementById('stat-parallel').textContent = parallelAvg ? '$' + parallelAvg : '—';
-
-  // Total sales — last 30 days
   document.getElementById('stat-weekly').textContent = recentValid.length || '—';
-
-  // Total sales — all time (sum totalSales across all products)
   const allTimeSales = products.reduce((sum, p) => sum + (p.totalSales || 0), 0);
   document.getElementById('stat-alltime').textContent = allTimeSales ? allTimeSales.toLocaleString() : '—';
+  document.getElementById('stat-products').textContent = products.length || '—';
 
-  // Products tracked — all time
-  document.getElementById('stat-products').textContent = data.totalProducts || '—';
+  const totalGmv = products.reduce((sum, p) => sum + (p.avgPrice || 0) * (p.totalSales || 0), 0);
+  const fmtGmv = totalGmv >= 1e6 ? '$' + Math.round(totalGmv / 1e6) + 'M'
+               : totalGmv >= 1e3 ? '$' + Math.round(totalGmv / 1e3) + 'K'
+               : totalGmv > 0    ? '$' + Math.round(totalGmv).toLocaleString()
+               : '—';
+  document.getElementById('stat-gmv').textContent = fmtGmv;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -894,8 +915,9 @@ function filterSearch(q) {
 // Variant averages
 // ─────────────────────────────────────────────────────────────────────────────
 const VARIANT_COLORS = {
-  Fire: '#ff4040', Chrome: '#a0c4ff', Gold: '#ffd700',
-  Emerald: '#3ddc84', Victory: '#c084fc', Base: '#666'
+  Base: 'var(--base)', Victory: 'var(--victory)', Vides: 'var(--vides)',
+  Emerald: 'var(--emerald)', Gold: 'var(--gold)', Chrome: 'var(--chrome)',
+  Fire: 'var(--fire)', 'Bet On Women': 'var(--bet-on-women)', SP: 'var(--sp)',
 };
 
 function switchLeagueTab(btn) {
@@ -917,13 +939,7 @@ function renderVariantAveragesByLeague(products, league) {
   // Filter products by league (or all)
   const filtered = league === 'ALL'
     ? products
-    : products.filter(p => {
-        const s = (p.set || '').toUpperCase();
-        if (league === 'NBA') return s.includes('NBA') && !s.includes('WNBA');
-        if (league === 'WNBA') return s.includes('WNBA');
-        if (league === 'MLB') return s.includes('MLB');
-        return true;
-      });
+    : products.filter(p => p.league === league);
 
   // Aggregate by variant
   const vMap = {};
@@ -967,7 +983,6 @@ function renderVariantAveragesByLeague(products, league) {
     </div>`).join('');
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Monthly sales volume chart
 // ─────────────────────────────────────────────────────────────────────────────
@@ -988,7 +1003,7 @@ function renderMonthlySalesChart(sales, products) {
   const byWeek = {};
   sales.forEach(s => {
     if (!s.date) return;
-    const d = new Date(s.date);
+    const d = parseDate(s.date);
     if (d >= thisWeekMonday) return; // skip current partial week
     if (d < sixMonthsAgo) return; // only last 6 months
 
@@ -1129,7 +1144,10 @@ function renderBasePriceByPlayer(sortCol, sortDir) {
 function renderRecentSales(sales) {
   const el = document.getElementById('recent-sales');
   const countEl = document.getElementById('recent-count');
-  const filtered = sales.filter(s => s.player && s.player !== 'Unknown');
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const filtered = sales
+    .filter(s => s.player && s.player !== 'Unknown' && s.date && parseDate(s.date) >= thirtyDaysAgo && s.price > 0)
+    .sort((a, b) => b.price - a.price);
   if (!filtered.length) {
     el.innerHTML = '<div class="empty" style="grid-column:1/-1">no sales in the last 30 days</div>';
     countEl.textContent = '';
@@ -1137,7 +1155,7 @@ function renderRecentSales(sales) {
   }
   countEl.textContent = filtered.length + ' sales · sorted highest to lowest';
   el.innerHTML = filtered.map(s => {
-    const d = s.date ? new Date(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    const d = s.date ? parseDate(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
     const vClass = 'v-' + (s.variant||'base').toLowerCase();
     const imgEl = s.image
       ? `<img class="sale-card-img" src="${s.image}" alt="${s.player}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -1158,63 +1176,59 @@ function renderRecentSales(sales) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Price chart
+// 90-day sales by set doughnut chart
 // ─────────────────────────────────────────────────────────────────────────────
-function renderPriceChart(sales) {
-  if (priceChart) { priceChart.destroy(); priceChart = null; }
+function renderSalesBySetChart(products) {
+  if (salesBySetChart) { salesBySetChart.destroy(); salesBySetChart = null; }
 
-  // Filter to parallels only (non-base) and last 6 months
-  const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
-  const parallelSales = sales.filter(s =>
-    s.variant && s.variant !== 'Base' &&
-    s.player && s.player !== 'Unknown' &&
-    s.date && new Date(s.date) >= sixMonthsAgo &&
-    s.price > 0
+  // Sum 90d sales per set (non-base only)
+  const bySet = {};
+  products.forEach(p => {
+    if (!p.set || !p.sales90d || p.variant === 'Base') return;
+    bySet[p.set] = (bySet[p.set] || 0) + p.sales90d;
+  });
+
+  const entries = Object.entries(bySet).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  if (!entries.length) return;
+
+  // Shorten set names for legend
+  const labels = entries.map(([k]) =>
+    k.replace('Game Face','').replace('2024-25','24-25').replace('2025-26','25-26')
+     .replace('2026-27','26-27').trim()
   );
+  const vals = entries.map(([,v]) => v);
 
-  // Group by month
-  const byMonth = {};
-  parallelSales.forEach(s => {
-    const d = new Date(s.date);
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const label = d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
-    if (!byMonth[key]) byMonth[key] = { label, prices: [] };
-    byMonth[key].prices.push(s.price);
-  });
+  const palette = ['#e8ff47','#a8c8ff','#3ddc84','#ff9f43','#ff4040','#b983ff','#00d2d3','#ff9ff3'];
+  const bgColors     = palette.slice(0, entries.length).map(c => c + '28');
+  const borderColors = palette.slice(0, entries.length);
 
-  const sorted = Object.entries(byMonth)
-    .sort((a,b) => a[0].localeCompare(b[0]));
-
-  if (!sorted.length) return;
-
-  const labels = sorted.map(e => e[1].label);
-  const avgs   = sorted.map(e => {
-    const p = e[1].prices;
-    return Math.round(p.reduce((a,b) => a+b, 0) / p.length);
-  });
-
-  const ctx = document.getElementById('priceChart').getContext('2d');
-  priceChart = new Chart(ctx, {
-    type: 'line',
+  const ctx = document.getElementById('salesBySetChart').getContext('2d');
+  salesBySetChart = new Chart(ctx, {
+    type: 'doughnut',
     data: {
       labels,
       datasets: [{
-        label: 'Avg Sale Price',
-        data: avgs,
-        borderColor: '#e8ff47',
-        backgroundColor: 'rgba(232,255,71,0.05)',
-        borderWidth: 2,
-        pointRadius: 3,
-        pointBackgroundColor: '#e8ff47',
-        tension: 0.4,
-        fill: true,
+        data: vals,
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderWidth: 1,
+        hoverBorderWidth: 2,
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: '62%',
       plugins: {
-        legend: { display: false },
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#666',
+            font: { family: 'DM Mono', size: 9 },
+            padding: 10,
+            boxWidth: 10,
+          }
+        },
         tooltip: {
           backgroundColor: '#111',
           borderColor: '#282828',
@@ -1223,108 +1237,11 @@ function renderPriceChart(sales) {
           bodyColor: '#f0f0f0',
           titleFont: { family: 'DM Mono', size: 10 },
           bodyFont: { family: 'DM Mono', size: 12 },
-          callbacks: { label: ctx => '$' + Math.round(ctx.parsed.y) }
+          callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' sales' }
         }
-      },
-      scales: {
-        x: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 } } },
-        y: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 }, callback: v => '$'+Math.round(v) } }
       }
     }
   });
-}
-
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Power Rankings
-// ─────────────────────────────────────────────────────────────────────────────
-let activePowerLeague = 'ALL';
-
-function switchPowerLeague(btn) {
-  document.querySelectorAll('#power-league-tabs .chip').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  activePowerLeague = btn.dataset.league;
-  renderPowerRankings(allProductsData, activePowerLeague);
-}
-
-function renderPowerRankings(products, league) {
-  const el = document.getElementById('power-rankings');
-
-  // Filter by league, exclude Unknown players
-  const leagueFiltered = league === 'ALL' ? products : products.filter(p => {
-    const s = (p.set || '').toUpperCase();
-    if (league === 'NBA')  return s.includes('NBA') && !s.includes('WNBA');
-    if (league === 'WNBA') return s.includes('WNBA');
-    if (league === 'MLB')  return s.includes('MLB');
-    return true;
-  });
-  const filtered = leagueFiltered.filter(p => p.player && p.player !== 'Unknown');
-
-  // Step 1: compute median price per variant across all players (baseline)
-  const variantPrices = {};
-  filtered.forEach(p => {
-    if (!p.avgPrice || !p.totalSales) return;
-    if (!variantPrices[p.variant]) variantPrices[p.variant] = [];
-    variantPrices[p.variant].push(p.avgPrice);
-  });
-
-  const variantMedians = {};
-  Object.entries(variantPrices).forEach(([v, prices]) => {
-    const sorted = [...prices].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    variantMedians[v] = sorted.length % 2 !== 0
-      ? sorted[mid]
-      : (sorted[mid - 1] + sorted[mid]) / 2;
-  });
-
-  // Step 2: for each player, compute avg multiplier across all variants they have
-  const playerMap = {};
-  filtered.forEach(p => {
-    if (!p.avgPrice || !p.totalSales || !variantMedians[p.variant]) return;
-    const multiplier = p.avgPrice / variantMedians[p.variant];
-    if (!playerMap[p.player]) playerMap[p.player] = { multipliers: [], sets: new Set(), sales: 0 };
-    playerMap[p.player].multipliers.push(multiplier);
-    playerMap[p.player].sets.add(p.set);
-    playerMap[p.player].sales += p.totalSales;
-  });
-
-  // Step 3: score = mean of multipliers, rank top 20
-  const ranked = Object.entries(playerMap)
-    .map(([player, d]) => ({
-      player,
-      score: d.multipliers.reduce((a, b) => a + b, 0) / d.multipliers.length,
-      variants: d.multipliers.length,
-      sets: [...d.sets],
-      sales: d.sales,
-    }))
-    .filter(p => p.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 20);
-
-  if (!ranked.length) { el.innerHTML = '<div class="empty">not enough data yet</div>'; return; }
-
-  const maxScore = ranked[0].score;
-
-  el.innerHTML = `<div class="power-grid">${ranked.map((p, i) => {
-    const pct = Math.round((p.score / maxScore) * 100);
-    const isTop3 = i < 3;
-    const scoreDisplay = p.score.toFixed(2) + 'x';
-    const league = p.sets.length === 1
-      ? p.sets[0].replace('Game Face','').replace('2024-25','').replace('2025-26','').replace('2025','').trim()
-      : p.sets.length + ' sets';
-    return `<div class="power-row">
-      <div class="power-rank ${isTop3 ? 'top3' : ''}">${i + 1}</div>
-      <div class="power-info">
-        <div class="power-name">${p.player}</div>
-        <div class="power-meta">${league} · ${p.sales} sales</div>
-      </div>
-      <div class="power-score-wrap">
-        <div class="power-score">${scoreDisplay}</div>
-        <div class="power-bar-bg"><div class="power-bar-fill" style="width:${pct}%"></div></div>
-      </div>
-    </div>`;
-  }).join('')}</div>`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1453,10 +1370,10 @@ function renderProducts() {
     const vClass = 'v-' + (p.variant||'base').toLowerCase();
     const mult = p.multiplier > 0 ? p.multiplier.toFixed(1) + 'x' : '';
     const lastSale = p.lastSaleDate
-      ? new Date(p.lastSaleDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+      ? parseDate(p.lastSaleDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})
       : '—';
     return `
-    <div class="product-card" onclick="openProduct('${p.set}','${p.player}','${p.variant}')">
+    <div class="product-card" onclick="window.location='guide.html?player=${encodeURIComponent(p.player)}'">
       ${mult ? `<div class="mult-badge">${mult}</div>` : ''}
       <div class="product-card-set">${p.set}</div>
       <div class="product-card-player">${p.player}</div>
@@ -1471,11 +1388,6 @@ function renderProducts() {
   }).join('');
 }
 
-function openProduct(set, player, variant) {
-  // Placeholder — in v2 this opens a detail page
-  console.log('Product clicked:', set, player, variant);
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Init
@@ -1484,6 +1396,26 @@ if (document.readyState === 'loading') {
 } else {
   loadData();
 }
+
+function toggleExplainer() {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  const isOpen = panel.classList.contains('visible');
+  panel.classList.toggle('visible', !isOpen);
+  if (btn) btn.classList.toggle('open', !isOpen);
+}
+// Close when clicking outside
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  if (panel && panel.classList.contains('visible')) {
+    if (!panel.contains(e.target) && (!btn || !btn.contains(e.target))) {
+      panel.classList.remove('visible');
+      if (btn) btn.classList.remove('open');
+    }
+  }
+});
+
 </script>
 </body>
 </html>
