@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ghostwrite · market heat map</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<title>ghostladder · market heat map</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="variants.css">
 <style>
 :root {
   --bg: #080808;
@@ -16,8 +18,8 @@
   --text: #efefef;
   --muted: #666;
   --muted2: #444;
-  --mono: 'Space Mono', monospace;
-  --display: 'Unbounded', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
   --hot3: #ff2d2d; --hot2: #ff6b35; --hot1: #ffb347;
   --flat: #1e1e1e;
   --cold1: #47a3ff; --cold2: #2d7fff; --cold3: #1a5ccc;
@@ -27,15 +29,6 @@ html, body { background: var(--bg); min-height: 100vh; }
 body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
 /* ── Nav ── */
-.nav {
-  display: flex; align-items: center;
-  padding: 14px 32px; border-bottom: 1px solid var(--border);
-  gap: 24px; position: sticky; top: 0; background: var(--bg); z-index: 50;
-}
-.nav-logo { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 2px; text-decoration: none; }
-.nav-links { display: flex; gap: 20px; margin-left: auto; }
-.nav-link { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.15s; }
-.nav-link:hover, .nav-link.active { color: var(--text); }
 
 /* ── Page header ── */
 .page-header { padding: 32px 32px 0; }
@@ -57,17 +50,39 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .insights-date { font-size: 8px; color: var(--muted2); margin-top: 8px; letter-spacing: 1px; }
 
 /* ── Controls ── */
-.controls { padding: 20px 32px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.controls { padding: 20px 32px 0; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+#set-tabs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
 .control-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+
+/* ── Recency slider ── */
+.recency-wrap { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.recency-track { width: 220px; display: flex; flex-direction: column; gap: 4px; }
+.recency-labels { display: flex; justify-content: space-between; font-size: 7px; letter-spacing: 1px; color: var(--muted2); text-transform: uppercase; }
+input[type=range].recency-slider { width: 100%; height: 2px; -webkit-appearance: none; appearance: none; background: var(--border); outline: none; cursor: pointer; }
+input[type=range].recency-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 0; background: var(--accent); cursor: pointer; }
+input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; border-radius: 0; background: var(--accent); cursor: pointer; border: none; }
+.recency-current { font-size: 8px; letter-spacing: 1px; color: var(--accent); text-transform: uppercase; min-width: 64px; text-align: right; }
+
 .set-tab {
-  font-family: var(--display); font-size: 9px; font-weight: 700;
+  font-family: var(--display); font-size: 11px; font-weight: 700;
   letter-spacing: 1px; text-transform: uppercase;
-  padding: 7px 14px; cursor: pointer;
+  padding: 10px 20px; cursor: pointer;
   background: var(--s2); border: 1px solid var(--border);
   color: var(--muted); transition: all 0.15s;
 }
 .set-tab:hover { color: var(--text); border-color: var(--muted2); }
 .set-tab.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* ── Estimate mode toggle ── */
+.estimate-toggle { display: flex; gap: 2px; }
+.tog-btn {
+  font-family: var(--display); font-size: 10px; letter-spacing: 1px;
+  text-transform: uppercase; padding: 5px 12px;
+  background: var(--s2); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.tog-btn:hover { color: var(--text); border-color: var(--muted); }
+.tog-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
 /* ── Legend ── */
 .legend-row {
@@ -101,8 +116,9 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .heat-cell:hover::after { opacity: 0.07; }
 .heat-cell.no-data { background: var(--s1); border: 1px dashed var(--border); cursor: default; }
 .heat-cell.no-data::after { display: none; }
+.heat-cell.na { background: transparent; border: 1px solid #222; color: #3a3a3a; font-size: 12px; cursor: default; }
+.heat-cell.na::after { display: none; }
 
-.heat-cell.projected { border: 1px solid rgba(232,255,71,0.3) !important; }
 .heat-cell.projected-ai { border: 1px solid rgba(176,240,255,0.35) !important; }
 
 .cell-badge {
@@ -113,17 +129,26 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .cell-badge.est { color: var(--accent); background: rgba(232,255,71,0.15); }
 .cell-badge.ai  { color: #b0f0ff; background: rgba(176,240,255,0.12); }
 
-.cell-arrow { font-size: 8px; line-height: 1; }
-.cell-pct { font-family: var(--display); font-size: 11px; font-weight: 700; line-height: 1; }
-.cell-price { font-size: 8px; opacity: 0.8; }
+.cell-pct { font-family: var(--display); font-size: 15px; font-weight: 700; line-height: 1; }
+.cell-price { font-size: 10px; opacity: 0.85; }
 
-.heat-up3   { background: var(--hot3); color: #fff; }
-.heat-up2   { background: var(--hot2); color: #fff; }
-.heat-up1   { background: var(--hot1); color: #000; }
-.heat-flat  { background: var(--flat); color: var(--muted); border: 1px solid var(--border); }
-.heat-down1 { background: #1a3a5c; color: var(--cold1); }
-.heat-down2 { background: #152d4d; color: var(--cold2); }
-.heat-down3 { background: #0f2040; color: var(--cold3); }
+/* Real sales: yellow spectrum (intensity = data richness) */
+.heat-up3   { background: rgba(232,255,71,0.28); border: 1px solid rgba(232,255,71,0.70); color: var(--accent); }
+.heat-up2   { background: rgba(232,255,71,0.20); border: 1px solid rgba(232,255,71,0.55); color: var(--accent); }
+.heat-up1   { background: rgba(232,255,71,0.13); border: 1px solid rgba(232,255,71,0.40); color: var(--accent); }
+.heat-flat  { background: rgba(232,255,71,0.07); border: 1px solid rgba(232,255,71,0.25); color: var(--accent); }
+/* Estimated: confidence-tier spectrum (green → amber → red → purple → grey) */
+.conf-high     { background: rgba(76,175,80,0.22);   border: 1px solid rgba(76,175,80,0.55);   color: #4caf50; }
+.conf-med-high { background: rgba(139,195,74,0.18);  border: 1px solid rgba(139,195,74,0.45);  color: #8bc34a; }
+.conf-medium   { background: rgba(255,179,71,0.18);  border: 1px solid rgba(255,179,71,0.48);  color: #ffb347; }
+.conf-med-low  { background: rgba(255,107,53,0.15);  border: 1px solid rgba(255,107,53,0.38);  color: #ff6b35; }
+.conf-low      { background: rgba(244,67,54,0.12);   border: 1px solid rgba(244,67,54,0.32);   color: #f44336; }
+.conf-very-low { background: rgba(192,132,252,0.10); border: 1px solid rgba(192,132,252,0.25); color: #c084fc; }
+.conf-no-data  { background: var(--s1); border: 1px dashed var(--border); color: var(--muted2); }
+/* Legacy estimated classes kept for any non-confidence fallback paths */
+.heat-down1 { background: rgba(192,132,252,0.15); border: 1px solid rgba(192,132,252,0.38); color: #c084fc; }
+.heat-down2 { background: rgba(192,132,252,0.09); border: 1px solid rgba(192,132,252,0.22); color: #c084fc; }
+.heat-down3 { background: var(--s1); border: 1px dashed var(--border); color: var(--muted2); }
 
 /* ── Summary ── */
 .summary-row { display: flex; gap: 24px; padding: 20px 32px; border-top: 1px solid var(--border); flex-wrap: wrap; }
@@ -141,22 +166,43 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 .overlay.visible { opacity: 1; pointer-events: all; }
 .drawer {
-  position: fixed; right: 0; top: 0; bottom: 0; width: 380px;
+  position: fixed; right: 0; top: 0; bottom: 0; width: 500px;
   background: var(--s1); border-left: 1px solid var(--border);
   z-index: 100; transform: translateX(100%); transition: transform 0.25s ease;
-  overflow-y: auto; padding: 28px;
+  overflow-y: auto; padding: 32px;
 }
 .drawer.open { transform: translateX(0); }
 .drawer-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px 8px; }
 .drawer-close:hover { color: var(--text); }
-.drawer-player { font-family: var(--display); font-size: 15px; font-weight: 700; margin-bottom: 2px; }
-.drawer-variant { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+.drawer-player { font-family: var(--display); font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.drawer-variant { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 24px; }
 
-.d-section { margin-bottom: 20px; }
-.d-section-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.d-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-.d-stat-label { font-size: 9px; color: var(--muted); }
-.d-stat-val { font-size: 11px; color: var(--text); }
+.d-section { margin-bottom: 24px; }
+.d-section-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.d-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.d-stat-label { font-size: 11px; color: var(--muted); }
+
+/* ── Sales feed (shown when cell has real sales) ── */
+.listing-card {
+  display: flex; gap: 12px; padding: 12px; margin-bottom: 10px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+  transition: border-color 0.15s;
+}
+.listing-card:hover { border-color: var(--muted2); }
+.listing-img { width: 56px; height: 56px; object-fit: cover; border-radius: 2px; flex-shrink: 0; }
+.listing-img-placeholder {
+  width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
+  background: var(--s2); border-radius: 2px; flex-shrink: 0; font-size: 20px;
+}
+.listing-body { flex: 1; min-width: 0; }
+.listing-title { font-size: 10px; color: var(--muted2); line-height: 1.4; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.listing-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.listing-price { font-family: var(--display); font-size: 17px; color: var(--accent); }
+.listing-date { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; }
+.listing-link { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; text-decoration: none; border: 1px solid var(--border); padding: 2px 7px; border-radius: 2px; transition: all 0.15s; }
+.listing-link:hover { color: var(--accent); border-color: var(--accent); }
+.afa-badge { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 6px; border: 1px solid #ffd700; color: #ffd700; border-radius: 2px; font-family: var(--display); }
+.d-stat-val { font-size: 13px; color: var(--text); }
 .d-stat-val.up { color: var(--hot2); }
 .d-stat-val.down { color: var(--cold1); }
 .d-stat-val.accent { color: var(--accent); font-family: var(--display); }
@@ -164,14 +210,14 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 /* Projection steps */
 .proj-steps { display: flex; flex-direction: column; gap: 8px; }
 .proj-step { background: var(--s2); border: 1px solid var(--border); padding: 12px; }
-.proj-step-num { font-size: 8px; letter-spacing: 1px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
-.proj-step-eq { font-size: 11px; color: var(--text); font-family: var(--mono); }
-.proj-step-note { font-size: 9px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
-.proj-arrow { text-align: center; color: var(--muted2); font-size: 12px; padding: 2px 0; }
-.proj-final { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 16px; text-align: center; }
-.proj-final-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
-.proj-final-val { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--accent); }
-.proj-final-note { font-size: 9px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+.proj-step-num { font-size: 10px; letter-spacing: 1px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+.proj-step-eq { font-size: 13px; color: var(--text); font-family: var(--mono); }
+.proj-step-note { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+.proj-arrow { text-align: center; color: var(--muted2); font-size: 14px; padding: 2px 0; }
+.proj-final { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 20px; text-align: center; }
+.proj-final-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.proj-final-val { font-family: var(--display); font-size: 40px; font-weight: 700; color: var(--accent); }
+.proj-final-note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
 
 .ai-override-note {
   background: rgba(176,240,255,0.06); border: 1px solid rgba(176,240,255,0.2);
@@ -179,6 +225,59 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   font-size: 9px; color: #b0f0ff; line-height: 1.5;
 }
 .ai-override-note strong { display: block; margin-bottom: 4px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* ── Redesigned estimate drawer ───────────────────────────────────────────── */
+/* Method badge */
+.method-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 2px; margin-bottom: 12px; font-weight: 700;
+}
+.method-badge.direct { background: rgba(232,255,71,0.12); color: var(--accent);  border: 1px solid rgba(232,255,71,0.35); }
+.method-badge.blend  { background: rgba(79,209,255,0.10); color: var(--chrome); border: 1px solid rgba(79,209,255,0.30); }
+.method-badge.range  { background: rgba(255,179,71,0.10); color: #ffb347;       border: 1px solid rgba(255,179,71,0.30); }
+.method-badge.ratio  { background: rgba(168,200,255,0.10); color: #a8c8ff;      border: 1px solid rgba(168,200,255,0.25); }
+
+/* Method hero headline */
+.method-headline { font-family: var(--display); font-size: 18px; color: var(--text); margin-bottom: 8px; line-height: 1.2; }
+.method-sub { font-size: 11px; color: var(--muted2); line-height: 1.65; margin-bottom: 14px; }
+
+/* Comp figure cards (direct comp case) */
+.comp-figures { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.comp-fig-card {
+  background: var(--s2); border: 1px solid var(--border); border-radius: 4px;
+  padding: 14px 14px; display: flex; align-items: center; gap: 12px;
+  flex: 1; min-width: 160px; min-height: 80px;
+}
+.comp-fig-set   { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-fig-price { font-family: var(--display); font-size: 18px; color: var(--accent); margin: 3px 0; }
+.comp-fig-meta  { font-size: 9px; color: var(--muted2); }
+
+/* Anchor rows (blend/ratio methods) */
+.anchor-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--s2); border: 1px solid var(--border);
+  padding: 10px 12px; margin-bottom: 6px; border-radius: 4px;
+}
+.anchor-src    { flex: 1; min-width: 0; }
+.anchor-eq     { font-size: 10px; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+.anchor-result { font-family: var(--display); font-size: 15px; color: var(--text); white-space: nowrap; }
+
+/* Reference range visualisation */
+.range-viz { background: var(--s2); border: 1px solid var(--border); border-radius: 4px; padding: 14px; margin-bottom: 8px; }
+.range-viz-bar { position: relative; height: 4px; background: var(--border); border-radius: 2px; margin: 10px 0 8px; }
+.range-viz-fill { position: absolute; height: 100%; background: linear-gradient(to right, #4fd1ff, #ffb347); border-radius: 2px; left: 0; right: 0; }
+.range-viz-marker {
+  position: absolute; top: -5px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--s2);
+  transform: translateX(-50%); box-shadow: 0 0 0 3px rgba(232,255,71,0.3);
+}
+
+/* Player rank bar */
+.rank-bar-wrap { position: relative; height: 5px; background: var(--s3); border-radius: 3px; margin: 8px 0 6px; }
+.rank-bar-fill { height: 100%; background: rgba(232,255,71,0.2); border-radius: 3px; }
+.rank-bar-dot  { position: absolute; top: -4px; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); border: 2px solid var(--s1); transform: translateX(-50%); }
 
 /* ── Simple tooltip ── */
 .tip {
@@ -193,22 +292,31 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 .tt-v.up { color: var(--hot2); }
 .tt-v.down { color: var(--cold1); }
 </style>
+<script src="estimate-engine.js"></script>
 </head>
 <body>
 
-<nav class="nav">
-  <a class="nav-logo" href="index.html">ghostwrite</a>
-  <div class="nav-links">
-    <a class="nav-link" href="index.html">dashboard</a>
-    <a class="nav-link" href="guide.html">price guide</a>
-    <a class="nav-link active" href="heatmap.html">heat map</a>
-    <a class="nav-link" href="case-sim.html">case sim</a>
-  </div>
-</nav>
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html" class="active">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+</header>
 
 <div class="page-header">
   <div class="page-title">market heat map</div>
-  <div class="page-sub">30-day vs 90-day price trend · all-time avg price · color = relative to peers in same variant · arrows = 30d vs 90d trend</div>
+  <div class="page-sub">yellow = real sales data · purple = model estimate · dark = no data · intensity = data richness</div>
 </div>
 
 <div class="insights-banner" id="insights-banner">
@@ -216,32 +324,64 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   <div class="insights-list" id="insights-list"></div>
 </div>
 
-<div class="controls" id="set-tabs">
-  <div class="loading" style="padding:20px 0">
-    <div class="loading-spinner">◌</div>
+<div class="controls">
+  <div id="set-tabs">
+    <div class="loading" style="padding:20px 0">
+      <div class="loading-spinner">◌</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="control-label">estimate mode</div>
+    <div class="estimate-toggle">
+      <button id="tog-sales" class="tog-btn" onclick="setEstimateMode('sales-only')">sales only</button>
+      <button id="tog-blend" class="tog-btn active" onclick="setEstimateMode('model-blend')">model blend</button>
+      <button id="tog-full"  class="tog-btn" onclick="setEstimateMode('full-model')">full model</button>
+    </div>
+  </div>
+  <div class="recency-wrap">
+    <div class="control-label">recency</div>
+    <div class="recency-track">
+      <input type="range" class="recency-slider" id="recency-slider"
+             min="0" max="3" step="0.01" value="1"
+             oninput="setRecency(this.value)"
+             onchange="snapRecency(this)">
+      <div class="recency-labels">
+        <span>all-time</span>
+        <span>90d</span>
+        <span>30d</span>
+        <span>last sale</span>
+      </div>
+    </div>
+    <div class="recency-current" id="recency-label">90d avg</div>
   </div>
 </div>
 
 <div class="legend-row">
   <div class="legend-heat">
-    <div class="legend-swatches">
-      <div class="legend-swatch" style="background:var(--cold3)"></div>
-      <div class="legend-swatch" style="background:var(--cold2)"></div>
-      <div class="legend-swatch" style="background:var(--cold1)"></div>
-      <div class="legend-swatch" style="background:var(--flat);border:1px solid var(--border)"></div>
-      <div class="legend-swatch" style="background:var(--hot1)"></div>
-      <div class="legend-swatch" style="background:var(--hot2)"></div>
-      <div class="legend-swatch" style="background:var(--hot3)"></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="legend-swatch" style="background:rgba(232,255,71,0.20);border:1px solid rgba(232,255,71,0.55)"></div>
+      <span class="legend-label">real sales</span>
     </div>
-    <span class="legend-label">below avg ←&nbsp;&nbsp;→ above avg</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="legend-swatch" style="background:rgba(76,175,80,0.22);border:1px solid rgba(76,175,80,0.55)"></div>
+      <span class="legend-label">est · high</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="legend-swatch" style="background:rgba(255,179,71,0.18);border:1px solid rgba(255,179,71,0.48)"></div>
+      <span class="legend-label">est · medium</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="legend-swatch" style="background:rgba(192,132,252,0.10);border:1px solid rgba(192,132,252,0.25)"></div>
+      <span class="legend-label">est · low</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="legend-swatch" style="background:var(--s1);border:1px dashed var(--border)"></div>
+      <span class="legend-label">no data</span>
+    </div>
   </div>
   <div class="legend-proj">
-    <span class="est-badge">EST</span>
-    <span class="legend-label">= projected (statistical model) · click for details</span>
-  </div>
-  <div class="legend-proj">
-    <span class="ai-badge">AI</span>
-    <span class="legend-label">= AI-calibrated projection · click for details</span>
+    <span class="est-badge">MODEL</span>
+    <span class="legend-label">= model estimate (no real sales) · click for details</span>
   </div>
 </div>
 
@@ -271,9 +411,9 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
     <div class="summary-sub" id="sum-mover-sub">—</div>
   </div>
   <div class="summary-stat">
-    <div class="summary-label">Projected Cells</div>
+    <div class="summary-label">Estimated Cells</div>
     <div class="summary-val" id="sum-proj">—</div>
-    <div class="summary-sub" id="sum-proj-sub">estimated values</div>
+    <div class="summary-sub" id="sum-proj-sub">model estimates (no real sales)</div>
   </div>
 </div>
 
@@ -296,27 +436,149 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 </div>
 
 <script>
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbzCIVyCjVqCd6OfFGRFkb34mtgYeb7KaO6X5kkd8Mz3WHks9fzXQ0cjPXIhfJjUelBhBw/exec';
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+
+async function sbGet(table, query = '') {
+  const url = `${SB_URL}/rest/v1/${table}${query ? '?' + query : ''}`;
+  const r = await fetch(url, { headers: SB_H });
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allData = null;
 let activeSet = null;
-const VARIANT_ORDER = ['Base','Victory','Vides','Emerald','Gold','Chrome','Fire','SP'];
+let estimateMode = 'model-blend'; // 'sales-only' | 'model-blend' | 'full-model'
+let recencyLevel = 1; // 0=all-time, 1=90d, 2=30d, 3=last-sale
+const RECENCY_LABELS = ['all-time avg', '90d avg', '30d avg', 'last sale'];
+
+function setEstimateMode(mode) {
+  estimateMode = mode;
+  document.getElementById('tog-sales').classList.toggle('active', mode === 'sales-only');
+  document.getElementById('tog-blend').classList.toggle('active', mode === 'model-blend');
+  document.getElementById('tog-full').classList.toggle('active', mode === 'full-model');
+  if (allData) renderHeatmap();
+}
+const VARIANT_ORDER = ['Fire','Bet On Women','Chrome','Gold','Emerald','Vides','Victory','Base','SP'];
+
+// ── Name shorteners ──────────────────────────────────────────────────────────
+function shortSetName(n) {
+  return n
+    .replace('Game Face', '')
+    .replace('2024-25', '24-25')
+    .replace('2025-26', '25-26')
+    .replace('2026-27', '26-27')
+    .replace(/\b(20\d\d)\b/, (m, y) => "'" + y.slice(2))
+    .trim();
+}
+function shortVariantName(v) {
+  return v === 'Bet On Women' ? 'BET' : v;
+}
+
+// ── Recency helpers ─────────────────────────────────────────────────────────
+// Returns the best price for a product row at the current recency setting,
+// falling back toward all-time avg if the preferred window has no data.
+function recencyPrice(p) {
+  if (!p) return 0;
+  // rawAvgPrice is the pre-normalization average (includes graded sales).
+  // Used as final fallback so all-graded combos still display a price.
+  const rawFallback = p.rawAvgPrice || p.lastSalePrice || 0;
+  switch (recencyLevel) {
+    case 3: // last sale
+      return p.lastSalePrice > 0 ? p.lastSalePrice : (p.rawAvgPrice || p.avgPrice || 0);
+    case 2: // 30d → 90d → all-time
+      if (p.avg30d  && p.sales30d  >= 1) return p.avg30d;
+      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
+      return p.avgPrice || rawFallback;
+    case 1: // 90d → all-time
+      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
+      return p.avgPrice || rawFallback;
+    case 0: // all-time
+    default:
+      return p.avgPrice || rawFallback;
+  }
+}
+
+function setRecency(val) {
+  const snapped = Math.round(+val);
+  if (snapped === recencyLevel) return;
+  recencyLevel = snapped;
+  document.getElementById('recency-label').textContent = RECENCY_LABELS[recencyLevel];
+  if (allData) renderHeatmap();
+}
+
+function snapRecency(el) {
+  const target = Math.round(+el.value);
+  const start  = +el.value;
+  const t0 = performance.now();
+  const dur = 120;
+  (function step(now) {
+    const p    = Math.min((now - t0) / dur, 1);
+    const ease = p < 0.5 ? 2*p*p : -1 + (4 - 2*p)*p;
+    el.value = start + (target - start) * ease;
+    if (p < 1) requestAnimationFrame(step);
+    else el.value = target;
+  })(t0);
+}
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const res = await fetch(DATA_URL, {
-      method: 'GET',
-      redirect: 'follow',
+    const [pi, paramsData, setMathData, setsData, gradedSalesData] = await Promise.all([
+      rpc('get_price_intelligence'),
+      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('sets', 'select=id,name,league,active&active=eq.true'),
+      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+    ]);
+
+    const products = (pi || [])
+      .filter(r => r.player && r.player !== 'Unknown')
+      .map(r => ({
+        set: r.set_name, player: r.player, variant: r.variant,
+        totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+        avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+        avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+        lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+        retail: +r.retail_price || 0,
+      }));
+
+    // Snapshot raw PI averages before normalization — used for cell display.
+    // applyGradingNorm zeros avgPrice for all-graded combos so the engine
+    // doesn't use graded prices as ungraded comps. rawAvgPrice preserves
+    // the actual selling price (including graded) for display purposes.
+    products.forEach(p => { p.rawAvgPrice = p.avgPrice; });
+
+    // Normalize product averages to remove graded-sale inflation so the
+    // engine uses accurate ungraded-equivalent prices when building comps.
+    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
+    applyGradingNorm(products, gradedNormMap);
+
+    // set_math lookup: set_name → [{player, variant, population}]
+    const setIdToName = {};
+    (setsData || []).forEach(s => { setIdToName[s.id] = s.name; });
+    const setMath = {};
+    (setMathData || []).forEach(r => {
+      const name = setIdToName[r.set_id];
+      if (!name || !r.player || r.player === 'Unknown') return;
+      if (!setMath[name]) setMath[name] = [];
+      setMath[name].push({ player: r.player, variant: r.variant, population: r.population });
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    try {
-      allData = JSON.parse(text);
-    } catch(e) {
-      throw new Error('Invalid JSON: ' + text.substring(0, 200));
-    }
+
+    const activeWeights = (paramsData || [])[0] || null;
+    // Build set→league lookup
+    const setLeagueMap = {};
+    (setsData || []).forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
+    allData = { products, signalMap: {}, activeWeights, setMath, setLeagueMap };
+
     try {
       initPage();
     } catch(e) {
@@ -334,24 +596,14 @@ async function loadData() {
 }
 
 function initPage() {
-  // Show AI insights if available
-  if (allData.aiModelOutput && allData.aiModelOutput.insights) {
-    const banner = document.getElementById('insights-banner');
-    const list = document.getElementById('insights-list');
-    document.getElementById('insights-date').textContent = allData.aiModelOutput.runDate
-      ? '— last calibrated ' + new Date(allData.aiModelOutput.runDate).toLocaleDateString()
-      : '';
-    list.innerHTML = allData.aiModelOutput.insights.map(i =>
-      `<div class="insight-item">${i}</div>`
-    ).join('');
-    banner.classList.add('visible');
-  }
-
-  // Build set tabs — sorted by total sales descending
+  // Build set tabs — union of products and set_math sets, sorted by total sales descending
   const setTotals = {};
   (allData.products || []).filter(p => p.player && p.player !== 'Unknown').forEach(p => {
     if (!p.set) return;
     setTotals[p.set] = (setTotals[p.set] || 0) + (p.totalSales || 0);
+  });
+  Object.keys(allData.setMath || {}).forEach(name => {
+    if (!setTotals[name]) setTotals[name] = 0;
   });
   const sets = Object.keys(setTotals).sort((a, b) => setTotals[b] - setTotals[a]);
 
@@ -365,15 +617,24 @@ function initPage() {
   renderTabs(sets);
   renderHeatmap();
   document.getElementById('summary-row').style.display = 'flex';
+  // Ensure evidence indicator container exists
+  if (!document.getElementById('evidence-indicator')) {
+    const ev = document.createElement('div');
+    ev.id = 'evidence-indicator';
+    ev.style.cssText = 'display:flex;align-items:center;gap:4px;padding:8px 32px;border-bottom:1px solid var(--border);background:var(--s1)';
+    const heatmap = document.getElementById('heatmap-container');
+    heatmap.parentNode.insertBefore(ev, heatmap);
+  }
 }
 
 function renderTabs(sets) {
+  const sorted = [...sets].sort((a, b) => shortSetName(b).localeCompare(shortSetName(a)));
   document.getElementById('set-tabs').innerHTML =
     `<span class="control-label">set</span>` +
-    sets.map(s =>
+    sorted.map(s =>
       `<button class="set-tab ${s === activeSet ? 'active' : ''}"
         onclick="switchSet('${s.replace(/'/g,"\\'")}')">
-        ${s}
+        ${shortSetName(s)}
       </button>`
     ).join('');
 }
@@ -385,329 +646,168 @@ function switchSet(s) {
     if (!p.set) return;
     setTotals[p.set] = (setTotals[p.set] || 0) + (p.totalSales || 0);
   });
+  Object.keys(allData.setMath || {}).forEach(name => {
+    if (!setTotals[name]) setTotals[name] = 0;
+  });
   const sets = Object.keys(setTotals).sort((a, b) => setTotals[b] - setTotals[a]);
   renderTabs(sets);
   renderHeatmap();
 }
 
-// ── Projection engine ──────────────────────────────────────────────────────
-// ── Price hierarchy: 30d avg → 90d avg → all-time avg ─────────────────────
-function bestPrice(product) {
-  if (!product) return null;
-  if (product.avg30d  && product.sales30d  >= 1) return { price: product.avg30d,  recency: '30d',      sales: product.sales30d };
-  if (product.avg90d  && product.sales90d  >= 1) return { price: product.avg90d,  recency: '90d',      sales: product.sales90d };
-  if (product.avgPrice && product.totalSales >= 1) return { price: product.avgPrice, recency: 'all-time', sales: product.totalSales };
-  return null;
-}
+// Estimate engine is in estimate-engine.js (shared with case-sim.html and sets.html)
 
-// Variant proximity weights — closer variants give more reliable cross-estimates
-// (adjacent rarity levels are more correlated than Fire↔Base)
-const VARIANT_PROXIMITY = {
-  'Base':    { 'Victory': 0.9, 'Vides': 0.85, 'Emerald': 0.85, 'Gold': 0.75, 'Chrome': 0.6,  'Fire': 0.4,  'SP': 0.8  },
-  'Victory': { 'Base': 0.9,   'Vides': 0.9,   'Emerald': 0.9,  'Gold': 0.8,  'Chrome': 0.65, 'Fire': 0.45, 'SP': 0.85 },
-  'Emerald': { 'Base': 0.85,  'Victory': 0.9, 'Vides': 0.95,   'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
-  'Vides':   { 'Base': 0.85,  'Victory': 0.9, 'Emerald': 0.95, 'Gold': 0.9,  'Chrome': 0.7,  'Fire': 0.5,  'SP': 0.8  },
-  'Gold':    { 'Base': 0.75,  'Victory': 0.8, 'Emerald': 0.9,  'Vides': 0.9, 'Chrome': 0.85, 'Fire': 0.65, 'SP': 0.7  },
-  'Chrome':  { 'Base': 0.6,   'Victory': 0.65,'Emerald': 0.7,  'Vides': 0.7, 'Gold': 0.85,   'Fire': 0.8,  'SP': 0.6  },
-  'Fire':    { 'Base': 0.4,   'Victory': 0.45,'Emerald': 0.5,  'Vides': 0.5, 'Gold': 0.65,   'Chrome': 0.8,'SP': 0.4  },
-  'SP':      { 'Base': 0.8,   'Victory': 0.85,'Emerald': 0.8,  'Vides': 0.8, 'Gold': 0.7,    'Chrome': 0.6,'Fire': 0.4},
-};
 
-function buildProjections(setName, setProducts) {
-  // ── Layer 2: AI overrides ──────────────────────────────────────────────
-  const aiAdjustedMults = {};
-  const aiPlayerOverrides = {};
-  if (allData.aiModelOutput) {
-    (allData.aiModelOutput.adjustedMultipliers || [])
-      .filter(m => m.set === setName)
-      .forEach(m => { aiAdjustedMults[m.variant] = { mult: m.recommendedMultiplier, reasoning: m.reasoning }; });
-    (allData.aiModelOutput.playerOverrides || [])
-      .filter(o => o.set === setName)
-      .forEach(o => { aiPlayerOverrides[o.player + '|||' + o.variant] = o; });
-  }
 
-  // ── Build per-variant set multipliers using 30d→90d→all-time hierarchy ──
-  // For each variant pair (A→B), compute ratio: B_price / A_price across all
-  // players who have real data for BOTH variants.
-  const byPlayer = {};
-  setProducts.forEach(p => {
-    if (!byPlayer[p.player]) byPlayer[p.player] = {};
-    byPlayer[p.player][p.variant] = p;
-  });
-
-  // Cross-variant ratios: for every pair of variants with shared player data,
-  // compute the set-level ratio. e.g. Gold/Base, Victory/Base, Gold/Victory, etc.
-  const crossRatios = {}; // 'Gold|||Base' -> [ratio, ratio, ...]
-  const allVariants = [...new Set(setProducts.map(p => p.variant))];
-
-  allVariants.forEach(vA => {
-    allVariants.forEach(vB => {
-      if (vA === vB) return;
-      const key = vA + '|||' + vB;
-      crossRatios[key] = [];
-      Object.values(byPlayer).forEach(pVariants => {
-        const dA = bestPrice(pVariants[vA]);
-        const dB = bestPrice(pVariants[vB]);
-        if (dA && dB && dA.price > 0 && dB.price > 0) {
-          crossRatios[key].push({ ratio: dA.price / dB.price, salesA: dA.sales, salesB: dB.sales });
-        }
-      });
-    });
-  });
-
-  // Weighted median ratio for each pair (weight by min sales of the two)
-  function weightedMedianRatio(pairs) {
-    if (!pairs.length) return null;
-    const sorted = [...pairs].sort((a, b) => a.ratio - b.ratio);
-    const totalW = sorted.reduce((s, p) => s + Math.min(p.salesA, p.salesB), 0);
-    let cumW = 0;
-    for (const p of sorted) {
-      cumW += Math.min(p.salesA, p.salesB);
-      if (cumW >= totalW / 2) return { ratio: p.ratio, n: pairs.length };
-    }
-    return { ratio: sorted[Math.floor(sorted.length / 2)].ratio, n: pairs.length };
-  }
-
-  const setRatios = {}; // 'Gold|||Base' -> { ratio, n }
-  Object.entries(crossRatios).forEach(([key, pairs]) => {
-    const r = weightedMedianRatio(pairs);
-    if (r) setRatios[key] = r;
-  });
-
-  // ── For each player × missing variant, build multi-anchor estimate ───────
-  const projections = {};
-
-  Object.entries(byPlayer).forEach(([player, variants]) => {
-    const knownVariants = Object.keys(variants).filter(v => variants[v]?.avgPrice > 0);
-    if (!knownVariants.length) return;
-
-    allVariants.forEach(targetVariant => {
-      if (variants[targetVariant]?.avgPrice > 0) return; // has real data
-      if (!setProducts.some(p => p.variant === targetVariant)) return;
-
-      const overrideKey = player + '|||' + targetVariant;
-      const aiOverride = aiPlayerOverrides[overrideKey];
-      const aiAdjusted = aiAdjustedMults[targetVariant];
-
-      // ── Build anchors: one estimate per known variant ──────────────────
-      const anchors = [];
-
-      knownVariants.forEach(sourceVariant => {
-        const ratioKey = targetVariant + '|||' + sourceVariant;
-        const ratioData = setRatios[ratioKey];
-        if (!ratioData) return;
-
-        const sourcePrice = bestPrice(variants[sourceVariant]);
-        if (!sourcePrice) return;
-
-        const impliedPrice = sourcePrice.price * ratioData.ratio;
-        const proximity = (VARIANT_PROXIMITY[targetVariant] || {})[sourceVariant] || 0.5;
-
-        // Weight = proximity × recency_factor × sqrt(sales)
-        const recencyFactor = sourcePrice.recency === '30d' ? 1.0 : sourcePrice.recency === '90d' ? 0.7 : 0.4;
-        const weight = proximity * recencyFactor * Math.sqrt(sourcePrice.sales);
-
-        anchors.push({
-          sourceVariant,
-          sourcePrice: Math.round(sourcePrice.price),
-          sourceRecency: sourcePrice.recency,
-          sourceSales: sourcePrice.sales,
-          ratio: Math.round(ratioData.ratio * 100) / 100,
-          ratioN: ratioData.n,
-          impliedPrice: Math.round(impliedPrice),
-          proximity,
-          recencyFactor,
-          weight,
-        });
-      });
-
-      if (!anchors.length && !aiOverride) return;
-
-      // ── Weighted average of anchors ────────────────────────────────────
-      let projectedPrice, projType, confidence, confidenceScore;
-
-      if (aiOverride) {
-        projectedPrice = Math.round(aiOverride.overrideMultiplier * (bestPrice(variants['Base'])?.price || 1));
-        projType = 'ai';
-      } else {
-        const totalWeight = anchors.reduce((s, a) => s + a.weight, 0);
-        const weightedSum = anchors.reduce((s, a) => s + a.impliedPrice * a.weight, 0);
-        projectedPrice = Math.round(totalWeight > 0 ? weightedSum / totalWeight : anchors[0].impliedPrice);
-
-        // AI adjusted multiplier as a check — if AI says something different, note it
-        if (aiAdjusted) {
-          projType = 'ai';
-        } else {
-          projType = 'est';
-        }
-      }
-
-      // ── Confidence scoring ─────────────────────────────────────────────
-      const has30d = anchors.some(a => a.sourceRecency === '30d');
-      const has90d = anchors.some(a => a.sourceRecency === '90d');
-      const anchorCount = anchors.length;
-      const totalSalesAcrossAnchors = anchors.reduce((s, a) => s + a.sourceSales, 0);
-      const highProximityAnchors = anchors.filter(a => a.proximity >= 0.8).length;
-
-      if (anchorCount >= 3 && has30d && highProximityAnchors >= 2) {
-        confidence = 'High';
-        confidenceScore = 90;
-      } else if (anchorCount >= 2 && (has30d || has90d)) {
-        confidence = 'Medium';
-        confidenceScore = 65;
-      } else if (anchorCount >= 2) {
-        confidence = 'Medium-Low';
-        confidenceScore = 45;
-      } else if (anchorCount === 1 && totalSalesAcrossAnchors >= 10) {
-        confidence = 'Low';
-        confidenceScore = 30;
-      } else {
-        confidence = 'Very Low';
-        confidenceScore = 15;
-      }
-
-      if (aiOverride || aiAdjusted) {
-        confidence = 'AI Calibrated';
-        confidenceScore = Math.min(95, confidenceScore + 20);
-      }
-
-      projections[player + '|||' + targetVariant] = {
-        price: projectedPrice,
-        projType,
-        confidence,
-        confidenceScore,
-        anchors,       // full breakdown for "show your work"
-        aiOverride: aiOverride || null,
-        aiAdjusted: aiAdjusted || null,
-        // Legacy fields still used by drawer
-        playerBasePrice: Math.round(bestPrice(variants['Base'])?.price || 0),
-        layerOneMult: null,
-      };
-    });
-  });
-
-  return { projections, byPlayer };
-}
 
 // ── Render heatmap ─────────────────────────────────────────────────────────
 function renderHeatmap() {
+  // All products for this set (including zero-sales — they have listing/signal data)
   const setProducts = (allData.products || []).filter(p =>
-    p.set === activeSet && p.player && p.player !== 'Unknown' && p.avgPrice > 0
+    p.set === activeSet && p.player && p.player !== 'Unknown'
   );
+  const mathRows = (allData.setMath || {})[activeSet] || [];
+  // set_math is source of truth — only these player×variant combos are real products
+  const mathSet  = new Set(mathRows.map(r => `${r.player}|||${r.variant}`));
 
-  if (!setProducts.length) {
-    document.getElementById('heatmap-container').innerHTML =
-      '<div class="loading">No data for this set yet.</div>';
-    return;
-  }
-
-  // Variants present in this set, in VARIANT_ORDER, plus any extras before SP at end
-  const knownVariants = VARIANT_ORDER.filter(v => setProducts.some(p => p.variant === v));
-  const extraVariants = [...new Set(setProducts.map(p => p.variant))]
-    .filter(v => !VARIANT_ORDER.includes(v));
-  // SP goes last — already in VARIANT_ORDER at end, extras go before SP
+  // Build variant list: union of set_math and product variants, ordered by VARIANT_ORDER
+  const mathVariants = [...new Set(mathRows.map(r => r.variant).filter(Boolean))];
+  const prodVariants  = [...new Set(setProducts.map(p => p.variant).filter(Boolean))];
+  const allVariantSet = [...new Set([...mathVariants, ...prodVariants])];
+  const knownVariants = VARIANT_ORDER.filter(v => allVariantSet.includes(v));
+  const extraVariants = allVariantSet.filter(v => !VARIANT_ORDER.includes(v));
   const spIdx = knownVariants.indexOf('SP');
   const variants = spIdx >= 0
     ? [...knownVariants.slice(0, spIdx), ...extraVariants, 'SP']
     : [...knownVariants, ...extraVariants];
 
-  const { projections, byPlayer } = buildProjections(activeSet, setProducts);
+  // Player list: union of set_math and products, alphabetical
+  const mathPlayers = [...new Set(mathRows.map(r => r.player).filter(p => p && p !== 'Unknown'))];
+  const prodPlayers  = [...new Set(setProducts.map(p => p.player).filter(p => p && p !== 'Unknown'))];
+  const players = [...new Set([...mathPlayers, ...prodPlayers])].sort((a, b) => a.localeCompare(b));
 
-  // Per-variant: compute median-centered range for color scaling
-  // Using median ± 1.5× IQR so outliers don't swamp the color scale
-  const variantPriceRange = {};
-  variants.forEach(variant => {
-    const prices = setProducts
-      .filter(p => p.variant === variant && p.avgPrice > 0)
-      .map(p => p.avgPrice);
-    Object.entries(projections).forEach(([key, proj]) => {
-      if (key.endsWith('|||' + variant)) prices.push(proj.price);
-    });
-    if (!prices.length) return;
-    prices.sort((a, b) => a - b);
-    const mid = Math.floor(prices.length / 2);
-    const median = prices.length % 2 === 0
-      ? (prices[mid - 1] + prices[mid]) / 2
-      : prices[mid];
-    // IQR
-    const q1 = prices[Math.floor(prices.length * 0.25)];
-    const q3 = prices[Math.floor(prices.length * 0.75)];
-    const iqr = q3 - q1;
-    // Clamp range to median ± 1.5×IQR (soft cap — real outliers still get extreme color but don't blow out the scale)
-    const lo = Math.max(prices[0],  median - 1.5 * iqr);
-    const hi = Math.min(prices[prices.length - 1], median + 1.5 * iqr);
-    variantPriceRange[variant] = {
-      min: lo < hi ? lo : prices[0],
-      max: lo < hi ? hi : prices[prices.length - 1],
-    };
-  });
+  if (!players.length || !variants.length) {
+    document.getElementById('heatmap-container').innerHTML =
+      '<div class="loading">No data for this set yet.</div>';
+    document.getElementById('sum-hot').textContent = '—';
+    document.getElementById('sum-cold').textContent = '0';
+    document.getElementById('sum-mover').textContent = '—';
+    document.getElementById('sum-mover-sub').textContent = '—';
+    document.getElementById('sum-proj').textContent = '0';
+    return;
+  }
 
-  // Sort players alphabetically
-  const players = [...new Set(setProducts.map(p => p.player))].sort((a, b) => a.localeCompare(b));
+  const { estimates, refreshedEstimates, byPlayer, evidenceWeight } = buildEstimates(activeSet, setProducts, allData.activeWeights);
+
+  // Show evidence weight indicator
+  const evPct = Math.round(evidenceWeight * 100);
+  const evLabel = evPct < 20 ? 'sparse · range-mapped'
+                : evPct < 50 ? 'building · range-primary'
+                : evPct < 80 ? 'moderate · ratio-blended'
+                : 'strong · data-driven';
+  const evColor = evPct < 20 ? '#ffb347' : evPct < 50 ? '#ffd700' : 'var(--green)';
+  const evEl = document.getElementById('evidence-indicator');
+  if (evEl) evEl.innerHTML = `
+    <span style="color:var(--muted);font-size:8px;letter-spacing:1px;text-transform:uppercase">model evidence</span>
+    <span style="font-family:var(--display);font-size:13px;color:${evColor};margin:0 6px">${evPct}%</span>
+    <span style="font-size:8px;color:var(--muted2)">${evLabel}</span>`;
 
   const LABEL_W = '155px';
   const gridCols = `${LABEL_W} ${variants.map(() => '1fr').join(' ')}`;
 
   let html = `<div class="col-headers" style="grid-template-columns:${gridCols}">
     <div></div>
-    ${variants.map(v => `<div class="col-header">${v}</div>`).join('')}
+    ${variants.map(v => `<div class="col-header">${shortVariantName(v)}</div>`).join('')}
   </div>`;
 
-  let projCount = 0, aiProjCount = 0;
+  let estimatedCount = 0;
   let highestPrice = 0, highestPlayer = '', highestVariant = '';
 
   players.forEach(player => {
     const cells = variants.map(variant => {
+      // If this combo doesn't exist in set_math, it's not a real product — show ✕
+      if (!mathSet.has(`${player}|||${variant}`)) {
+        return `<div class="heat-cell na" title="${player} · ${variant} · not in this set">✕</div>`;
+      }
+
       const realData = setProducts.find(p => p.player === player && p.variant === variant);
-      const projKey = player + '|||' + variant;
-      const proj = projections[projKey];
+      const est = estimates[player + '|||' + variant];
 
-      // Real data
-      if (realData && realData.avgPrice > 0) {
-        const price = realData.avgPrice; // ALL-TIME avg — headline number
-        const p30 = realData.avg30d || 0;
-        const p90 = realData.avg90d || 0;
+      const totalSales  = realData?.totalSales || 0;
+      const supplyCount = 0;
+      const hasEstimate = !!(est?.price > 0);
+      const refreshed   = refreshedEstimates?.[player + '|||' + variant];
+      // rawAvgPrice is preserved pre-normalization — truthy for any combo that
+      // had actual sales (including all-graded). avgPrice is zeroed for graded-only.
+      const hasRealData = totalSales > 0 && (realData?.avgPrice > 0 || realData?.rawAvgPrice > 0);
 
-        // Arrow: 30d vs 90d trend (only if both exist)
-        const trendPct = (p30 && p90) ? Math.round(((p30 - p90) / p90) * 100) : null;
-        const arrow = heatArrow(trendPct);
+      // Color = data richness (signal density), not price percentile
+      const cls = heatClassBySignals(totalSales, supplyCount, hasEstimate || !!refreshed);
 
-        // Heat color: how does this player's price compare to others in this variant?
-        const range = variantPriceRange[variant];
-        const cls = range ? heatClassByPrice(price, range.min, range.max) : 'heat-flat';
-
-        if (price > highestPrice) { highestPrice = price; highestPlayer = player; highestVariant = variant; }
-
-        return `<div class="heat-cell ${cls}"
-          data-type="real" data-player="${esc(player)}" data-variant="${variant}"
-          data-avg="${price}" data-p30="${p30}" data-p90="${p90}"
-          data-trend="${trendPct != null ? trendPct : ''}" data-sales="${realData.totalSales||0}"
-          onmouseenter="showTip(event,this)" onmouseleave="hideTip()">
-          <div class="cell-arrow">${arrow}</div>
-          <div class="cell-pct">$${Math.round(price)}</div>
-          <div class="cell-price">${realData.totalSales} sales</div>
+      // ── Full Model: refreshed estimate overrides real-data display ──────
+      // Every card with real sales shows a staleness-adjusted model price,
+      // with the last real sale shown as context below.
+      if (estimateMode === 'full-model' && refreshed) {
+        const displayPrice = refreshed.price;
+        if (displayPrice > highestPrice) { highestPrice = displayPrice; highestPlayer = player; highestVariant = variant; }
+        estimatedCount++;
+        return `<div class="heat-cell ${confClass(refreshed.confidence)} projected"
+          data-type="refreshed" data-player="${esc(player)}" data-variant="${variant}"
+          onclick="openSalesDrawer('${esc(player)}','${variant}')">
+          <div class="cell-badge est">MODEL</div>
+          <div class="cell-pct">$${Math.round(displayPrice).toLocaleString()}</div>
+          <div class="cell-price" style="color:var(--muted)">$${Math.round(refreshed.ownPrice).toLocaleString()} real</div>
         </div>`;
       }
 
-      // Projected
-      if (proj) {
-        projCount++;
-        if (proj.projType === 'ai') aiProjCount++;
-        const badgeCls = proj.projType === 'ai' ? 'ai' : 'est';
-        const badgeLabel = 'EST';
-        const range = variantPriceRange[variant];
-        const baseCls = range ? heatClassByPrice(proj.price, range.min, range.max) : 'heat-flat';
-        const projCls = proj.projType === 'ai' ? `${baseCls} projected-ai` : `${baseCls} projected`;
-        return `<div class="heat-cell ${projCls}"
-          data-type="proj" data-player="${esc(player)}" data-variant="${variant}"
+      // ── Real data cell (Sales Only + Model Blend) ───────────────────────
+      if (hasRealData) {
+        const price    = recencyPrice(realData);
+        const p30      = realData.avg30d || 0;
+        const p90      = realData.avg90d || 0;
+        const trendPct = (p30 && p90) ? Math.round(((p30 - p90) / p90) * 100) : null;
+        const arrow    = heatArrow(trendPct);
+        const salesLabel = recencyLevel === 3
+          ? 'last sale'
+          : recencyLevel === 2 && realData.sales30d > 0
+          ? `${realData.sales30d} sales · 30d`
+          : recencyLevel === 1 && realData.sales90d > 0
+          ? `${realData.sales90d} sales · 90d`
+          : `${totalSales} sales`;
+        if (price > highestPrice) { highestPrice = price; highestPlayer = player; highestVariant = variant; }
+        return `<div class="heat-cell ${cls}" style="cursor:pointer"
+          data-type="real" data-player="${esc(player)}" data-variant="${variant}"
+          data-avg="${price}" data-p30="${p30}" data-p90="${p90}"
+          data-trend="${trendPct != null ? trendPct : ''}" data-sales="${totalSales}"
+          onmouseenter="showTip(event,this)" onmouseleave="hideTip()"
+          onclick="hideTip();openSalesDrawer('${esc(player)}','${variant}')">
+          <div class="cell-pct">$${Math.round(price).toLocaleString()}</div>
+          <div class="cell-price">${salesLabel}</div>
+        </div>`;
+      }
+
+      // ── Gap-fill model estimate cell (hidden in Sales Only mode) ────────
+      if (hasEstimate && estimateMode !== 'sales-only') {
+        estimatedCount++;
+        return `<div class="heat-cell ${confClass(est.confidence)} projected"
+          data-type="est" data-player="${esc(player)}" data-variant="${variant}"
           onclick="openProjectionDrawer('${esc(player)}','${variant}')">
-          <div class="cell-badge ${badgeCls}">${badgeLabel}</div>
-          <div class="cell-pct" style="font-size:13px">$${Math.round(proj.price)}</div>
+          <div class="cell-badge est">MODEL</div>
+          <div class="cell-pct">$${Math.round(est.price).toLocaleString()}</div>
           <div class="cell-price" style="color:var(--muted)">est.</div>
         </div>`;
       }
 
-      return `<div class="heat-cell no-data"></div>`;
+      // ── Listing-only cell (supply > 0, no sales, no estimate) ──────────
+      if (supplyCount > 0 && estimateMode !== 'sales-only') {
+        return `<div class="heat-cell ${cls}" style="cursor:pointer"
+          onclick="openProjectionDrawer('${esc(player)}','${variant}')">
+          <div class="cell-price" style="font-size:8px;color:#c084fc">${supplyCount} listed</div>
+        </div>`;
+      }
+
+      // ── No data (or sales-only with no real data) ───────────────────────
+      return `<div class="heat-cell no-data" style="cursor:pointer"
+        onclick="openProjectionDrawer('${esc(player)}','${variant}')"></div>`;
     }).join('');
 
     html += `<div class="heatmap-row" style="grid-template-columns:${gridCols}">
@@ -726,143 +826,555 @@ function renderHeatmap() {
   document.getElementById('sum-cold').textContent = players.length;
   document.getElementById('sum-mover').textContent = highestPlayer || '—';
   document.getElementById('sum-mover-sub').textContent = highestPlayer ? `${highestPlayer} · ${highestVariant}` : '—';
-  document.getElementById('sum-proj').textContent = projCount;
-  document.getElementById('sum-proj-sub').textContent =
-    aiProjCount > 0 ? `${aiProjCount} AI-calibrated, ${projCount - aiProjCount} statistical` : 'estimated values';
+  document.getElementById('sum-proj').textContent = estimatedCount;
+  document.getElementById('sum-proj-sub').textContent = 'model estimates (no real sales)';
 }
 
-// ── Projection drawer ──────────────────────────────────────────────────────
-function openProjectionDrawer(player, variant) {
+// ── Figure URL helpers (for direct-comp card thumbnails) ──────────────────
+function slugifyHm_(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\./g,'').replace(/[^a-z0-9\s]/g,'').trim().replace(/\s+/g,'_');
+}
+function slugifySetHm_(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+}
+function normVarHm_(v) {
+  const l=(v||'').toLowerCase();
+  if(l.includes('fire'))   return 'fire';
+  if(l.includes('gold'))   return 'gold';
+  if(l.includes('chrome')) return 'chrome';
+  if(l.includes('emerald'))return 'emerald';
+  if(l.includes('victory'))return 'victory';
+  if(l.includes('vides'))  return 'vides';
+  if(l.includes('bet'))    return 'bet-on-women';
+  if(l.includes('sp'))     return 'sp';
+  return 'base';
+}
+function figureUrlHm_(player, variant, setName) {
+  return `assets/figures/${slugifySetHm_(setName)}/${slugifyHm_(player)}_${normVarHm_(variant)}.png`;
+}
+
+// ── Estimate drawer ────────────────────────────────────────────────────────
+function openProjectionDrawer(player, variant, isRefreshed = false) {
   const setProducts = (allData.products || []).filter(p => p.set === activeSet && p.player !== 'Unknown');
-  const { projections, byPlayer } = buildProjections(activeSet, setProducts);
-  const proj = projections[player + '|||' + variant];
-  if (!proj) return;
+  const { estimates, refreshedEstimates, byPlayer } = buildEstimates(activeSet, setProducts, allData.activeWeights);
+
+  const est = isRefreshed
+    ? (refreshedEstimates?.[player + '|||' + variant] || estimates[player + '|||' + variant])
+    : estimates[player + '|||' + variant];
 
   document.getElementById('d-player').textContent = player;
-  document.getElementById('d-variant').textContent = variant + ' · Projected Value';
+  document.getElementById('d-variant').textContent = variant + ' · Estimate';
 
-  // ── Known data for this player ─────────────────────────────────────────
+  if (!est) {
+    document.getElementById('d-body').innerHTML =
+      `<div style="font-size:11px;color:var(--muted);padding:20px 0">No estimate available for this cell.</div>`;
+    document.getElementById('overlay').classList.add('visible');
+    document.getElementById('drawer').classList.add('open');
+    return;
+  }
+
+  const fmt = v => (v && +v > 0) ? '$' + Math.round(+v).toLocaleString() : '—';
+
+  // ── Method routing ───────────────────────────────────────────────────────
+  // evPct = within-set ratio evidence weight (0–100).
+  // 100% → fully based on set-internal pricing ratios.
+  //   0% → fully based on cross-set reference range.
+  const evPct      = est.evidenceWeight ?? 0;
+  const anchors    = est.anchors || [];
+  const hasAnchors = anchors.length > 0 && est.ratioEstimate != null;
+  const isComp     = est.compUsed && est.compData;
+  const hasRef     = !!est.refDist;
+
+  // ── Confidence ───────────────────────────────────────────────────────────
+  const CONF_SCORES = { 'High': 95, 'Medium-High': 82, 'Medium': 65, 'Medium-Low': 45, 'Low': 30, 'Very Low': 15, 'No Data': 5 };
+  const confidence  = est.confidence || 'No Data';
+  const score       = CONF_SCORES[confidence] || 10;
+  const confColor   = score >= 80 ? '#4caf50' : score >= 60 ? '#ffb347' : score >= 35 ? '#ff6b35' : '#ff6b6b';
+
+  const confHtml = `
+    <div class="d-section">
+      <div class="d-section-title">Confidence</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:5px;background:var(--border);border-radius:3px">
+          <div style="width:${score}%;height:100%;background:${confColor};border-radius:3px"></div>
+        </div>
+        <span style="font-family:var(--display);font-size:11px;color:${confColor};white-space:nowrap">${confidence}</span>
+      </div>
+    </div>`;
+
+  // ── Player rank (compact bar — no Implied Base) ──────────────────────────
+  const pvsInfo = est.pvs;
+  let rankHtml = '';
+  if (pvsInfo) {
+    const displayRank = pvsInfo.nPlayers - pvsInfo.rank + 1; // 1 = most valuable
+    const rankPct     = pvsInfo.percentilePct; // 0=cheapest, 100=most expensive
+    const rankLabel   = rankPct >= 95 ? 'highest value in this set'
+                      : rankPct >= 80 ? `top ${100 - rankPct}%`
+                      : rankPct <= 5  ? 'lowest value in this set'
+                      : rankPct <= 20 ? `bottom ${rankPct}%`
+                      : `${rankPct}th percentile`;
+    const rankSource  =
+      pvsInfo.source === 'base'
+        ? `Ranked by ${player}'s own Base card average sale price.`
+      : pvsInfo.source === 'inferred' && pvsInfo.inferredFrom
+        ? `No Base sales yet — rank inferred by comparing ${player}'s ${pvsInfo.inferredFrom.variant} price to ${pvsInfo.inferredFrom.otherPlayer}'s.`
+      : `No sales data — assigned the set median position as a placeholder.`;
+
+    rankHtml = `
+      <div class="d-section">
+        <div class="d-section-title">${player}'s Value Rank in This Set</div>
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:8px">
+          This rank is how we decide where ${player} falls on the reference price curve.
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-family:var(--display);font-size:22px;color:var(--text)">#${displayRank} of ${pvsInfo.nPlayers}</span>
+          <span style="font-size:11px;color:var(--muted2)">${rankLabel}</span>
+        </div>
+        <div class="rank-bar-wrap">
+          <div class="rank-bar-fill" style="width:${rankPct}%"></div>
+          <div class="rank-bar-dot" style="left:${rankPct}%"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${rankSource}</div>
+      </div>`;
+  }
+
+  // ── Known prices for this player ─────────────────────────────────────────
   const playerVariants = byPlayer[player] || {};
   const knownEntries = Object.entries(playerVariants)
     .filter(([, d]) => d.avgPrice > 0)
     .sort((a, b) => {
-      const order = {'Base':0,'Victory':1,'Vides':2,'Emerald':3,'Gold':4,'Chrome':5,'Fire':6,'SP':7};
-      return (order[a[0]]??99) - (order[b[0]]??99);
+      const ord = { Base:0, Victory:1, Vides:2, Emerald:3, Gold:4, Chrome:5, Fire:6, SP:7 };
+      return (ord[a[0]] ?? 99) - (ord[b[0]] ?? 99);
     });
+  const knownHtml = knownEntries.length ? `
+    <div class="d-section">
+      <div class="d-section-title">Known prices for ${player} in this set</div>
+      ${knownEntries.map(([v, d]) => `
+        <div class="d-stat">
+          <span class="d-stat-label">${v}</span>
+          <span class="d-stat-val accent">$${Math.round(d.avgPrice).toLocaleString()}
+            <span style="font-size:10px;color:var(--muted);font-family:inherit"> · ${d.totalSales} sale${d.totalSales !== 1 ? 's' : ''}</span>
+          </span>
+        </div>`).join('')}
+    </div>` : '';
 
-  const knownData = knownEntries.map(([v, d]) => {
-    const bp = bestPrice(d);
-    const recencyTag = bp ? `<span style="font-size:8px;color:var(--muted);margin-left:4px">(${bp.recency})</span>` : '';
-    return `<div class="d-stat">
-      <span class="d-stat-label">${v}</span>
-      <span class="d-stat-val accent">$${Math.round(d.avgPrice)} · ${d.totalSales} sales${recencyTag}</span>
+  // ── Anchor row builder (reused in multiple branches) ─────────────────────
+  const anchorRow = a => {
+    const clr = a.ratioSource === 'sales'      ? 'var(--accent)'
+              : a.ratioSource === 'global-pop' ? '#c8f0a8'
+              : a.ratioSource === 'cross-set'  ? '#a8c8ff'
+              : '#ffb347';
+    const lbl = a.ratioSource === 'sales'      ? 'this set'
+              : a.ratioSource === 'global-pop' ? 'universal ratio'
+              : a.ratioSource === 'cross-set'  ? 'cross-set avg'
+              : 'approx. match';
+    // Cross-set anchors: price came from another set, annotate the source
+    const srcDesc = a.crossSet
+      ? `${player}'s ${a.sourceVariant} sold for ${fmt(a.sourcePrice)} <span style="color:var(--muted2);font-size:9px">(in ${a.srcSetLabel})</span>`
+      : `${player}'s ${a.sourceVariant} sold for ${fmt(a.sourcePrice)}`;
+    return `<div class="anchor-row">
+      <div class="anchor-src">
+        <div style="font-size:10px;color:var(--text)">${srcDesc}</div>
+        <div style="font-size:9px;color:${clr};margin-top:2px">${a.sourceVariant}→${variant} ratio: ${a.ratio}× <span style="color:var(--muted)">(${lbl}${a.ratioN > 0 ? `, ${a.ratioN} player${a.ratioN !== 1 ? 's' : ''}` : ''})</span></div>
+      </div>
+      <div class="anchor-eq">${fmt(a.sourcePrice)} × ${a.ratio}×</div>
+      <div class="anchor-result">${fmt(a.impliedPrice)}</div>
     </div>`;
-  }).join('');
+  };
 
-  // ── Anchor breakdown table ─────────────────────────────────────────────
-  const anchors = proj.anchors || [];
-  const totalWeight = anchors.reduce((s, a) => s + a.weight, 0);
+  // ── METHOD HERO ──────────────────────────────────────────────────────────
+  let methodHtml = '';
 
-  let anchorsHtml = '';
-  if (anchors.length) {
-    const rows = anchors.map(a => {
-      const weightPct = totalWeight > 0 ? Math.round((a.weight / totalWeight) * 100) : 0;
-      const barWidth = Math.max(4, weightPct);
-      const recencyColor = a.sourceRecency === '30d' ? 'var(--accent)' : a.sourceRecency === '90d' ? '#ffb347' : 'var(--muted)';
-      return `<div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-bottom:4px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
-          <span style="font-size:10px;color:var(--text)">${a.sourceVariant} → ${variant}</span>
-          <span style="font-family:var(--display);font-size:12px;color:var(--accent)">$${a.impliedPrice}</span>
-        </div>
-        <div style="font-size:9px;color:var(--muted);line-height:1.7">
-          $${a.sourcePrice} × ${a.ratio}× ratio = $${a.impliedPrice}<br>
-          <span style="color:${recencyColor}">${a.sourceRecency} avg</span>
-          · ${a.sourceSales} sale${a.sourceSales !== 1 ? 's' : ''}
-          · proximity ${Math.round(a.proximity * 100)}%
-        </div>
-        <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
-          <div style="flex:1;height:3px;background:var(--border);border-radius:2px">
-            <div style="width:${barWidth}%;height:100%;background:var(--accent);border-radius:2px;opacity:0.6"></div>
+  // ── A: Direct Comp ────────────────────────────────────────────────────────
+  if (isComp) {
+    const comps  = est.compData.comps || [];
+    const league = (allData.setLeagueMap || {})[activeSet] || '';
+    const figCards = comps.slice(0, 3).map(c => {
+      const sameLeague = league && (allData.setLeagueMap || {})[c.set] === league;
+      const gradingNote = c.gradingAdjusted
+        ? ` · <span style="color:#c8f0a8">grading adjustment applied</span>` : '';
+      return `<div class="comp-fig-card">
+        <img src="${figureUrlHm_(player, variant, c.set)}" alt=""
+          onerror="this.style.display='none'"
+          style="width:38px;height:52px;object-fit:contain;background:var(--s3);border-radius:3px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div class="comp-fig-set">${c.set}</div>
+          <div class="comp-fig-price">${fmt(c.price)}</div>
+          <div class="comp-fig-meta">
+            ${c.sales} sale${c.sales !== 1 ? 's' : ''} ·
+            <span style="color:${sameLeague ? 'var(--accent)' : 'var(--muted2)'}">
+              ${sameLeague ? 'same league' : 'diff. league'}
+            </span>${gradingNote}
           </div>
-          <span style="font-size:8px;color:var(--muted);white-space:nowrap">${weightPct}% weight</span>
         </div>
       </div>`;
     }).join('');
 
-    const weightedRows = anchors.map(a => {
-      const weightPct = totalWeight > 0 ? Math.round((a.weight / totalWeight) * 100) : 0;
-      return `  $${a.impliedPrice} (${a.sourceVariant}) × ${weightPct}%`;
-    }).join('<br>');
-
-    anchorsHtml = `
-      <div class="d-section-title">Anchors · ${anchors.length} source${anchors.length !== 1 ? 's' : ''}</div>
-      ${rows}
-      <div style="background:var(--s2);border:1px solid var(--border);padding:10px 12px;margin-top:4px;font-size:9px;color:var(--muted);line-height:1.8">
-        Weighted avg:<br>
-        <span style="font-family:var(--mono)">${weightedRows}</span>
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge direct">⚡ Direct Match</span>
+        <div class="method-headline">${player}'s ${variant} has sold before</div>
+        <div class="method-sub">
+          We found real sale${est.compData.n !== 1 ? 's' : ''} of this exact card in
+          ${est.compData.n > 1 ? 'other sets' : 'another set'}.
+          This is the most reliable signal — no extrapolation, just actual market prices.
+        </div>
+        <div class="comp-figures">${figCards}</div>
       </div>`;
-  } else if (proj.aiOverride) {
-    anchorsHtml = `<div class="d-section-title">AI Override</div>
-      <div style="background:rgba(176,240,255,0.06);border:1px solid rgba(176,240,255,0.2);padding:12px;font-size:9px;color:#b0f0ff;line-height:1.6">
-        ${proj.aiOverride.reasoning || 'Player-specific AI adjustment applied.'}
+
+  // ── B: Blend Dominant (≥60% within-set ratios) ────────────────────────────
+  } else if (hasAnchors && evPct >= 60) {
+    const rangePct = 100 - evPct;
+    const rangeSupplement = hasRef && est.rangeEstimate ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+                  font-size:10px;color:var(--muted2)">
+        Also cross-checked against a price curve from
+        <strong style="color:var(--text)">${est.refDist.refSets.join(', ')}</strong>
+        (${rangePct}% weight) → ${fmt(est.rangeEstimate)}
+      </div>` : '';
+
+    const allCrossSet   = anchors.every(a => a.crossSet);
+    const anyCrossSet   = anchors.some(a => a.crossSet);
+    const bHeadline     = allCrossSet
+      ? `Derived from ${player}'s sales in other sets`
+      : anyCrossSet
+      ? `Derived from ${player}'s sales (this set + other sets)`
+      : `Derived from ${player}'s other sales in this set`;
+    const bSub = allCrossSet
+      ? `${player} hasn't sold any other variants in this set yet, but they have
+         sales in other sets. We applied the universal variant ratios to those
+         cross-set prices to estimate this variant.`
+      : anyCrossSet
+      ? `We used ${player}'s known variant prices — some from this set, some from
+         their other sets — and applied the observed ratios to estimate ${variant}.`
+      : `We know how variants price relative to each other in this set — so we took
+         ${player}'s known ${variant === anchors[0]?.sourceVariant ? 'prices' : `${anchors[0]?.sourceVariant ?? ''} price`}
+         and applied the observed ratio.`;
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge blend">↔ Variant Price Ratios</span>
+        <div class="method-headline">${bHeadline}</div>
+        <div class="method-sub">${bSub}</div>
+        ${anchors.map(anchorRow).join('')}
+        ${rangeSupplement}
+      </div>`;
+
+  // ── C: Ratio Only (no ref dist) ───────────────────────────────────────────
+  } else if (!hasRef && hasAnchors) {
+    const cAllCrossSet = anchors.every(a => a.crossSet);
+    const cAnyCrossSet = anchors.some(a => a.crossSet);
+    const cHeadline    = cAllCrossSet
+      ? `Derived from ${player}'s sales in other sets`
+      : cAnyCrossSet
+      ? `Derived from ${player}'s sales (this set + other sets)`
+      : `Derived from ${player}'s other sales in this set`;
+    const cSub = cAllCrossSet
+      ? `No cross-set pricing data is available for ${variant} yet, and ${player}
+         hasn't sold other variants in this set. But they have sales in other sets —
+         we used those with the universal ratios to estimate this variant.`
+      : cAnyCrossSet
+      ? `No cross-set pricing data for ${variant} yet. We combined ${player}'s
+         within-set and cross-set variant prices and applied the price ratios
+         between variants to estimate this one.`
+      : `No cross-set pricing data is available yet for ${variant}. But we know
+         ${player} has sold other variants, so we used the price relationships
+         between variants to estimate this one.`;
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge ratio">↔ Variant Price Ratios</span>
+        <div class="method-headline">${cHeadline}</div>
+        <div class="method-sub">${cSub}</div>
+        ${anchors.map(anchorRow).join('')}
+      </div>`;
+
+  // ── D: Reference Range ── two sub-cases: pure curve vs blended ────────────
+  } else if (hasRef) {
+    const rd        = est.refDist;
+    const setList   = rd.refSets.join(', ');
+    const leagueStr = rd.sameLeague ? 'same-league' : 'cross-league';
+    const pct       = pvsInfo ? pvsInfo.percentilePct : 50;
+    const rm        = rd.rangeMin, rM = rd.rangeMax;
+    const isBlended = hasAnchors && evPct > 0;
+    const rangePct  = 100 - evPct;
+
+    const extNote = rd.extrapolated
+      ? `<div style="font-size:10px;color:#ffb347;margin-top:8px">
+           ⚠ ${player} ranks ${rd.extrapolatedUp ? 'higher' : 'lower'} than anyone in the reference data — price is extrapolated beyond the curve.
+         </div>` : '';
+    const popNote = rd.targetPop != null && !rd.exactPopMatch
+      ? `<div style="font-size:10px;color:#ffb347;margin-top:4px">
+           No exact population match in reference sets — used nearest (pop=${rm?.matchPop ?? '?'}), prices scaled ×${rd.scaleFactor}.
+         </div>` : '';
+
+    // Range visualisation bar
+    const rangeViz = `
+      <div class="range-viz">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+          <span style="font-size:9px;color:var(--muted)">${rm?.player || 'cheapest'}</span>
+          <span style="font-size:9px;color:var(--accent)">${player}</span>
+          <span style="font-size:9px;color:var(--muted)">${rM?.player || 'most expensive'}</span>
+        </div>
+        <div class="range-viz-bar">
+          <div class="range-viz-fill"></div>
+          <div class="range-viz-marker" style="left:${pct}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div>
+            <div style="font-family:var(--display);font-size:15px;color:#4fd1ff">${fmt(rm?.price)}</div>
+            <div style="font-size:9px;color:var(--muted)">cheapest</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--display);font-size:18px;color:var(--accent)">${fmt(est.rangeEstimate)}</div>
+            <div style="font-size:9px;color:var(--muted2)">${pct}th percentile</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--display);font-size:15px;color:#ffb347">${fmt(rM?.price)}</div>
+            <div style="font-size:9px;color:var(--muted)">most expensive</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--muted2)">
+          ${rd.nPoints} player${rd.nPoints !== 1 ? 's' : ''} from
+          <strong style="color:var(--text)">${setList}</strong> · ${leagueStr}
+        </div>
+        ${extNote}${popNote}
+      </div>`;
+
+    if (!isBlended) {
+      // ── D1: Pure price curve — no variant anchor data ──────────────────────
+      // "new player" = no anchors of any kind (no within-set or cross-set prices)
+      const introHtml = !hasAnchors
+        ? `<div style="font-size:11px;color:var(--muted2);line-height:1.65;margin-bottom:14px">
+             This is the first time <strong style="color:var(--text)">${player}</strong> appears
+             in any set. The model relies exclusively on a
+             <strong style="color:var(--text)">price curve match</strong>.
+           </div>`
+        : '';
+
+      methodHtml = `
+        <div class="d-section">
+          ${introHtml}
+          <span class="method-badge range">📊 Price Curve Method [100% Weight]</span>
+          <div class="method-headline">${player} is at the ${pct}th percentile in this set</div>
+          <div class="method-sub">
+            We pulled ${rd.nPoints} real ${variant} sale${rd.nPoints !== 1 ? 's' : ''} from
+            <strong style="color:var(--text)">${setList}</strong> and ranked the players cheapest to most expensive.
+            <br><br>
+            Based on available data, we estimate that ${player} sits at the
+            <strong style="color:var(--text)">${pct}th percentile</strong> of this set.
+            At that position on the ${variant} price curve, the going rate is ${fmt(est.rangeEstimate)}.
+          </div>
+          ${rangeViz}
+        </div>`;
+
+    } else {
+      // ── D2: Blended — price curve + variant ratio anchors ──────────────────
+      const totalW         = anchors.reduce((s, a) => s + a.weight, 0);
+      const ratioEstimate  = totalW > 0
+        ? Math.round(anchors.reduce((s, a) => s + a.impliedPrice * a.weight, 0) / totalW)
+        : null;
+
+      const blendMath = ratioEstimate !== null ? `
+        <div style="margin-top:16px;padding:12px;background:var(--s3);border:1px solid var(--border);border-radius:4px">
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Blended Estimate</div>
+          <div style="font-size:11px;color:var(--muted2);line-height:1.8">
+            Price Curve Estimate:&nbsp;
+              <strong style="color:var(--text)">${fmt(est.rangeEstimate)}</strong>
+              × ${rangePct}%
+          </div>
+          <div style="font-size:11px;color:var(--muted2);line-height:1.8;margin-bottom:6px">
+            Variant Ratio Estimate:&nbsp;
+              <strong style="color:var(--text)">${fmt(ratioEstimate)}</strong>
+              × ${evPct}%
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:8px;
+                      display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:10px;color:var(--muted)">
+              ${fmt(est.rangeEstimate)} × ${rangePct}% + ${fmt(ratioEstimate)} × ${evPct}%
+            </span>
+            <span style="font-family:var(--display);font-size:16px;color:var(--accent)">${fmt(est.price)}</span>
+          </div>
+        </div>` : '';
+
+      methodHtml = `
+        <div class="d-section">
+          <div style="font-size:11px;color:var(--muted2);line-height:1.65;margin-bottom:16px">
+            This estimate uses a blend of
+            <strong style="color:var(--text)">Price Curve</strong> and
+            <strong style="color:var(--text)">Variant Anchors</strong>.
+          </div>
+
+          <span class="method-badge range">📊 Price Curve Method [${rangePct}% Weight]</span>
+          <div class="method-sub" style="margin-top:8px">
+            We pulled ${rd.nPoints} real ${variant} sale${rd.nPoints !== 1 ? 's' : ''} from
+            <strong style="color:var(--text)">${setList}</strong> and ranked the players cheapest to most expensive.
+            Based on available data, we estimate that ${player} sits at the
+            <strong style="color:var(--text)">${pct}th percentile</strong> of this set.
+            At that position on the price curve, the going rate is ${fmt(est.rangeEstimate)}.
+          </div>
+          ${rangeViz}
+
+          <div style="margin-top:20px">
+            <span class="method-badge blend">⚖️ Variant Ratio Method [${evPct}% Weight]</span>
+            <div style="margin-top:10px">
+              ${anchors.map(anchorRow).join('')}
+            </div>
+          </div>
+
+          ${blendMath}
+        </div>`;
+    } // closes if (!isBlended) / else
+
+  // ── E: Fallback ─────────────────────────────────────────────────────────
+  } else {
+    methodHtml = `
+      <div class="d-section">
+        <span class="method-badge ratio">Low Confidence</span>
+        <div class="method-headline">Not enough data to estimate reliably</div>
+        <div class="method-sub">
+          We don't have real sales for this variant in any comparable set yet,
+          and ${player} hasn't sold enough other variants to anchor a ratio.
+          Treat this estimate as a very rough placeholder.
+        </div>
       </div>`;
   }
 
-  // ── Confidence bar ─────────────────────────────────────────────────────
-  const score = proj.confidenceScore || 0;
-  const confColor = score >= 70 ? '#6fcf97' : score >= 40 ? '#ffb347' : '#ff6b6b';
-  const confLabel = proj.confidence || '—';
+  // ── Freshness blend (Full Model only) ────────────────────────────────────
+  let freshnessHtml = '';
+  if (isRefreshed && est.isRefreshed) {
+    const fp  = est.freshness;
+    const fc  = fp >= 70 ? 'var(--accent)' : fp >= 30 ? '#ffb347' : '#ff6b6b';
+    const age = fp >= 70 ? 'recent' : fp >= 30 ? 'a few months old' : 'over a year old';
+    freshnessHtml = `
+      <div class="d-section">
+        <div class="d-section-title">Real Sales + Model Blend</div>
+        <div style="font-size:11px;color:var(--muted2);line-height:1.65;margin-bottom:10px">
+          This card has actual sales data, but it's ${age}. We weight the last known price
+          by how recent it is and blend in the model estimate to account for market drift.
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="flex:1;height:4px;background:var(--border);border-radius:2px">
+            <div style="width:${fp}%;height:100%;background:${fc};border-radius:2px"></div>
+          </div>
+          <span style="font-size:10px;color:${fc};white-space:nowrap">${fp}% own data weight</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">LAST SALE</div>
+            <div style="font-family:var(--display);font-size:16px;color:var(--text)">$${est.ownPrice.toLocaleString()}</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);text-align:center;padding:0 4px">
+            ${fp}% ↑<br>${100-fp}% ↓
+          </div>
+          <div style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">MODEL</div>
+            <div style="font-family:var(--display);font-size:16px;color:var(--muted2)">$${est.modelEstimate?.toLocaleString() ?? '—'}</div>
+          </div>
+          <div style="font-size:16px;color:var(--muted)">→</div>
+          <div style="flex:1;background:rgba(232,255,71,0.06);border:1px solid rgba(232,255,71,0.2);border-radius:4px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">BLENDED</div>
+            <div style="font-family:var(--display);font-size:16px;color:var(--accent)">$${est.price.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>`;
+  }
 
-  // ── Recency note ───────────────────────────────────────────────────────
-  const has30d = anchors.some(a => a.sourceRecency === '30d');
-  const has90d = anchors.some(a => a.sourceRecency === '90d');
-  const recencyNote = has30d ? 'Using 30-day prices — recent data.' :
-                      has90d ? 'Using 90-day prices — no data in last 30 days.' :
-                      anchors.length ? 'Using all-time averages — limited recent data.' : '';
-
-  // ── AI note ────────────────────────────────────────────────────────────
-  const aiNote = proj.aiAdjusted
-    ? `<div class="ai-override-note"><strong>AI Calibrated</strong>${proj.aiAdjusted.reasoning || 'Set-level multiplier adjusted by AI market model.'}</div>`
-    : '';
+  // ── Method note for final box ─────────────────────────────────────────────
+  const methodNote = isComp
+    ? `Based on <strong>${est.compData.n}</strong> real sale${est.compData.n !== 1 ? 's' : ''} of this card in other sets.`
+    : hasAnchors && evPct >= 60
+    ? `Variant ratio anchors${hasRef ? ' + price curve cross-check.' : '.'}`
+    : hasRef && !est.refDist?.extrapolated && hasAnchors && evPct > 0
+    ? `${est.refDist.sameLeague ? 'Same-league' : 'Cross-league'} price curve match + variant ratio anchors.`
+    : hasRef && !est.refDist?.extrapolated
+    ? `${est.refDist.sameLeague ? 'Same-league' : 'Cross-league'} price curve match.`
+    : hasRef && est.refDist?.extrapolated
+    ? `Extrapolated ${est.refDist.extrapolatedUp ? 'above' : 'below'} known reference range — confidence lower.`
+    : hasAnchors
+    ? 'Variant price ratio estimate (no cross-set curve available yet).'
+    : 'Insufficient data — rough placeholder only.';
 
   document.getElementById('d-body').innerHTML = `
-    <div class="d-section">
-      <div class="d-section-title">Confidence</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <div style="flex:1;height:5px;background:var(--border);border-radius:3px">
-          <div style="width:${score}%;height:100%;background:${confColor};border-radius:3px"></div>
-        </div>
-        <span style="font-family:var(--display);font-size:10px;color:${confColor};white-space:nowrap">${confLabel}</span>
-      </div>
-      ${recencyNote ? `<div style="font-size:9px;color:var(--muted)">${recencyNote}</div>` : ''}
-    </div>
-
-    <div class="d-section">
-      ${anchorsHtml}
-      ${aiNote}
-    </div>
-
+    ${confHtml}
+    ${methodHtml}
+    ${knownHtml}
+    ${freshnessHtml}
     <div class="proj-final">
-      <div class="proj-final-label">Projected Value</div>
-      <div class="proj-final-val">$${proj.price}</div>
-      <div class="proj-final-note">
-        ${anchors.length > 1
-          ? `Weighted average of ${anchors.length} anchors.`
-          : anchors.length === 1
-          ? `Based on ${anchors[0].sourceVariant} price only.`
-          : 'AI override.'}
-        Actual sale price will vary.
-      </div>
+      <div class="proj-final-label">Estimate</div>
+      <div class="proj-final-val">$${est.price.toLocaleString()}</div>
+      <div class="proj-final-note">${methodNote}<br>Actual sale price will vary.</div>
     </div>
-
-    ${knownData ? `<div class="d-section" style="margin-top:16px">
-      <div class="d-section-title">What we know for ${player}</div>
-      ${knownData}
-    </div>` : ''}
   `;
 
   document.getElementById('overlay').classList.add('visible');
   document.getElementById('drawer').classList.add('open');
+}
+
+// ── Sales drawer (real-data cells) ────────────────────────────────────────
+async function openSalesDrawer(player, variant) {
+  const vClass = 'v-' + (variant || 'base').toLowerCase();
+  document.getElementById('d-player').textContent = player;
+  document.getElementById('d-variant').innerHTML =
+    `<span class="v-tag ${vClass}" style="margin-right:6px">${variant}</span> Sales History`;
+
+  document.getElementById('d-body').innerHTML =
+    `<div style="padding:32px 0;text-align:center;color:var(--muted);font-size:11px;letter-spacing:1px">loading sales…</div>`;
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('drawer').classList.add('open');
+
+  try {
+    const raw = await rpc('get_sales_by_combo', {
+      p_set_name: activeSet, p_player: player, p_variant: variant
+    });
+
+    // Filter to last 90 days, newest first
+    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    const sales = raw
+      .map(l => ({ id: l.id, price: +l.price || 0, date: l.date, image: l.image_url, url: l.ebay_url, afa: l.afa_grade, title: l.title || '' }))
+      .filter(l => l.date && new Date(l.date).getTime() >= cutoff && l.price > 0)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (!sales.length) {
+      document.getElementById('d-body').innerHTML =
+        `<div style="padding:32px 0;text-align:center;color:var(--muted);font-size:11px">No sales in the last 90 days.</div>`;
+      return;
+    }
+
+    document.getElementById('d-body').innerHTML =
+      `<div style="font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px">
+        Last 90 days · ${sales.length} sale${sales.length !== 1 ? 's' : ''}
+       </div>
+       ${sales.map(renderSaleCard).join('')}`;
+  } catch(e) {
+    document.getElementById('d-body').innerHTML =
+      `<div style="color:var(--red);font-size:11px;padding:20px 0">Failed to load: ${e.message}</div>`;
+  }
+}
+
+function renderSaleCard(sale) {
+  const dateStr = sale.date
+    ? new Date(sale.date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+    : '—';
+  const imgHtml = sale.image
+    ? `<img class="listing-img" src="${sale.image}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="listing-img-placeholder" style="display:none">👻</div>`
+    : `<div class="listing-img-placeholder">👻</div>`;
+  const linkHtml = sale.url
+    ? `<a class="listing-link" href="${sale.url}" target="_blank" rel="noopener">↗ view</a>`
+    : '';
+  return `<div class="listing-card">
+    ${imgHtml}
+    <div class="listing-body">
+      <div class="listing-title">${sale.title || '—'}</div>
+      <div class="listing-meta">
+        <span class="listing-price">$${Math.round(sale.price).toLocaleString()}</span>
+        <span class="listing-date">${dateStr}</span>
+        ${sale.afa ? `<span class="afa-badge">🏆 ${sale.afa}</span>` : ''}
+        ${linkHtml}
+      </div>
+    </div>
+  </div>`;
 }
 
 function closeDrawer() {
@@ -912,17 +1424,38 @@ function heatClass(pct) {
   return 'heat-down3';
 }
 
-// New: color based on where this price sits within the variant's min-max range
-function heatClassByPrice(price, min, max) {
-  if (max === min) return 'heat-flat';
-  const pct = (price - min) / (max - min); // 0 = lowest, 1 = highest
-  if (pct >= 0.85) return 'heat-up3';
-  if (pct >= 0.65) return 'heat-up2';
-  if (pct >= 0.45) return 'heat-up1';
-  if (pct >= 0.25) return 'heat-flat';
-  if (pct >= 0.12) return 'heat-down1';
-  if (pct >= 0.04) return 'heat-down2';
-  return 'heat-down3';
+// Maps a confidence tier label → CSS class for estimated/model cells
+function confClass(confidence) {
+  switch (confidence) {
+    case 'High':        return 'conf-high';
+    case 'Medium-High': return 'conf-med-high';
+    case 'Medium':      return 'conf-medium';
+    case 'Medium-Low':  return 'conf-med-low';
+    case 'Low':         return 'conf-low';
+    case 'Very Low':    return 'conf-very-low';
+    default:            return 'conf-no-data'; // 'No Data' or unknown
+  }
+}
+
+// Color based on data signal richness (not price percentile)
+// Yellow spectrum = real sales (intensity by richness) · see confClass for estimates
+function heatClassBySignals(totalSales, supplyCount, hasEstimate) {
+  const sales  = totalSales  || 0;
+  const supply = supplyCount || 0;
+
+  // No real sales — blue spectrum
+  if (sales === 0) {
+    if (hasEstimate) return 'heat-down1'; // model estimate — lightest blue
+    if (supply > 0)  return 'heat-down2'; // listing data only — medium blue
+    return 'heat-down3';                  // completely unknown — darkest blue
+  }
+
+  // Has real sales — scale by richness (sales + partial credit for listings)
+  const richness = sales + Math.min(supply * 0.3, 10);
+  if (richness >= 30) return 'heat-up3';  // tons of data — deep red
+  if (richness >= 12) return 'heat-up2';  // solid data — orange
+  if (richness >= 4)  return 'heat-up1';  // decent — amber
+  return 'heat-flat';                     // 1–3 sales — sparse but real
 }
 function heatArrow(pct) {
   if (pct == null) return '—';
