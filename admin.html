@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav.css">
+<style>
+:root {
+  --bg: #080808; --s1: #0f0f0f; --s2: #161616; --s3: #1e1e1e;
+  --border: #222; --accent: #e8ff47; --text: #efefef; --muted: #555;
+  --muted2: #888; --green: #3ddc84; --red: #ff4455; --purple: #c084fc;
+  --mono: 'DM Mono', monospace; --display: 'Bebas Neue', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; min-height: 100vh; }
+
+/* ── Login screen ─────────────────────────────────────────────────────────── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+  width: 340px; padding: 48px 40px;
+  border: 1px solid var(--border); background: var(--s1);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.login-logo { font-family: var(--display); font-size: 22px; letter-spacing: 3px; color: var(--text); }
+.login-logo em { color: var(--accent); font-style: normal; }
+.login-eyebrow { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.login-error { font-size: 10px; color: var(--red); min-height: 16px; letter-spacing: 0.3px; }
+.login-input {
+  background: var(--s2); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 12px; padding: 10px 12px; width: 100%;
+  outline: none; transition: border-color 0.15s;
+}
+.login-input:focus { border-color: var(--accent); }
+.login-input::placeholder { color: var(--muted); }
+.login-btn {
+  background: var(--accent); color: #080808; border: none;
+  font-family: var(--display); font-size: 13px; letter-spacing: 2px;
+  text-transform: uppercase; padding: 11px; cursor: pointer; transition: opacity 0.15s; margin-top: 2px;
+}
+.login-btn:hover { opacity: 0.85; }
+.login-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
+
+/* ── Admin shell ──────────────────────────────────────────────────────────── */
+.admin-user-row { display: flex; align-items: center; gap: 12px; }
+.admin-email-label { font-size: 9px; letter-spacing: 1px; color: var(--muted); }
+.logout-btn {
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 12px; cursor: pointer; transition: all 0.15s;
+}
+.logout-btn:hover { border-color: var(--red); color: var(--red); }
+.restricted-badge {
+  font-size: 8px; letter-spacing: 1.5px; background: var(--red);
+  color: #fff; padding: 2px 7px; font-family: var(--mono); vertical-align: middle;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+  padding: 0 32px; gap: 0; margin-top: 4px;
+}
+.atab {
+  font-family: var(--display); font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 13px 22px; border: none; background: none; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color 0.15s; display: flex; align-items: center; gap: 8px;
+}
+.atab:hover { color: var(--text); }
+.atab.active { color: var(--text); border-bottom-color: var(--accent); }
+.flag-badge {
+  font-family: var(--mono); font-size: 9px; background: var(--red);
+  color: #fff; padding: 1px 6px; border-radius: 2px; letter-spacing: 0; font-weight: 700;
+}
+.invalid-badge {
+  font-family: var(--mono); font-size: 9px; background: var(--muted);
+  color: var(--bg); padding: 1px 6px; border-radius: 2px; letter-spacing: 0; font-weight: 700;
+}
+.tab-refresh {
+  margin-left: auto; background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+  text-transform: uppercase; padding: 4px 12px; cursor: pointer; transition: all 0.15s; align-self: center;
+}
+.tab-refresh:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Page content area ───────────────────────────────────────────────────── */
+.admin-page { padding: 28px 32px 80px; }
+.atab-pane { display: none; }
+.atab-pane.active { display: block; }
+.loading-text {
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); padding: 48px 0;
+}
+
+/* ── Review queue (card-based flagged/invalid view) ──────────────────────── */
+.review-queue { border: 1px solid var(--border); }
+
+.review-card {
+  display: flex; border-bottom: 1px solid var(--border);
+  background: var(--s1); transition: background 0.12s;
+}
+.review-card:last-child { border-bottom: none; }
+.review-card:hover { background: #111; }
+
+/* Image column */
+.rc-img-col { width: 96px; flex-shrink: 0; }
+.rc-img { width: 96px; height: 96px; object-fit: cover; display: block; }
+.rc-img-placeholder {
+  width: 96px; height: 96px; background: var(--s3);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 22px;
+}
+
+/* Main content */
+.rc-main { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+/* Evidence row */
+.rc-evidence { display: flex; align-items: flex-start; gap: 16px; min-width: 0; }
+.rc-evidence-info { flex: 1; min-width: 0; }
+.rc-title {
+  font-size: 11px; color: var(--text); line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; margin-bottom: 5px;
+}
+.rc-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.rc-price { font-family: var(--display); font-size: 15px; color: var(--accent); }
+.rc-date { font-size: 10px; color: var(--muted2); }
+.rc-link {
+  font-size: 9px; letter-spacing: 0.5px; color: var(--muted2);
+  text-decoration: none; border-bottom: 1px solid var(--border); padding-bottom: 1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.rc-link:hover { color: var(--accent); border-color: var(--accent); }
+.rc-no-link { font-size: 9px; color: var(--muted); }
+.rc-notes-pill {
+  font-size: 9px; color: var(--red); font-style: italic;
+  padding: 1px 6px; border: 1px solid rgba(255,68,85,0.3);
+  background: rgba(255,68,85,0.05);
+}
+
+/* Classification fields row */
+.rc-fields { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.rc-field { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 130px; }
+.rc-field-afa { flex: 0 0 90px; min-width: 90px; }
+.rc-label { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.rc-select, .rc-input {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 11px; padding: 5px 8px;
+  outline: none; width: 100%; transition: border-color 0.15s;
+}
+.rc-select {
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; padding-right: 22px;
+}
+.rc-select:focus, .rc-input:focus { border-color: var(--accent); }
+.rc-select:disabled { opacity: 0.35; cursor: not-allowed; }
+.rc-input::placeholder { color: var(--muted); }
+
+/* Action buttons */
+.rc-actions { display: flex; gap: 6px; align-items: center; }
+.rc-btn {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 11px; cursor: pointer; border: 1px solid; background: transparent;
+  transition: all 0.15s;
+}
+.rc-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.rc-save        { color: var(--muted2); border-color: var(--border); }
+.rc-save:hover  { color: var(--text); border-color: var(--muted2); }
+.rc-approve     { color: var(--green); border-color: rgba(61,220,132,0.25); }
+.rc-approve:hover { background: rgba(61,220,132,0.06); border-color: var(--green); }
+.rc-invalid     { color: var(--red); border-color: rgba(255,68,85,0.2); }
+.rc-invalid:hover { background: rgba(255,68,85,0.06); border-color: var(--red); }
+.rc-restore     { color: var(--muted2); border-color: var(--border); }
+.rc-restore:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── Variant badge colors (used in card) ─────────────────────────────────── */
+.v-base    { color: var(--muted); }
+.v-victory { color: #e8ff47; }
+.v-emerald { color: #2ecc71; }
+.v-vides   { color: #2ecc71; }
+.v-gold    { color: #ffd700; }
+.v-chrome  { color: #a8c8ff; }
+.v-fire    { color: #ff4444; }
+.v-sp      { color: var(--purple); }
+.v-other   { color: var(--muted2); }
+
+.empty-state {
+  padding: 64px 32px; text-align: center;
+  border: 1px solid var(--border); background: var(--s1);
+}
+.empty-state-title { font-family: var(--display); font-size: 22px; color: var(--green); letter-spacing: 1px; margin-bottom: 6px; }
+.empty-state-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+/* ── Add Sale form ───────────────────────────────────────────────────────── */
+.add-form-wrap { max-width: 680px; }
+.form-section { margin-bottom: 36px; }
+.form-section-title {
+  font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent);
+  margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.span2 { grid-column: 1 / -1; }
+.form-label {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+.form-label .req { color: var(--red); margin-left: 2px; }
+.form-input, .form-select, .form-textarea {
+  background: var(--s2); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 12px; padding: 9px 12px;
+  outline: none; width: 100%; transition: border-color 0.15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-input::placeholder, .form-textarea::placeholder { color: var(--muted); }
+.form-input:disabled, .form-select:disabled { opacity: 0.35; cursor: not-allowed; }
+.form-select {
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 28px;
+}
+.form-textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+.checkbox-row { display: flex; align-items: center; gap: 10px; }
+.form-checkbox { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+.checkbox-label { font-size: 11px; color: var(--text); cursor: pointer; }
+.form-error { font-size: 10px; color: var(--red); min-height: 16px; letter-spacing: 0.3px; }
+.submit-btn {
+  font-family: var(--display); font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 12px 36px; background: var(--accent); color: #080808; border: none;
+  cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+}
+.submit-btn:hover { opacity: 0.85; }
+.submit-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast-wrap {
+  position: fixed; bottom: 28px; right: 28px; z-index: 999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast {
+  font-size: 11px; letter-spacing: 0.3px; padding: 11px 16px; border: 1px solid;
+  max-width: 320px; animation: toast-in 0.25s ease both;
+}
+.toast.success { background: rgba(61,220,132,0.08); border-color: rgba(61,220,132,0.35); color: var(--green); }
+.toast.error   { background: rgba(255,68,85,0.08);  border-color: rgba(255,68,85,0.35);  color: var(--red); }
+@keyframes toast-in { from { transform: translateX(16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- ── Login Screen ─────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">ghost<em>ladder</em></div>
+    <div class="login-eyebrow">Admin · Restricted Access</div>
+    <div id="login-error" class="login-error"></div>
+    <input type="email"    id="login-email"    class="login-input" placeholder="email address" autocomplete="email">
+    <input type="password" id="login-password" class="login-input" placeholder="password"      autocomplete="current-password">
+    <button id="login-btn" class="login-btn">Sign In</button>
+  </div>
+</div>
+
+<!-- ── Admin Shell (hidden until authenticated) ──────────────────────────────── -->
+<div id="admin-wrap" style="display:none">
+
+  <header>
+    <div class="logo">ghost<em>ladder</em></div>
+    
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+    <div class="header-right admin-user-row">
+      <span id="admin-email-label" class="admin-email-label"></span>
+      <button id="logout-btn" class="logout-btn">Sign Out</button>
+    </div>
+  </header>
+<div class="admin-subnav">
+  <a href="admin.html" class="active">Admin</a>
+  <a href="admin_views.html">Analytics</a>
+  <a href="admin_slides.html">Slides</a>
+  <a href="social-studio.html">Social Studio</a>
+</div>
+
+  <div class="page-header-block">
+    <div class="page-header-title">
+      Admin &nbsp;<span class="restricted-badge">RESTRICTED</span>
+    </div>
+    <div class="page-header-sub">Flagged sales review · Manual data entry</div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div class="admin-tabs">
+    <button class="atab active" data-tab="flagged">
+      Flagged Sales
+      <span id="flag-count-badge" class="flag-badge" style="display:none">0</span>
+    </button>
+    <button class="atab" data-tab="invalid">
+      Invalid
+      <span id="invalid-count-badge" class="invalid-badge" style="display:none">0</span>
+    </button>
+    <button class="atab" data-tab="add-sale">Add Sale</button>
+    <button class="tab-refresh" id="flagged-refresh-btn" title="Reload flagged sales">↺ Refresh</button>
+  </div>
+
+  <div class="admin-page">
+
+    <!-- ── Tab: Flagged Sales ── -->
+    <div id="tab-flagged" class="atab-pane active">
+      <div id="flagged-loading" class="loading-text">loading flagged sales…</div>
+      <div id="flagged-queue" style="display:none"></div>
+      <div id="flagged-empty" class="empty-state" style="display:none">
+        <div class="empty-state-title">Queue Clear</div>
+        <div class="empty-state-sub">No flagged sales — everything looks clean</div>
+      </div>
+    </div>
+
+    <!-- ── Tab: Invalid Sales ── -->
+    <div id="tab-invalid" class="atab-pane">
+      <div id="invalid-queue"><div class="loading-text">click to load invalid sales…</div></div>
+    </div>
+
+    <!-- ── Tab: Add Sale ── -->
+    <div id="tab-add-sale" class="atab-pane">
+      <div class="add-form-wrap">
+        <form id="add-sale-form" novalidate>
+
+          <div class="form-section">
+            <div class="form-section-title">01 · Card Identity</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="f-set">Set <span class="req">*</span></label>
+                <select id="f-set" class="form-select">
+                  <option value="">— select set —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-player">Player <span class="req">*</span></label>
+                <select id="f-player" class="form-select" disabled>
+                  <option value="">— select set first —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-variant">Variant <span class="req">*</span></label>
+                <select id="f-variant" class="form-select" disabled>
+                  <option value="">— select player first —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-afa">AFA Grade</label>
+                <input type="text" id="f-afa" class="form-input" placeholder="AFA 9.0">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">02 · Transaction Details</div>
+            <div class="form-grid">
+              <div class="form-group span2">
+                <label class="form-label" for="f-title">Title <span class="req">*</span></label>
+                <input type="text" id="f-title" class="form-input" placeholder="eBay listing title or description">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-price">Price (USD) <span class="req">*</span></label>
+                <input type="number" id="f-price" class="form-input" placeholder="0.00" min="0.01" step="0.01">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-date">Sale Date <span class="req">*</span></label>
+                <input type="date" id="f-date" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-source">Source</label>
+                <select id="f-source" class="form-select">
+                  <option value="eBay">eBay</option>
+                  <option value="Manual">Manual</option>
+                  <option value="PWCC">PWCC</option>
+                  <option value="Heritage">Heritage Auctions</option>
+                  <option value="Goldin">Goldin</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-status">Status</label>
+                <select id="f-status" class="form-select">
+                  <option value="">— none —</option>
+                  <option value="verified">Verified</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">03 · Links &amp; Notes</div>
+            <div class="form-grid">
+              <div class="form-group span2">
+                <label class="form-label" for="f-url">eBay URL</label>
+                <input type="url" id="f-url" class="form-input" placeholder="https://www.ebay.com/itm/...">
+              </div>
+              <div class="form-group span2">
+                <label class="form-label" for="f-image">Image URL</label>
+                <input type="url" id="f-image" class="form-input" placeholder="https://...">
+              </div>
+              <div class="form-group span2">
+                <label class="form-label" for="f-notes">Notes</label>
+                <textarea id="f-notes" class="form-textarea" placeholder="Internal notes — not displayed publicly"></textarea>
+              </div>
+              <div class="form-group span2">
+                <div class="checkbox-row">
+                  <input type="checkbox" id="f-multi" class="form-checkbox">
+                  <label for="f-multi" class="checkbox-label">Multi-sale (lot containing multiple cards)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="add-form-error" class="form-error"></div>
+          <button type="submit" id="add-submit-btn" class="submit-btn">Add Sale</button>
+
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /admin-page -->
+</div><!-- /admin-wrap -->
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- Supabase JS SDK (for Auth) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────────────────────
+const SB_URL  = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_ANON = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+
+const sb = window.supabase.createClient(SB_URL, SB_ANON);
+
+const R_H = {
+  'apikey': SB_ANON,
+  'Authorization': 'Bearer ' + SB_ANON,
+  'Content-Type': 'application/json',
+};
+
+let W_H = null;
+
+function buildWriteHeaders(jwt) {
+  W_H = {
+    'apikey': SB_ANON,
+    'Authorization': 'Bearer ' + jwt,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let setsData     = [];   // { id, name, league }[]
+let mathData     = [];   // { set_id, player, variant }[]
+let flaggedSales = [];   // current flagged rows
+let invalidSales = [];   // rows with status='invalid'
+let invalidLoaded = false;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth init
+// ─────────────────────────────────────────────────────────────────────────────
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    buildWriteHeaders(session.access_token);
+    showAdmin(session.user);
+  } else {
+    showLogin();
+  }
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN')  { buildWriteHeaders(session.access_token); showAdmin(session.user); }
+    if (event === 'SIGNED_OUT') { W_H = null; showLogin(); }
+  });
+})();
+
+document.getElementById('login-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-password').focus();
+});
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-btn').addEventListener('click', doLogin);
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Email and password required.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (error) { errEl.textContent = error.message; return; }
+  buildWriteHeaders(data.session.access_token);
+  showAdmin(data.user);
+}
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+});
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-wrap').style.display   = 'none';
+  document.getElementById('login-password').value       = '';
+  document.getElementById('login-error').textContent    = '';
+}
+
+async function showAdmin(user) {
+  document.getElementById('login-screen').style.display        = 'none';
+  document.getElementById('admin-wrap').style.display          = 'block';
+  document.getElementById('admin-email-label').textContent     = user.email;
+  // Show admin-only nav links (Reports)
+  document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'flex');
+  await loadReferenceData();
+  await loadFlaggedSales();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tabs
+// ─────────────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.atab').forEach(btn => {
+  if (!btn.dataset.tab) return;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.atab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    // Lazy-load invalid tab on first open
+    if (btn.dataset.tab === 'invalid' && !invalidLoaded) {
+      invalidLoaded = true;
+      loadInvalidSales();
+    }
+  });
+});
+
+document.getElementById('flagged-refresh-btn').addEventListener('click', () => {
+  // Refresh whichever tab is active
+  const activeTab = document.querySelector('.atab.active')?.dataset.tab;
+  if (activeTab === 'invalid') {
+    invalidLoaded = false; // force reload
+    loadInvalidSales();
+  } else {
+    loadFlaggedSales();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reference Data
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadReferenceData() {
+  const [s, m] = await Promise.all([
+    fetch(`${SB_URL}/rest/v1/sets?select=id,name,league&active=eq.true&order=name.asc`, { headers: R_H }).then(r => r.json()),
+    fetch(`${SB_URL}/rest/v1/set_math?select=set_id,player,variant&order=player.asc`,   { headers: R_H }).then(r => r.json()),
+  ]);
+  setsData = Array.isArray(s) ? s : [];
+  mathData = Array.isArray(m) ? m : [];
+  populateSetSelect('f-set');
+}
+
+function getSetName(setId) {
+  const s = setsData.find(s => s.id === setId);
+  return s ? s.name : (setId ? setId.slice(0,8) + '…' : '—');
+}
+
+function populateSetSelect(id, currentVal = '') {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '<option value="">— select set —</option>';
+  setsData.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    if (s.id === currentVal) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function populatePlayerSelect(id, setId, currentVal = '') {
+  const players = [...new Set(mathData.filter(m => m.set_id === setId).map(m => m.player))].sort();
+  const sel = document.getElementById(id);
+  sel.innerHTML = players.length
+    ? '<option value="">— select player —</option>'
+    : '<option value="">no players found</option>';
+  players.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p;
+    if (p === currentVal) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.disabled = players.length === 0;
+}
+
+function populateVariantSelect(id, setId, player, currentVal = '') {
+  const variants = [...new Set(mathData.filter(m => m.set_id === setId && m.player === player).map(m => m.variant))].sort();
+  const sel = document.getElementById(id);
+  sel.innerHTML = variants.length
+    ? '<option value="">— select variant —</option>'
+    : '<option value="">no variants found</option>';
+  variants.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    if (v === currentVal) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.disabled = variants.length === 0;
+}
+
+// Element-level helpers (for inline card dropdowns)
+function populatePlayerSelectEl(el, setId, currentVal = '') {
+  const players = [...new Set(mathData.filter(m => m.set_id === setId).map(m => m.player))].sort();
+  el.innerHTML = players.length
+    ? '<option value="">— select player —</option>'
+    : '<option value="">no players found</option>';
+  players.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p;
+    if (p === currentVal) o.selected = true;
+    el.appendChild(o);
+  });
+  el.disabled = players.length === 0;
+}
+
+function populateVariantSelectEl(el, setId, player, currentVal = '') {
+  const variants = [...new Set(mathData.filter(m => m.set_id === setId && m.player === player).map(m => m.variant))].sort();
+  el.innerHTML = variants.length
+    ? '<option value="">— select variant —</option>'
+    : '<option value="">no variants found</option>';
+  variants.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    if (v === currentVal) o.selected = true;
+    el.appendChild(o);
+  });
+  el.disabled = variants.length === 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Flagged Sales
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadFlaggedSales() {
+  document.getElementById('flagged-loading').style.display = 'block';
+  document.getElementById('flagged-queue').style.display   = 'none';
+  document.getElementById('flagged-empty').style.display   = 'none';
+  try {
+    const data = await fetch(
+      `${SB_URL}/rest/v1/sales?flagged=eq.true&select=*&order=date.desc`,
+      { headers: R_H }
+    ).then(r => r.json());
+    flaggedSales = Array.isArray(data) ? data : [];
+    renderFlaggedCards();
+  } catch(e) {
+    showToast('Failed to load flagged sales: ' + e.message, 'error');
+  }
+  document.getElementById('flagged-loading').style.display = 'none';
+}
+
+function updateFlagBadge() {
+  const badge = document.getElementById('flag-count-badge');
+  badge.textContent   = flaggedSales.length;
+  badge.style.display = flaggedSales.length ? 'inline' : 'none';
+}
+
+function showFlaggedEmpty() {
+  document.getElementById('flagged-queue').style.display = 'none';
+  document.getElementById('flagged-empty').style.display = 'block';
+}
+
+function renderFlaggedCards() {
+  updateFlagBadge();
+  if (flaggedSales.length === 0) { showFlaggedEmpty(); return; }
+
+  document.getElementById('flagged-empty').style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.className = 'review-queue';
+  flaggedSales.forEach(sale => wrap.appendChild(buildReviewCard(sale, 'flagged')));
+
+  const container = document.getElementById('flagged-queue');
+  container.innerHTML = '';
+  container.appendChild(wrap);
+  container.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Invalid Sales
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadInvalidSales() {
+  const el = document.getElementById('invalid-queue');
+  el.innerHTML = '<div class="loading-text">loading invalid sales…</div>';
+  try {
+    const data = await fetch(
+      `${SB_URL}/rest/v1/sales?status=eq.invalid&select=*&order=date.desc`,
+      { headers: R_H }
+    ).then(r => r.json());
+    invalidSales = Array.isArray(data) ? data : [];
+    renderInvalidCards();
+  } catch(e) {
+    showToast('Failed to load invalid sales: ' + e.message, 'error');
+  }
+}
+
+function updateInvalidBadge() {
+  const badge = document.getElementById('invalid-count-badge');
+  badge.textContent   = invalidSales.length;
+  badge.style.display = invalidSales.length ? 'inline' : 'none';
+}
+
+function renderInvalidCards() {
+  updateInvalidBadge();
+  const el = document.getElementById('invalid-queue');
+  if (!invalidSales.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color:var(--muted)">No Invalid Sales</div><div class="empty-state-sub">Nothing has been marked as invalid yet</div></div>';
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'review-queue';
+  invalidSales.forEach(sale => wrap.appendChild(buildReviewCard(sale, 'invalid')));
+  el.innerHTML = '';
+  el.appendChild(wrap);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Review Card Builder
+// ─────────────────────────────────────────────────────────────────────────────
+function variantCls(v = '') {
+  const lc = v.toLowerCase();
+  if (lc === 'base')    return 'v-base';
+  if (lc === 'victory') return 'v-victory';
+  if (lc === 'emerald') return 'v-emerald';
+  if (lc === 'vides')   return 'v-vides';
+  if (lc === 'gold')    return 'v-gold';
+  if (lc === 'chrome')  return 'v-chrome';
+  if (lc === 'fire')    return 'v-fire';
+  if (lc === 'sp')      return 'v-sp';
+  return 'v-other';
+}
+
+function buildReviewCard(sale, mode) {
+  const id      = sale.id;
+  const price   = sale.price != null
+    ? '$' + Number(sale.price).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})
+    : '—';
+  const title   = (sale.title || '').replace(/</g, '&lt;');
+  const setName = getSetName(sale.set_id);
+
+  const imgHtml = sale.image_url
+    ? `<img class="rc-img" src="${sale.image_url}" alt="" loading="lazy"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      + `<div class="rc-img-placeholder" style="display:none">👻</div>`
+    : `<div class="rc-img-placeholder">👻</div>`;
+
+  const listingHtml = sale.ebay_url
+    ? `<a href="${sale.ebay_url}" target="_blank" rel="noopener" class="rc-link">View Listing ↗</a>`
+    : `<span class="rc-no-link">no listing url</span>`;
+
+  const notesHtml = sale.notes
+    ? `<span class="rc-notes-pill">⚑ ${(sale.notes).replace(/</g,'&lt;')}</span>`
+    : '';
+
+  const actionsHtml = mode === 'flagged'
+    ? `<button class="rc-btn rc-save"    data-action="save"       data-id="${id}">Save</button>
+       <button class="rc-btn rc-approve" data-action="approve"    data-id="${id}">Approve ✓</button>
+       <button class="rc-btn rc-invalid" data-action="invalidate" data-id="${id}">✗ Invalidate</button>`
+    : `<button class="rc-btn rc-restore" data-action="restore"    data-id="${id}">↩ Restore to Queue</button>`;
+
+  const div = document.createElement('div');
+  div.className = 'review-card';
+  div.id = 'card-' + id;
+
+  div.innerHTML = `
+    <div class="rc-img-col">${imgHtml}</div>
+    <div class="rc-main">
+      <div class="rc-evidence">
+        <div class="rc-evidence-info">
+          <div class="rc-title">${title || '<span style="color:var(--muted)">no title</span>'}</div>
+          <div class="rc-meta">
+            <span class="rc-price">${price}</span>
+            <span class="rc-date">${sale.date || '—'}</span>
+            ${listingHtml}
+            ${notesHtml}
+          </div>
+        </div>
+      </div>
+      <div class="rc-fields">
+        <div class="rc-field">
+          <div class="rc-label">Set</div>
+          <select class="rc-select" id="rc-set-${id}"></select>
+        </div>
+        <div class="rc-field">
+          <div class="rc-label">Player</div>
+          <select class="rc-select" id="rc-player-${id}"></select>
+        </div>
+        <div class="rc-field">
+          <div class="rc-label">Variant</div>
+          <select class="rc-select" id="rc-variant-${id}"></select>
+        </div>
+        <div class="rc-field rc-field-afa">
+          <div class="rc-label">AFA Grade</div>
+          <input type="text" class="rc-input" id="rc-afa-${id}" placeholder="AFA 9.0"
+            value="${(sale.afa_grade || '').replace(/"/g,'&quot;')}">
+        </div>
+      </div>
+      <div class="rc-actions">${actionsHtml}</div>
+    </div>
+  `;
+
+  // Populate Set dropdown
+  const setEl = div.querySelector(`#rc-set-${id}`);
+  setEl.innerHTML = '<option value="">— select set —</option>';
+  setsData.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    if (s.id === sale.set_id) o.selected = true;
+    setEl.appendChild(o);
+  });
+
+  // Populate Player dropdown
+  const playerEl = div.querySelector(`#rc-player-${id}`);
+  if (sale.set_id) {
+    populatePlayerSelectEl(playerEl, sale.set_id, sale.player || '');
+  } else {
+    playerEl.innerHTML = '<option value="">— select set first —</option>';
+    playerEl.disabled = true;
+  }
+
+  // Populate Variant dropdown
+  const variantEl = div.querySelector(`#rc-variant-${id}`);
+  if (sale.set_id && sale.player) {
+    populateVariantSelectEl(variantEl, sale.set_id, sale.player, sale.variant || '');
+  } else {
+    variantEl.innerHTML = '<option value="">— select player first —</option>';
+    variantEl.disabled = true;
+  }
+
+  // Cascading listeners
+  setEl.addEventListener('change', function() {
+    populatePlayerSelectEl(playerEl, this.value, '');
+    variantEl.innerHTML = '<option value="">— select player first —</option>';
+    variantEl.disabled = true;
+  });
+  playerEl.addEventListener('change', function() {
+    if (setEl.value && this.value) {
+      populateVariantSelectEl(variantEl, setEl.value, this.value, '');
+    } else {
+      variantEl.innerHTML = '<option value="">— select player first —</option>';
+      variantEl.disabled = true;
+    }
+  });
+
+  // Action listeners
+  div.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'save')       saveCard(id);
+      if (action === 'approve')    approveCard(id);
+      if (action === 'invalidate') invalidateCard(id);
+      if (action === 'restore')    restoreCard(id);
+    });
+  });
+
+  return div;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Card Actions
+// ─────────────────────────────────────────────────────────────────────────────
+function getCardClassification(id) {
+  return {
+    set_id:    document.getElementById(`rc-set-${id}`)?.value    || null,
+    player:    document.getElementById(`rc-player-${id}`)?.value || null,
+    variant:   document.getElementById(`rc-variant-${id}`)?.value || null,
+    afa_grade: document.getElementById(`rc-afa-${id}`)?.value    || null,
+  };
+}
+
+async function saveCard(id) {
+  const payload = getCardClassification(id);
+  const btn = document.querySelector(`#card-${id} [data-action="save"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/sales?id=eq.${id}`, {
+      method: 'PATCH', headers: W_H, body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    // Update local cache
+    const idx = flaggedSales.findIndex(s => s.id === id);
+    if (idx !== -1) flaggedSales[idx] = { ...flaggedSales[idx], ...payload };
+    showToast('Changes saved ✓', 'success');
+  } catch(e) {
+    showToast('Save failed: ' + e.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+}
+
+async function approveCard(id) {
+  // Saves classification edits + approves in a single PATCH
+  const classification = getCardClassification(id);
+  const payload = { ...classification, flagged: false, status: 'valid' };
+  const sale  = flaggedSales.find(s => s.id === id);
+  const label = `${payload.player || sale?.player || ''} · ${payload.variant || sale?.variant || ''}`;
+
+  const btn = document.querySelector(`#card-${id} [data-action="approve"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Approving…'; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/sales?id=eq.${id}`, {
+      method: 'PATCH', headers: W_H, body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    flaggedSales = flaggedSales.filter(s => s.id !== id);
+    document.getElementById('card-' + id)?.remove();
+    updateFlagBadge();
+    if (flaggedSales.length === 0) showFlaggedEmpty();
+    showToast(`${label} approved ✓`, 'success');
+  } catch(e) {
+    showToast('Approve failed: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Approve ✓'; }
+  }
+}
+
+async function invalidateCard(id) {
+  const sale  = flaggedSales.find(s => s.id === id);
+  const label = sale ? `${sale.player || ''} · ${sale.variant || ''}` : 'this sale';
+  if (!confirm(`Mark "${label}" as invalid?\n\nThis will remove it from the queue and exclude it from all data. You can restore it later from the Invalid tab.`)) return;
+
+  const btn = document.querySelector(`#card-${id} [data-action="invalidate"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Invalidating…'; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/sales?id=eq.${id}`, {
+      method: 'PATCH', headers: W_H,
+      body: JSON.stringify({ flagged: false, status: 'invalid' }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    flaggedSales = flaggedSales.filter(s => s.id !== id);
+    document.getElementById('card-' + id)?.remove();
+    updateFlagBadge();
+    if (flaggedSales.length === 0) showFlaggedEmpty();
+    // Invalidate badge will update when user visits that tab
+    showToast(`${label} marked as invalid`, 'success');
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✗ Invalidate'; }
+  }
+}
+
+async function restoreCard(id) {
+  const sale  = invalidSales.find(s => s.id === id);
+  const label = sale ? `${sale.player || ''} · ${sale.variant || ''}` : 'this sale';
+
+  const btn = document.querySelector(`#card-${id} [data-action="restore"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Restoring…'; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/sales?id=eq.${id}`, {
+      method: 'PATCH', headers: W_H,
+      body: JSON.stringify({ flagged: true, status: null }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    invalidSales = invalidSales.filter(s => s.id !== id);
+    document.getElementById('card-' + id)?.remove();
+    updateInvalidBadge();
+    if (invalidSales.length === 0) renderInvalidCards();
+    showToast(`${label} restored to queue ✓`, 'success');
+  } catch(e) {
+    showToast('Restore failed: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '↩ Restore to Queue'; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Add Sale Form — cascading dropdowns
+// ─────────────────────────────────────────────────────────────────────────────
+document.getElementById('f-set').addEventListener('change', function() {
+  populatePlayerSelect('f-player', this.value);
+  document.getElementById('f-player').disabled  = !this.value;
+  const fv = document.getElementById('f-variant');
+  fv.innerHTML = '<option value="">— select player first —</option>';
+  fv.disabled  = true;
+});
+
+document.getElementById('f-player').addEventListener('change', function() {
+  const setId = document.getElementById('f-set').value;
+  if (setId && this.value) {
+    populateVariantSelect('f-variant', setId, this.value);
+  } else {
+    const fv = document.getElementById('f-variant');
+    fv.innerHTML = '<option value="">— select player first —</option>';
+    fv.disabled  = true;
+  }
+});
+
+// Default date to today
+document.getElementById('f-date').valueAsDate = new Date();
+
+// Form submit
+document.getElementById('add-sale-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const errEl = document.getElementById('add-form-error');
+  errEl.textContent = '';
+
+  const setId   = document.getElementById('f-set').value;
+  const player  = document.getElementById('f-player').value;
+  const variant = document.getElementById('f-variant').value;
+  const title   = document.getElementById('f-title').value.trim();
+  const price   = parseFloat(document.getElementById('f-price').value);
+  const date    = document.getElementById('f-date').value;
+
+  if (!setId)               { errEl.textContent = 'Please select a set.';              return; }
+  if (!player)              { errEl.textContent = 'Please select a player.';           return; }
+  if (!variant)             { errEl.textContent = 'Please select a variant.';          return; }
+  if (!title)               { errEl.textContent = 'Title is required.';                return; }
+  if (!price || price <= 0) { errEl.textContent = 'A valid sale price is required.';   return; }
+  if (!date)                { errEl.textContent = 'Sale date is required.';            return; }
+
+  const btn = document.getElementById('add-submit-btn');
+  btn.disabled = true; btn.textContent = 'Adding Sale…';
+
+  const payload = {
+    set_id:        setId,
+    player,
+    variant,
+    title,
+    price,
+    date,
+    source:        document.getElementById('f-source').value  || 'eBay',
+    status:        document.getElementById('f-status').value  || null,
+    ebay_url:      document.getElementById('f-url').value     || null,
+    image_url:     document.getElementById('f-image').value   || null,
+    afa_grade:     document.getElementById('f-afa').value     || null,
+    notes:         document.getElementById('f-notes').value   || null,
+    is_multi_sale: document.getElementById('f-multi').checked,
+    flagged:       false,
+  };
+
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/sales`, {
+      method: 'POST',
+      headers: { ...W_H, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) { const txt = await r.text(); throw new Error(txt); }
+
+    showToast(`${player} · ${variant} · $${price.toLocaleString()} added ✓`, 'success');
+
+    const keepSetId = setId;
+    document.getElementById('add-sale-form').reset();
+    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('f-set').value = keepSetId;
+    populatePlayerSelect('f-player', keepSetId);
+    document.getElementById('f-player').disabled  = false;
+    const fv = document.getElementById('f-variant');
+    fv.innerHTML = '<option value="">— select player first —</option>';
+    fv.disabled  = true;
+
+  } catch(e) {
+    errEl.textContent = 'Failed to add sale: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Add Sale';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => {
+    t.style.transition = 'opacity 0.3s';
+    t.style.opacity    = '0';
+    setTimeout(() => t.remove(), 320);
+  }, 3200);
+}
+</script>
+
+</body>
+</html>

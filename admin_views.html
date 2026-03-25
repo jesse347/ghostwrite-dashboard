@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics — GhostLadder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="nav.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="estimate-engine.js"></script>
+  <style>
+    :root {
+      --bg: #080808; --s1: #101010; --s2: #161616; --s3: #1e1e1e;
+      --border: #282828; --border2: #333;
+      --accent: #e8ff47; --chrome: #4fd1ff;
+      --text: #f0f0f0; --muted: #666; --muted2: #999;
+      --red: #ff4040; --green: #3ddc84; --orange: #ff9f43; --purple: #c084fc;
+      --mono: 'DM Mono', monospace; --display: 'Bebas Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
+
+    /* ── Page layout ── */
+    .views-wrap {
+      padding: 0 32px 80px;
+      max-width: 1600px;
+    }
+
+    /* ── Loading overlay ── */
+    #main-loading {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 60vh; gap: 14px;
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Summary stats row ── */
+    .summary-stats {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 1px; margin-bottom: 28px;
+      border: 1px solid var(--border);
+    }
+    .summary-card {
+      background: var(--s1);
+      padding: 18px 20px 16px;
+    }
+    .summary-card-label {
+      font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    .summary-card-value {
+      font-family: var(--display); font-size: 28px;
+      color: var(--text); letter-spacing: 1px; line-height: 1;
+    }
+    .summary-card-sub {
+      font-size: 9px; color: var(--muted2); margin-top: 6px;
+    }
+
+    /* ── Section containers ── */
+    .views-section {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      padding: 22px 24px 20px;
+      margin-bottom: 16px;
+    }
+    .section-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .section-title {
+      font-family: var(--display); font-size: 16px;
+      letter-spacing: 1px; color: var(--text);
+      line-height: 1;
+    }
+    .section-sub {
+      font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted); margin-top: 5px;
+    }
+    .section-controls {
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    }
+
+    /* ── Two-column chart row ── */
+    .charts-row-2 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-bottom: 16px;
+    }
+    .charts-row-2 .views-section { margin-bottom: 0; }
+
+    /* ── Chart canvas wrappers ── */
+    .chart-wrap { position: relative; height: 280px; }
+    .chart-wrap-tall { height: 340px; }
+    .chart-wrap-sm { height: 220px; }
+
+    /* ── Chip / toggle buttons ── */
+    .chip-btn {
+      background: none; border: 1px solid var(--border2);
+      color: var(--muted); font-family: var(--mono);
+      font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 4px 10px; cursor: pointer; transition: all 0.12s;
+    }
+    .chip-btn:hover { border-color: var(--muted2); color: var(--muted2); }
+    .chip-btn.active {
+      background: rgba(232,255,71,0.08);
+      border-color: var(--accent); color: var(--accent);
+    }
+
+    /* ── Set selector chips ── */
+    .set-chip {
+      background: none; border: 1px solid var(--border2);
+      color: var(--muted); font-family: var(--mono);
+      font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 4px 10px; cursor: pointer; transition: all 0.12s;
+    }
+    .set-chip:hover { border-color: var(--muted2); color: var(--muted2); }
+    .set-chip.active { border-color: var(--chrome); color: var(--chrome); background: rgba(79,209,255,0.06); }
+
+    /* ── Tables ── */
+    .data-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .data-table th {
+      font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); text-align: left; padding: 0 12px 10px 0;
+      border-bottom: 1px solid var(--border2); font-weight: 400;
+    }
+    .data-table th:last-child { padding-right: 0; }
+    .data-table td {
+      font-size: 10px; color: var(--muted2);
+      padding: 9px 12px 9px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+      vertical-align: middle;
+    }
+    .data-table td:last-child { padding-right: 0; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { color: var(--text); background: rgba(255,255,255,0.015); }
+    .td-player { color: var(--text) !important; font-weight: 500; }
+    .td-price { color: var(--accent) !important; font-family: var(--display); font-size: 13px; }
+    .td-link { color: var(--chrome); text-decoration: none; font-size: 9px; }
+    .td-link:hover { text-decoration: underline; }
+    .td-afa { font-size: 8px; letter-spacing: 1px; }
+    .tag-afa {
+      display: inline-block; padding: 2px 6px; border-radius: 2px;
+      background: rgba(192,132,252,0.12); border: 1px solid rgba(192,132,252,0.3);
+      color: var(--purple); font-size: 7px; letter-spacing: 1px;
+    }
+    .td-date { font-size: 9px; }
+    .td-set { font-size: 9px; color: var(--muted) !important; }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .page-btn {
+      background: none; border: 1px solid var(--border2);
+      color: var(--muted2); font-family: var(--mono); font-size: 9px;
+      letter-spacing: 1px; padding: 4px 12px; cursor: pointer; transition: all 0.12s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .page-btn:disabled { opacity: 0.3; cursor: default; }
+    .page-info { font-size: 9px; color: var(--muted); letter-spacing: 1px; flex: 1; text-align: center; }
+
+    /* ── Time slider ── */
+    .time-slider-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .time-slider-wrap input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      width: 180px; height: 3px; background: var(--border2); outline: none; cursor: pointer;
+    }
+    .time-slider-wrap input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+    }
+    .time-labels {
+      display: flex; justify-content: space-between;
+      font-size: 7px; letter-spacing: 1px; color: var(--muted);
+      width: 180px;
+    }
+    .time-label-active { color: var(--accent); }
+
+    /* ── Floating mode sidebar ── */
+    .mode-sidebar {
+      position: fixed; right: 24px; top: 72px; z-index: 50;
+      background: var(--s2); border: 1px solid var(--border2);
+      padding: 14px 14px 12px; width: 150px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .mode-sidebar-title {
+      font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mode-btn {
+      display: block; width: 100%; text-align: left;
+      background: none; border: 1px solid transparent;
+      color: var(--muted2); font-family: var(--mono);
+      font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 6px 8px; cursor: pointer; transition: all 0.12s;
+      margin-bottom: 4px;
+    }
+    .mode-btn:last-of-type { margin-bottom: 0; }
+    .mode-btn:hover { color: var(--text); border-color: var(--border2); }
+    .mode-btn.active {
+      color: var(--accent); border-color: rgba(232,255,71,0.3);
+      background: rgba(232,255,71,0.05);
+    }
+    .mode-affects {
+      margin-top: 12px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .mode-affects-label {
+      font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .mode-affects-item {
+      font-size: 8px; color: var(--muted2); margin-bottom: 3px;
+      padding-left: 2px;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── AFA Grade badge in table ── */
+    .grade-badge {
+      display: inline-block; padding: 2px 7px; border-radius: 2px;
+      font-size: 8px; letter-spacing: 1px; font-weight: 500;
+      background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.25);
+      color: var(--purple);
+    }
+    .grade-badge.ungraded {
+      background: rgba(255,255,255,0.04); border-color: var(--border2);
+      color: var(--muted);
+    }
+
+    /* ── Trend chip ── */
+    .trend-up   { color: var(--green); font-size: 9px; }
+    .trend-down { color: var(--red); font-size: 9px; }
+
+    /* ── Responsive table scroll ── */
+    .table-scroll { overflow-x: auto; }
+
+    /* ── Highest Sales strip ── */
+    .top-sales-strip {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+      scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+    }
+    .top-sales-strip::-webkit-scrollbar { height: 4px; }
+    .top-sales-strip::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .ts-card {
+      flex-shrink: 0; width: 122px; background: var(--s2);
+      border: 1px solid var(--border); border-radius: 4px;
+      display: flex; flex-direction: column; position: relative;
+      transition: border-color 0.12s;
+    }
+    .ts-card:hover { border-color: var(--border2); }
+    .ts-rank {
+      position: absolute; top: 7px; left: 7px; z-index: 2;
+      font-size: 8px; letter-spacing: 1px; font-family: var(--mono);
+      background: rgba(0,0,0,0.65); padding: 1px 6px; border-radius: 2px;
+      color: var(--muted);
+    }
+    .ts-rank-1 { color: var(--accent) !important; }
+    .ts-rank-2 { color: var(--chrome) !important; }
+    .ts-rank-3 { color: var(--orange) !important; }
+    .ts-img-wrap {
+      width: 100%; height: 136px;
+      background: var(--s3); overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ts-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .ts-img-ph { font-size: 32px; opacity: 0.12; }
+    .ts-body { padding: 9px 10px 11px; display: flex; flex-direction: column; gap: 3px; }
+    .ts-price {
+      font-family: var(--display); font-size: 24px;
+      color: var(--accent); letter-spacing: 0.5px; line-height: 1;
+    }
+    .ts-player {
+      font-size: 10px; color: var(--text); font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ts-variant { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
+    .ts-set {
+      font-size: 8px; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
+    }
+    .ts-date { font-size: 9px; color: var(--muted); margin-top: 5px; }
+    .ts-afa {
+      display: inline-block; padding: 1px 5px; margin-top: 2px; border-radius: 2px;
+      background: rgba(192,132,252,0.10); border: 1px solid rgba(192,132,252,0.28);
+      color: var(--purple); font-size: 7px; letter-spacing: 1px;
+    }
+
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="header-right">
+    <span id="user-email-label" style="font-size:9px;letter-spacing:1px;color:var(--muted)"></span>
+    <button class="refresh-btn" onclick="loadData()">↺ refresh</button>
+  </div>
+</header>
+<div class="admin-subnav">
+  <a href="admin.html">Admin</a>
+  <a href="admin_views.html" class="active">Analytics</a>
+  <a href="admin_slides.html">Slides</a>
+  <a href="social-studio.html">Social Studio</a>
+</div>
+
+<!-- Auth gate — redirect to login if not authenticated -->
+<script>
+(function() {
+  try {
+    const s = localStorage.getItem('sb-sabzbyuqrondoayhwoth-auth-token');
+    if (!s || !JSON.parse(s)?.access_token) { window.location.href = 'admin.html'; }
+    else {
+      const tok = JSON.parse(s);
+      const email = tok?.user?.email || tok?.user_metadata?.email || '';
+      const el = document.getElementById('user-email-label');
+      if (el && email) el.textContent = email;
+    }
+  } catch(e) { window.location.href = 'admin.html'; }
+})();
+</script>
+
+<!-- Floating estimation mode sidebar -->
+<div class="mode-sidebar" id="mode-sidebar">
+  <div class="mode-sidebar-title">EST. MODE</div>
+  <button class="mode-btn active" id="mode-sales" onclick="setMode('sales-only')">SALES ONLY</button>
+  <button class="mode-btn" id="mode-blend" onclick="setMode('model-blend')">MODEL BLEND</button>
+  <button class="mode-btn" id="mode-full" onclick="setMode('full-model')">FULL MODEL</button>
+  <div class="mode-affects">
+    <div class="mode-affects-label">AFFECTS:</div>
+    <div class="mode-affects-item">↳ Avg Prices</div>
+    <div class="mode-affects-item">↳ Value Dist.</div>
+  </div>
+</div>
+
+<div class="views-wrap">
+
+  <!-- Page header -->
+  <div class="page-header-block">
+    <div class="page-header-title">Admin Analytics</div>
+    <div class="page-header-sub">Internal data views · all sets · all variants</div>
+  </div>
+
+  <!-- Loading -->
+  <div id="main-loading">
+    <div class="spinner"></div>
+    loading analytics data
+  </div>
+
+  <!-- Main content (hidden until loaded) -->
+  <div id="main-content" style="display:none">
+
+    <!-- ── Summary stats ─────────────────────────────────────── -->
+    <div class="summary-stats" id="summary-stats">
+      <div class="summary-card">
+        <div class="summary-card-label">Total Sales</div>
+        <div class="summary-card-value" id="s-total-sales">—</div>
+        <div class="summary-card-sub">all-time transactions</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">Total GMV</div>
+        <div class="summary-card-value" id="s-gmv">—</div>
+        <div class="summary-card-sub">all-time sale value</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">Avg Sale Price</div>
+        <div class="summary-card-value" id="s-avg-price">—</div>
+        <div class="summary-card-sub">across all sets</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">Active Listings</div>
+        <div class="summary-card-value" id="s-listings">—</div>
+        <div class="summary-card-sub">live on eBay</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">30-Day Sales</div>
+        <div class="summary-card-value" id="s-30d">—</div>
+        <div class="summary-card-sub">last 30 days</div>
+      </div>
+    </div>
+
+    <!-- ── Highest Sales ─────────────────────────────────────── -->
+    <div class="views-section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Highest Sales</div>
+          <div class="section-sub" id="top-sales-sub">Top 10 all-time · all sets</div>
+        </div>
+        <div class="section-controls" id="top-sales-set-controls"></div>
+      </div>
+      <div class="top-sales-strip" id="top-sales-strip"></div>
+    </div>
+
+    <!-- ── Recent Sales ──────────────────────────────────────── -->
+    <div class="views-section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Recent Sales</div>
+          <div class="section-sub">Last 200 transactions</div>
+        </div>
+      </div>
+      <div class="table-scroll" id="recent-sales-wrap"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- ── Price charts row ──────────────────────────────────── -->
+    <div class="charts-row-2">
+
+      <div class="views-section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Avg Variant Price by Set</div>
+            <div class="section-sub" id="avg-price-mode-note">Sales Only mode</div>
+          </div>
+          <div class="section-controls" id="avg-price-set-controls"></div>
+        </div>
+        <div class="chart-wrap"><canvas id="avg-price-chart"></canvas></div>
+      </div>
+
+      <div class="views-section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Value Distribution by Variant</div>
+            <div class="section-sub">Wide bar = P10–P90 · narrow = IQR · hover for stats</div>
+          </div>
+          <div class="section-controls" id="distrib-set-controls"></div>
+        </div>
+        <div class="chart-wrap"><canvas id="distrib-chart"></canvas></div>
+      </div>
+
+    </div>
+
+    <!-- ── Sales over time row ───────────────────────────────── -->
+    <div class="charts-row-2">
+
+      <div class="views-section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Total Sales by Set</div>
+            <div class="section-sub" id="sales-by-set-range-label">Last 30D</div>
+          </div>
+          <div class="time-slider-wrap">
+            <input type="range" id="time-range-slider" min="0" max="5" value="1"
+              oninput="onTimeSlide(this.value)">
+            <div class="time-labels">
+              <span>7D</span><span>30D</span><span>90D</span>
+              <span>6M</span><span>1Y</span><span>ALL</span>
+            </div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="sales-by-set-chart"></canvas></div>
+      </div>
+
+      <div class="views-section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Total GMV Over Time</div>
+            <div class="section-sub">Stacked by set · monthly</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="gmv-over-time-chart"></canvas></div>
+      </div>
+
+    </div>
+
+    <!-- ── Base value over time (full width) ────────────────── -->
+    <div class="views-section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Avg Base Value Over Time</div>
+          <div class="section-sub">Monthly avg · Base variant only</div>
+        </div>
+        <div class="section-controls" id="base-value-set-controls"></div>
+      </div>
+      <div class="chart-wrap chart-wrap-tall"><canvas id="base-value-chart"></canvas></div>
+    </div>
+
+    <!-- ── Listings + players row ────────────────────────────── -->
+    <div class="charts-row-2">
+
+      <div class="views-section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Listings by Set</div>
+            <div class="section-sub">Current inventory snapshot</div>
+          </div>
+          <div class="section-controls">
+            <button class="chip-btn active" id="lf-active" onclick="setListingsFilter('active')">Active only</button>
+            <button class="chip-btn" id="lf-all" onclick="setListingsFilter('all')">All</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="listings-by-set-chart"></canvas></div>
+      </div>
+
+      <div class="views-section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Top Players by Sales Volume</div>
+            <div class="section-sub">Total units sold · top 15</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="top-players-chart"></canvas></div>
+      </div>
+
+    </div>
+
+    <!-- ── AFA tables row ────────────────────────────────────── -->
+    <div class="charts-row-2">
+
+      <div class="views-section">
+        <div class="section-title">AFA Sales by Grade</div>
+        <div class="section-sub" style="margin:5px 0 16px">All graded sales</div>
+        <div id="afa-sales-wrap"></div>
+      </div>
+
+      <div class="views-section">
+        <div class="section-title">AFA Active Listings by Grade</div>
+        <div class="section-sub" style="margin:5px 0 16px">Current eBay inventory</div>
+        <div id="afa-listings-wrap"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Sales velocity row ────────────────────────────────── -->
+    <div class="views-section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Sales Velocity by Set</div>
+          <div class="section-sub">% share of monthly sales · last 6 months</div>
+        </div>
+      </div>
+      <div class="chart-wrap chart-wrap-tall"><canvas id="velocity-chart"></canvas></div>
+    </div>
+
+  </div><!-- /#main-content -->
+</div><!-- /.views-wrap -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────────────────────
+const SB_URL  = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_ANON = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const R_H = {
+  'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json'
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let allData           = null;
+let estimateMode      = 'sales-only';
+let recentPage        = 0;
+let listingsFilter    = 'active';
+let selectedAvgSet    = null;
+let selectedDistribSet = null;
+let selectedBaseSet   = null;
+let selectedTopSalesSet = null;   // null = all sets
+let timeRangeIdx      = 1;   // 0=7D 1=30D 2=90D 3=6M 4=1Y 5=ALL
+const charts          = {};
+const estCache        = {};   // keyed by setName
+
+const RECENT_PER_PAGE = 10;
+const TIME_RANGES = [
+  { label: '7D',  days: 7   },
+  { label: '30D', days: 30  },
+  { label: '90D', days: 90  },
+  { label: '6M',  days: 183 },
+  { label: '1Y',  days: 365 },
+  { label: 'ALL', days: null },
+];
+const SET_PALETTE = [
+  '#e8ff47','#4fd1ff','#3ddc84','#c084fc','#ff9f43','#ff4040','#fff','#888'
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API helpers
+// ─────────────────────────────────────────────────────────────────────────────
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, { headers: R_H });
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+async function rpc(fn, p = {}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST', headers: R_H, body: JSON.stringify(p)
+  });
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+async function sbGetAll(table, qs, pageSize = 1000) {
+  let all = [], offset = 0;
+  while (true) {
+    const page = await sbGet(table, `${qs}&limit=${pageSize}&offset=${offset}`);
+    all = all.concat(page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('main-loading').style.display = 'flex';
+  document.getElementById('main-content').style.display = 'none';
+  Object.keys(estCache).forEach(k => delete estCache[k]);
+
+  try {
+    const [recentSales, pi, rawSales, allListings, setsData, setMathData, paramsArr] =
+      await Promise.all([
+        rpc('get_recent_sales', { limit_rows: 200 }),
+        rpc('get_price_intelligence'),
+        sbGetAll('sales',
+          'select=player,set_id,variant,price,date,afa_grade' +
+          '&status=neq.invalid&order=date.desc'),
+        sbGetAll('listings',
+          'select=set_name,player,variant,ask_price,is_active,afa_grade'),
+        sbGet('sets', 'select=id,name,league&active=eq.true&order=name.asc'),
+        sbGet('set_math', 'select=set_id,player,variant,population'),
+        sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+      ]);
+
+    const engineParams = (paramsArr || [])[0] || null;
+
+    // Build PI map
+    const piMap = {};
+    (pi || []).forEach(r => {
+      if (!r.player || r.player === 'Unknown') return;
+      const k = `${r.set_name}|||${r.player}|||${r.variant}`;
+      piMap[k] = {
+        player: r.player, variant: r.variant, set: r.set_name,
+        lastSalePrice: +r.last_sale_price || 0,
+        lastSaleDate:  r.last_sale_date,
+        avgPrice:      +r.avg_price || 0,
+        avg30d:        +r.avg_30d   || 0,
+        avg90d:        +r.avg_90d   || 0,
+        totalSales:    +r.total_sales || 0,
+        sales30d:      +r.sales_30d  || 0,
+        sales90d:      +r.sales_90d  || 0,
+      };
+    });
+
+    // Build set id map + math by set
+    const setIdMap  = {};
+    const setNameById = {};
+    (setsData || []).forEach(s => { setIdMap[s.name] = s.id; setNameById[s.id] = s.name; });
+    const mathBySet = {};
+    (setMathData || []).forEach(m => {
+      if (!mathBySet[m.set_id]) mathBySet[m.set_id] = [];
+      mathBySet[m.set_id].push(m);
+    });
+
+    // Denormalize set_id → set_name on rawSales
+    const rawSalesMapped = (rawSales || []).map(r => ({
+      ...r,
+      set_name: setNameById[r.set_id] || null,
+    }));
+
+    allData = {
+      recentSales: recentSales || [],
+      rawSales:    rawSalesMapped,
+      allListings: allListings || [],
+      sets:        setsData    || [],
+      piMap, mathBySet, setIdMap, setNameById, engineParams,
+    };
+
+    // Init selected sets
+    if (allData.sets.length > 0) {
+      if (!selectedAvgSet)     selectedAvgSet     = allData.sets[0].name;
+      if (!selectedDistribSet) selectedDistribSet = allData.sets[0].name;
+      if (!selectedBaseSet)    selectedBaseSet    = allData.sets[0].name;
+    }
+
+    renderAll();
+
+  } catch(e) {
+    document.getElementById('main-loading').innerHTML =
+      `<div style="color:var(--red)">Error: ${e.message}</div>`;
+    return;
+  }
+
+  document.getElementById('main-loading').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render all
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderSummaryStats();
+  buildSetControls();
+  renderTopSalesStrip();
+  renderRecentSalesTable();
+  renderAvgPriceChart();
+  renderDistribChart();
+  renderSalesBySetChart();
+  renderGMVOverTimeChart();
+  renderBaseValueChart();
+  renderListingsBySetChart();
+  renderTopPlayersChart();
+  renderAfaSalesTable();
+  renderAfaListingsTable();
+  renderVelocityChart();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Highest Sales strip
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTopSalesStrip() {
+  // Figure URL helpers (same pattern as other pages)
+  const _slug    = n => (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\./g,'').replace(/[^a-z0-9\s]/g,'').trim().replace(/\s+/g,'_');
+  const _slugSet = n => (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+  const _normVar = v => {
+    const l = (v||'').toLowerCase();
+    if (l.includes('fire'))    return 'fire';
+    if (l.includes('gold'))    return 'gold';
+    if (l.includes('chrome'))  return 'chrome';
+    if (l.includes('emerald')) return 'emerald';
+    if (l.includes('victory')) return 'victory';
+    if (l.includes('vides'))   return 'vides';
+    if (l.includes('bet'))     return 'bet-on-women';
+    if (l.includes('sp'))      return 'sp';
+    return 'base';
+  };
+  const figUrl = (player, variant, setName) =>
+    `assets/figures/${_slugSet(setName)}/${_slug(player)}_${_normVar(variant)}.png`;
+
+  const VCOLORS = {
+    Base:'var(--muted2)', Victory:'#c084fc', Vides:'#ff9f43',
+    Emerald:'#3ddc84', Gold:'#f5c842', Chrome:'#4fd1ff',
+    Fire:'#ff4040', 'Bet On Women':'#ff80c8', SP:'#c084fc',
+  };
+
+  // Set filter chips
+  const ctrlEl = document.getElementById('top-sales-set-controls');
+  let ctrlHtml = `<button class="set-chip ${selectedTopSalesSet === null ? 'active' : ''}"
+    onclick="selectedTopSalesSet=null;renderTopSalesStrip()">All</button>`;
+  (allData.sets || []).forEach(s => {
+    const esc = s.name.replace(/'/g,"\\'");
+    ctrlHtml += `<button class="set-chip ${selectedTopSalesSet === s.name ? 'active' : ''}"
+      onclick="selectedTopSalesSet='${esc}';renderTopSalesStrip()">${s.name}</button>`;
+  });
+  ctrlEl.innerHTML = ctrlHtml;
+
+  // Filter, sort, slice top 10
+  let sales = (allData.rawSales || []).filter(s => s.price > 0 && s.set_name);
+  if (selectedTopSalesSet) sales = sales.filter(s => s.set_name === selectedTopSalesSet);
+  const top10 = [...sales].sort((a, b) => b.price - a.price).slice(0, 10);
+
+  // Sub-label
+  const subEl = document.getElementById('top-sales-sub');
+  if (subEl) subEl.textContent =
+    `Top 10 all-time · ${selectedTopSalesSet || 'all sets'}`;
+
+  const stripEl = document.getElementById('top-sales-strip');
+  if (!top10.length) {
+    stripEl.innerHTML = '<div class="empty-state">No sales data</div>';
+    return;
+  }
+
+  stripEl.innerHTML = top10.map((s, i) => {
+    const rankCls = i === 0 ? 'ts-rank-1' : i === 1 ? 'ts-rank-2' : i === 2 ? 'ts-rank-3' : '';
+    const varColor = VCOLORS[s.variant] || 'var(--muted2)';
+    const dateStr  = s.date
+      ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US',
+          { month: 'short', day: 'numeric', year: '2-digit' })
+      : '—';
+    const img = figUrl(s.player, s.variant, s.set_name);
+    const afaBadge = s.afa_grade
+      ? `<span class="ts-afa">🏆 ${s.afa_grade}</span>` : '';
+    const setLine = !selectedTopSalesSet
+      ? `<div class="ts-set">${s.set_name}</div>` : '';
+
+    return `<div class="ts-card">
+      <div class="ts-rank ${rankCls}">#${i + 1}</div>
+      <div class="ts-img-wrap">
+        <img class="ts-img" src="${img}" alt="${s.player}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="ts-img-ph" style="display:none;align-items:center;justify-content:center;width:100%;height:100%">👻</div>
+      </div>
+      <div class="ts-body">
+        <div class="ts-price">$${Math.round(s.price).toLocaleString()}</div>
+        <div class="ts-player">${s.player}</div>
+        <div class="ts-variant" style="color:${varColor}">${s.variant}</div>
+        ${setLine}${afaBadge}
+        <div class="ts-date">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Estimation mode
+// ─────────────────────────────────────────────────────────────────────────────
+function setMode(mode) {
+  estimateMode = mode;
+  Object.keys(estCache).forEach(k => delete estCache[k]);
+  document.getElementById('mode-sales').classList.toggle('active', mode === 'sales-only');
+  document.getElementById('mode-blend').classList.toggle('active', mode === 'model-blend');
+  document.getElementById('mode-full').classList.toggle('active',  mode === 'full-model');
+  // Re-render price-sensitive charts only
+  renderAvgPriceChart();
+  renderDistribChart();
+  updateAvgPriceModeNote();
+}
+
+function updateAvgPriceModeNote() {
+  const el = document.getElementById('avg-price-mode-note');
+  if (!el) return;
+  const notes = {
+    'sales-only':   'Sales Only mode · real data only',
+    'model-blend':  'Model Blend · gaps filled with estimates',
+    'full-model':   'Full Model · freshness-weighted estimates',
+  };
+  el.textContent = notes[estimateMode] || '';
+}
+
+function getSetEstimates(setName) {
+  if (estCache[setName]) return estCache[setName];
+  if (!allData?.engineParams || typeof buildEstimates !== 'function') {
+    return { estimates: {}, refreshedEstimates: {} };
+  }
+  const setId = allData.setIdMap[setName];
+  const mathRows = allData.mathBySet[setId] || [];
+  const setProducts = mathRows.map(m => {
+    const pk = `${setName}|||${m.player}|||${m.variant}`;
+    const p  = allData.piMap[pk] || {};
+    return {
+      player: m.player, variant: m.variant, set: setName,
+      population:    m.population || 0,
+      avgPrice:      p.avgPrice  || 0,
+      avg30d:        p.avg30d    || 0,
+      avg90d:        p.avg90d    || 0,
+      lastSalePrice: p.lastSalePrice || 0,
+      lastSaleDate:  p.lastSaleDate,
+      totalSales:    p.totalSales  || 0,
+      sales30d:      p.sales30d   || 0,
+    };
+  });
+  try {
+    const res = buildEstimates(setName, setProducts, allData.engineParams);
+    estCache[setName] = res;
+    return res;
+  } catch(e) {
+    return { estimates: {}, refreshedEstimates: {} };
+  }
+}
+
+function getPriceForCell(setName, player, variant) {
+  const k  = `${setName}|||${player}|||${variant}`;
+  const pi = allData.piMap[k];
+  if (estimateMode === 'sales-only') return pi?.avgPrice || null;
+  if (!allData.engineParams) return pi?.avgPrice || null;
+  const { estimates, refreshedEstimates } = getSetEstimates(setName);
+  const ek = `${player}|||${variant}`;
+  if (estimateMode === 'full-model') {
+    const ref = refreshedEstimates?.[ek];
+    if (ref) return ref.price;
+    const est = estimates?.[ek];
+    if (est) return est.price;
+    return pi?.avgPrice || null;
+  }
+  // model-blend: real first, then estimate
+  if (pi?.avgPrice > 0) return pi.avgPrice;
+  const est = estimates?.[ek];
+  return est?.price || null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Summary stats
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSummaryStats() {
+  const { rawSales, allListings } = allData;
+  const totalSales   = rawSales.length;
+  const gmv          = rawSales.reduce((s, r) => s + (+r.price || 0), 0);
+  const avgSale      = totalSales > 0 ? Math.round(gmv / totalSales) : 0;
+  const activeCount  = allListings.filter(l => l.is_active).length;
+  const cutoff30     = new Date(Date.now() - 30 * 86400000).toISOString();
+  const sales30d     = rawSales.filter(r => r.date >= cutoff30).length;
+
+  const fmtMoney = v =>
+    v >= 1e6 ? '$' + Math.round(v / 1e6) + 'M' :
+    v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' :
+    '$' + Math.round(v).toLocaleString();
+
+  setText('s-total-sales', totalSales.toLocaleString());
+  setText('s-gmv',         fmtMoney(gmv));
+  setText('s-avg-price',   '$' + avgSale.toLocaleString());
+  setText('s-listings',    activeCount.toLocaleString());
+  setText('s-30d',         sales30d.toLocaleString());
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Set chip click handlers — named globals so inline onclick can reference them
+// ─────────────────────────────────────────────────────────────────────────────
+function onSelectAvgSet(name) {
+  selectedAvgSet = name;
+  buildSetChips('avg-price-set-controls', selectedAvgSet, 'onSelectAvgSet');
+  renderAvgPriceChart();
+}
+function onSelectDistribSet(name) {
+  selectedDistribSet = name;
+  buildSetChips('distrib-set-controls', selectedDistribSet, 'onSelectDistribSet');
+  renderDistribChart();
+}
+function onSelectBaseSet(name) {
+  selectedBaseSet = name;
+  buildSetChips('base-value-set-controls', selectedBaseSet, 'onSelectBaseSet');
+  renderBaseValueChart();
+}
+
+function buildSetChips(containerId, activeItem, handlerName) {
+  const el = document.getElementById(containerId);
+  if (!el || !allData) return;
+  el.innerHTML = allData.sets.map(s => s.name).map(name =>
+    `<button class="set-chip${name === activeItem ? ' active' : ''}"
+      onclick="${handlerName}('${esc(name)}')">${esc(name)}</button>`
+  ).join('');
+}
+
+function buildSetControls() {
+  buildSetChips('avg-price-set-controls',  selectedAvgSet,     'onSelectAvgSet');
+  buildSetChips('distrib-set-controls',    selectedDistribSet, 'onSelectDistribSet');
+  buildSetChips('base-value-set-controls', selectedBaseSet,    'onSelectBaseSet');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recent Sales table
+// ─────────────────────────────────────────────────────────────────────────────
+function renderRecentSalesTable() {
+  const rows   = allData.recentSales;
+  const total  = rows.length;
+  const start  = recentPage * RECENT_PER_PAGE;
+  const slice  = rows.slice(start, start + RECENT_PER_PAGE);
+
+  const tableHtml = slice.length === 0 ? '<div class="empty-state">No sales data</div>' : `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Set</th>
+          <th>Variant</th>
+          <th>Sale Price</th>
+          <th>Date</th>
+          <th>Grade</th>
+          <th>eBay Listing</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${slice.map(r => {
+          const dateStr = r.date
+            ? new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })
+            : '—';
+          const price   = r.price
+            ? '$' + (+r.price).toLocaleString()
+            : '—';
+          const title   = (r.title || r.title || '').substring(0, 40);
+          const afa     = r.afa_grade
+            ? `<span class="tag-afa">${esc(r.afa_grade)}</span>`
+            : '<span style="color:var(--muted);font-size:9px">—</span>';
+          const link    = r.ebay_url
+            ? `<a href="${r.ebay_url}" target="_blank" class="td-link">${esc(title) || 'view ↗'}</a>`
+            : (title ? esc(title) : '—');
+          return `<tr>
+            <td class="td-player">${esc(r.player || '—')}</td>
+            <td class="td-set">${esc(r.set_name || '—')}</td>
+            <td class="td-date">${esc(r.variant || '—')}</td>
+            <td class="td-price">${price}</td>
+            <td class="td-date">${dateStr}</td>
+            <td>${afa}</td>
+            <td style="max-width:220px;font-size:9px">${link}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+  document.getElementById('recent-sales-wrap').innerHTML = tableHtml;
+
+  // Pagination
+  const totalPages = Math.ceil(total / RECENT_PER_PAGE);
+  document.getElementById('pagination').innerHTML = `
+    <button class="page-btn" onclick="gotoPage(${recentPage - 1})" ${recentPage === 0 ? 'disabled' : ''}>← Prev</button>
+    <span class="page-info">${start + 1}–${Math.min(start + RECENT_PER_PAGE, total)} of ${total}</span>
+    <button class="page-btn" onclick="gotoPage(${recentPage + 1})" ${recentPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
+  `;
+}
+function gotoPage(p) { recentPage = p; renderRecentSalesTable(); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Avg Variant Price by Set (bar chart)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAvgPriceChart() {
+  destroyChart('avg-price-chart');
+  updateAvgPriceModeNote();
+  if (!selectedAvgSet || !allData) return;
+
+  const setId    = allData.setIdMap[selectedAvgSet];
+  const mathRows = allData.mathBySet[setId] || [];
+
+  // Group prices by variant, averaging across all players
+  const pricesByVariant = {};
+  mathRows.forEach(m => {
+    const price = getPriceForCell(selectedAvgSet, m.player, m.variant);
+    if (!price) return;
+    if (!pricesByVariant[m.variant]) pricesByVariant[m.variant] = [];
+    pricesByVariant[m.variant].push(price);
+  });
+
+  // Sort variants by order, then compute per-variant average
+  const variants = Object.keys(pricesByVariant).sort((a, b) => variantOrder(a) - variantOrder(b));
+  const avgPrices = variants.map(v => {
+    const arr = pricesByVariant[v];
+    return Math.round(arr.reduce((s, p) => s + p, 0) / arr.length);
+  });
+
+  const ctx = document.getElementById('avg-price-chart');
+  if (!ctx) return;
+
+  charts['avg-price-chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: variants,
+      datasets: [{
+        label: 'Avg Price (across players)',
+        data: avgPrices,
+        backgroundColor: variants.map((_, i) => hexAlpha(SET_PALETTE[i % SET_PALETTE.length], 0.6)),
+        borderColor:     variants.map((_, i) => SET_PALETTE[i % SET_PALETTE.length]),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => '$' + (ctx.raw || 0).toLocaleString(),
+          },
+        },
+      },
+      scales: {
+        y: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+        x: {
+          ticks: {
+            color: '#666', font: { size: 9 },
+            callback: v => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v),
+          },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Value Distribution by Variant — floating bars (P10–P90 + IQR overlay)
+// Native Chart.js 4, no plugin required
+// ─────────────────────────────────────────────────────────────────────────────
+function renderDistribChart() {
+  destroyChart('distrib-chart');
+  if (!selectedDistribSet || !allData) return;
+
+  const pricesByVariant = {};
+  allData.rawSales.forEach(s => {
+    if (s.set_name !== selectedDistribSet) return;
+    if (!(s.price > 0)) return;
+    if (!pricesByVariant[s.variant]) pricesByVariant[s.variant] = [];
+    pricesByVariant[s.variant].push(+s.price);
+  });
+
+  const variants = Object.keys(pricesByVariant).sort((a, b) => variantOrder(a) - variantOrder(b));
+  if (variants.length === 0) {
+    document.getElementById('distrib-chart').parentElement.innerHTML =
+      '<div class="empty-state">No sale records for this set</div>';
+    return;
+  }
+
+  // Compute quartile stats per variant
+  const stats = variants.map(v => {
+    const arr = [...pricesByVariant[v]].sort((a, b) => a - b);
+    const n   = arr.length;
+    const p   = pct => arr[Math.min(n - 1, Math.max(0, Math.floor(n * pct)))];
+    return {
+      p10: p(0.10), q1: p(0.25), med: p(0.50), q3: p(0.75), p90: p(0.90),
+      avg: Math.round(arr.reduce((a, b) => a + b, 0) / n),
+      n,
+    };
+  });
+
+  const ctx = document.getElementById('distrib-chart');
+  if (!ctx) return;
+
+  charts['distrib-chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: variants,
+      datasets: [
+        {
+          // Wide background bar: P10–P90 full range
+          label: 'P10–P90 Range',
+          data: stats.map(s => [s.p10, s.p90]),
+          backgroundColor: variants.map((_, i) => hexAlpha(SET_PALETTE[i % SET_PALETTE.length], 0.10)),
+          borderColor:     variants.map((_, i) => SET_PALETTE[i % SET_PALETTE.length]),
+          borderWidth: 1,
+          borderSkipped: false,
+          barPercentage: 0.85,
+          categoryPercentage: 0.9,
+          order: 2,
+        },
+        {
+          // Narrow foreground bar: IQR Q1–Q3
+          label: 'IQR (Q1–Q3)',
+          data: stats.map(s => [s.q1, s.q3]),
+          backgroundColor: variants.map((_, i) => hexAlpha(SET_PALETTE[i % SET_PALETTE.length], 0.55)),
+          borderColor:     variants.map((_, i) => SET_PALETTE[i % SET_PALETTE.length]),
+          borderWidth: 1.5,
+          borderSkipped: false,
+          barPercentage: 0.40,
+          categoryPercentage: 0.9,
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      grouped: false,   // overlap bars at same x position
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#555', font: { size: 8 }, boxWidth: 10, padding: 12 },
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title: (items) => variants[items[0]?.dataIndex] || '',
+            label: (ctx) => {
+              if (ctx.datasetIndex !== 0) return null; // deduplicate — only render once
+              const s = stats[ctx.dataIndex];
+              if (!s) return null;
+              return [
+                `  Sales: ${s.n}`,
+                `  Avg:   $${s.avg.toLocaleString()}`,
+                `  Med:   $${s.med.toLocaleString()}`,
+                `  Q1–Q3: $${s.q1.toLocaleString()} – $${s.q3.toLocaleString()}`,
+                `  P10–P90: $${s.p10.toLocaleString()} – $${s.p90.toLocaleString()}`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#666', font: { size: 9 } },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+        },
+        y: {
+          ticks: {
+            color: '#666', font: { size: 9 },
+            callback: v => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v),
+          },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+          beginAtZero: false,
+        },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Total Sales by Set (bar + time slider)
+// ─────────────────────────────────────────────────────────────────────────────
+function onTimeSlide(val) {
+  timeRangeIdx = +val;
+  const label = TIME_RANGES[timeRangeIdx].label;
+  setText('sales-by-set-range-label', label === 'ALL' ? 'All time' : 'Last ' + label);
+  renderSalesBySetChart();
+}
+
+function renderSalesBySetChart() {
+  destroyChart('sales-by-set-chart');
+  if (!allData) return;
+
+  const range = TIME_RANGES[timeRangeIdx];
+  const cutoff = range.days
+    ? new Date(Date.now() - range.days * 86400000).toISOString()
+    : null;
+
+  const countBySet = {};
+  allData.sets.forEach(s => { countBySet[s.name] = 0; });
+  allData.rawSales.forEach(s => {
+    if (cutoff && s.date < cutoff) return;
+    if (countBySet[s.set_name] !== undefined) countBySet[s.set_name]++;
+  });
+
+  const labels = Object.keys(countBySet);
+  const counts = labels.map(l => countBySet[l]);
+
+  const ctx = document.getElementById('sales-by-set-chart');
+  if (!ctx) return;
+
+  charts['sales-by-set-chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Sales',
+        data: counts,
+        backgroundColor: labels.map((_, i) => hexAlpha(SET_PALETTE[i % SET_PALETTE.length], 0.55)),
+        borderColor:     labels.map((_, i) => SET_PALETTE[i % SET_PALETTE.length]),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+        y: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Total GMV Over Time — stacked bar by set, monthly
+// ─────────────────────────────────────────────────────────────────────────────
+function renderGMVOverTimeChart() {
+  destroyChart('gmv-over-time-chart');
+  if (!allData) return;
+
+  // Build month labels (last 18 months)
+  const now    = new Date();
+  const months = [];
+  for (let i = 17; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.toISOString().substring(0, 7));
+  }
+
+  const setNames = allData.sets.map(s => s.name);
+  const gmvBySetMonth = {};
+  setNames.forEach(s => { gmvBySetMonth[s] = {}; months.forEach(m => { gmvBySetMonth[s][m] = 0; }); });
+
+  allData.rawSales.forEach(s => {
+    if (!s.date || !s.price) return;
+    const mo = (s.date || '').substring(0, 7);
+    if (!months.includes(mo)) return;
+    if (s.set_name && gmvBySetMonth[s.set_name] !== undefined) {
+      gmvBySetMonth[s.set_name][mo] += +s.price;
+    }
+  });
+
+  const fmtMonth = m => {
+    const [yr, mn] = m.split('-');
+    return new Date(+yr, +mn - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  };
+
+  const ctx = document.getElementById('gmv-over-time-chart');
+  if (!ctx) return;
+
+  charts['gmv-over-time-chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months.map(fmtMonth),
+      datasets: setNames.map((name, i) => ({
+        label: name,
+        data:  months.map(m => gmvBySetMonth[name][m] || 0),
+        backgroundColor: hexAlpha(SET_PALETTE[i % SET_PALETTE.length], 0.55),
+        borderColor:     SET_PALETTE[i % SET_PALETTE.length],
+        borderWidth: 0.5,
+        stack: 'gmv',
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#666', font: { size: 8 }, boxWidth: 10 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': $' + Math.round(ctx.raw).toLocaleString(),
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#555', font: { size: 8 }, maxRotation: 45 },
+          grid: { color: 'rgba(255,255,255,0.02)' },
+        },
+        y: {
+          stacked: true,
+          ticks: {
+            color: '#666', font: { size: 9 },
+            callback: v => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v),
+          },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+        },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Avg Base Value Over Time — line chart, selected set, monthly
+// ─────────────────────────────────────────────────────────────────────────────
+function renderBaseValueChart() {
+  destroyChart('base-value-chart');
+  if (!selectedBaseSet || !allData) return;
+
+  const now    = new Date();
+  const months = [];
+  for (let i = 23; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.toISOString().substring(0, 7));
+  }
+
+  const sumByMonth = {}, cntByMonth = {};
+  months.forEach(m => { sumByMonth[m] = 0; cntByMonth[m] = 0; });
+
+  allData.rawSales.forEach(s => {
+    if (s.set_name !== selectedBaseSet) return;
+    if (!s.date || !(+s.price > 0)) return;
+    if ((s.variant || '').toLowerCase() !== 'base') return;
+    const mo = (s.date || '').substring(0, 7);
+    if (sumByMonth[mo] !== undefined) {
+      sumByMonth[mo] += +s.price;
+      cntByMonth[mo]++;
+    }
+  });
+
+  const fmtMonth = m => {
+    const [yr, mn] = m.split('-');
+    return new Date(+yr, +mn - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  };
+
+  const avgData = months.map(m => cntByMonth[m] > 0 ? Math.round(sumByMonth[m] / cntByMonth[m]) : null);
+
+  const ctx = document.getElementById('base-value-chart');
+  if (!ctx) return;
+
+  charts['base-value-chart'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months.map(fmtMonth),
+      datasets: [{
+        label: 'Avg Base Price',
+        data:  avgData,
+        borderColor: '#e8ff47',
+        backgroundColor: 'rgba(232,255,71,0.06)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#e8ff47',
+        tension: 0.3,
+        spanGaps: true,
+        fill: true,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.raw !== null ? '$' + ctx.raw.toLocaleString() : 'no data',
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#555', font: { size: 8 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.02)' } },
+        y: {
+          ticks: {
+            color: '#666', font: { size: 9 },
+            callback: v => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v),
+          },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+          beginAtZero: false,
+        },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Listings by Set
+// ─────────────────────────────────────────────────────────────────────────────
+function setListingsFilter(f) {
+  listingsFilter = f;
+  document.getElementById('lf-active').classList.toggle('active', f === 'active');
+  document.getElementById('lf-all').classList.toggle('active',    f === 'all');
+  renderListingsBySetChart();
+}
+
+function renderListingsBySetChart() {
+  destroyChart('listings-by-set-chart');
+  if (!allData) return;
+
+  const filtered = listingsFilter === 'active'
+    ? allData.allListings.filter(l => l.is_active)
+    : allData.allListings;
+
+  const countBySet = {};
+  allData.sets.forEach(s => { countBySet[s.name] = 0; });
+  filtered.forEach(l => {
+    if (countBySet[l.set_name] !== undefined) countBySet[l.set_name]++;
+  });
+
+  const labels = Object.keys(countBySet);
+  const counts = labels.map(l => countBySet[l]);
+
+  const ctx = document.getElementById('listings-by-set-chart');
+  if (!ctx) return;
+
+  charts['listings-by-set-chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Listings',
+        data: counts,
+        backgroundColor: labels.map((_, i) => hexAlpha(SET_PALETTE[i % SET_PALETTE.length], 0.5)),
+        borderColor:     labels.map((_, i) => SET_PALETTE[i % SET_PALETTE.length]),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+        y: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Top Players by Sales Volume
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTopPlayersChart() {
+  destroyChart('top-players-chart');
+  if (!allData) return;
+
+  const countByPlayer = {};
+  allData.rawSales.forEach(s => {
+    if (!s.player) return;
+    countByPlayer[s.player] = (countByPlayer[s.player] || 0) + 1;
+  });
+
+  const sorted = Object.entries(countByPlayer)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15);
+
+  const labels = sorted.map(([p]) => p);
+  const counts = sorted.map(([, c]) => c);
+
+  const ctx = document.getElementById('top-players-chart');
+  if (!ctx) return;
+
+  charts['top-players-chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Sales',
+        data: counts,
+        backgroundColor: 'rgba(79,209,255,0.45)',
+        borderColor:     '#4fd1ff',
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true },
+        y: { ticks: { color: '#aaa', font: { size: 9 } }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AFA Sales Table
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAfaSalesTable() {
+  const el = document.getElementById('afa-sales-wrap');
+  if (!el || !allData) return;
+
+  const gradeMap = {};
+  allData.rawSales.forEach(s => {
+    const g = s.afa_grade || 'Ungraded';
+    if (!gradeMap[g]) gradeMap[g] = { count: 0, sum: 0, last: null };
+    gradeMap[g].count++;
+    gradeMap[g].sum += +s.price || 0;
+    if (!gradeMap[g].last || s.date > gradeMap[g].last) gradeMap[g].last = s.date;
+  });
+
+  const rows = Object.entries(gradeMap)
+    .filter(([g]) => g !== 'Ungraded')
+    .sort((a, b) => b[1].count - a[1].count);
+
+  if (rows.length === 0) {
+    el.innerHTML = '<div class="empty-state">No AFA-graded sales found</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Grade</th>
+          <th>Total Sales</th>
+          <th>Avg Sale Price</th>
+          <th>Last Sale</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(([grade, d]) => {
+          const avg      = d.count > 0 ? '$' + Math.round(d.sum / d.count).toLocaleString() : '—';
+          const lastDate = d.last ? new Date(d.last).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '—';
+          return `<tr>
+            <td><span class="grade-badge">${esc(grade)}</span></td>
+            <td>${d.count.toLocaleString()}</td>
+            <td class="td-price">${avg}</td>
+            <td class="td-date">${lastDate}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AFA Listings Table
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAfaListingsTable() {
+  const el = document.getElementById('afa-listings-wrap');
+  if (!el || !allData) return;
+
+  const active = allData.allListings.filter(l => l.is_active && l.afa_grade);
+  const gradeMap = {};
+  active.forEach(l => {
+    const g = l.afa_grade;
+    if (!gradeMap[g]) gradeMap[g] = { count: 0, sum: 0, min: Infinity };
+    gradeMap[g].count++;
+    const p = +l.ask_price || 0;
+    gradeMap[g].sum += p;
+    if (p > 0 && p < gradeMap[g].min) gradeMap[g].min = p;
+  });
+
+  const rows = Object.entries(gradeMap).sort((a, b) => b[1].count - a[1].count);
+
+  if (rows.length === 0) {
+    el.innerHTML = '<div class="empty-state">No AFA-graded active listings found</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Grade</th>
+          <th>Active Listings</th>
+          <th>Avg Ask</th>
+          <th>Lowest Ask</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(([grade, d]) => {
+          const avg = d.count > 0 ? '$' + Math.round(d.sum / d.count).toLocaleString() : '—';
+          const low = d.min < Infinity ? '$' + Math.round(d.min).toLocaleString() : '—';
+          return `<tr>
+            <td><span class="grade-badge">${esc(grade)}</span></td>
+            <td>${d.count.toLocaleString()}</td>
+            <td class="td-price">${avg}</td>
+            <td style="color:var(--green);font-family:var(--display);font-size:13px">${low}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sales Velocity — % stacked bar, monthly, last 6 months
+// ─────────────────────────────────────────────────────────────────────────────
+function renderVelocityChart() {
+  destroyChart('velocity-chart');
+  if (!allData) return;
+
+  // Build 6 monthly buckets ending at current month
+  const now    = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.toISOString().substring(0, 7));
+  }
+
+  const setNames = allData.sets.map(s => s.name);
+  const cntBySetMonth = {};
+  setNames.forEach(s => { cntBySetMonth[s] = new Array(6).fill(0); });
+
+  allData.rawSales.forEach(s => {
+    if (!s.date) return;
+    const mo = s.date.substring(0, 7);
+    const idx = months.indexOf(mo);
+    if (idx >= 0 && cntBySetMonth[s.set_name] !== undefined) {
+      cntBySetMonth[s.set_name][idx]++;
+    }
+  });
+
+  // Convert to percentages per month column
+  const totalsPerMonth = months.map((_, mi) =>
+    setNames.reduce((sum, name) => sum + cntBySetMonth[name][mi], 0));
+
+  const pctBySetMonth = {};
+  setNames.forEach(name => {
+    pctBySetMonth[name] = months.map((_, mi) => {
+      const total = totalsPerMonth[mi];
+      return total > 0 ? Math.round((cntBySetMonth[name][mi] / total) * 1000) / 10 : 0;
+    });
+  });
+
+  const monthLabels = months.map(m => {
+    const [yr, mo] = m.split('-');
+    return new Date(+yr, +mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  });
+
+  const ctx = document.getElementById('velocity-chart');
+  if (!ctx) return;
+
+  charts['velocity-chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: setNames.map((name, i) => ({
+        label: name,
+        data:  pctBySetMonth[name],
+        backgroundColor: hexAlpha(SET_PALETTE[i % SET_PALETTE.length], 0.65),
+        borderColor:     SET_PALETTE[i % SET_PALETTE.length],
+        borderWidth: 0.5,
+        stack: 'velocity',
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#666', font: { size: 8 }, boxWidth: 10 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.raw}% (${cntBySetMonth[ctx.dataset.label][ctx.dataIndex]} sales)`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#555', font: { size: 9 } },
+          grid: { color: 'rgba(255,255,255,0.02)' },
+        },
+        y: {
+          stacked: true,
+          min: 0, max: 100,
+          ticks: {
+            color: '#666', font: { size: 9 },
+            callback: v => v + '%',
+          },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+          title: { display: true, text: '% of Monthly Sales', color: '#555', font: { size: 8 } },
+        },
+      },
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function setText(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = v;
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function hexAlpha(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function variantOrder(v) {
+  const order = ['base', 'common', 'victory', 'emerald', 'gold', 'chrome', 'fire', 'super', 'ultra'];
+  const lc = (v || '').toLowerCase();
+  const idx = order.findIndex(o => lc.includes(o));
+  return idx >= 0 ? idx : 99;
+}
+
+// Chart.js global defaults (dark theme)
+Chart.defaults.color             = '#666';
+Chart.defaults.borderColor       = '#282828';
+Chart.defaults.font.family       = "'DM Mono', monospace";
+Chart.defaults.font.size         = 10;
+Chart.defaults.animation.duration = 300;
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+
+</body>
+</html>

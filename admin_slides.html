@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slides — GhostLadder</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav.css">
+<script src="estimate-engine.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg: #080808; --s1: #0f0f0f; --s2: #161616; --s3: #1e1e1e;
+  --border: #282828; --border2: #333;
+  --accent: #e8ff47; --chrome: #4fd1ff;
+  --text: #f0f0f0; --muted: #666; --muted2: #999;
+  --red: #ff4040; --green: #3ddc84; --orange: #ff9f43; --purple: #c084fc;
+  --mono: 'DM Mono', monospace; --display: 'Bebas Neue', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
+
+/* ── Slides page layout ── */
+.slides-wrap { max-width: 1400px; padding: 32px 32px 80px; }
+
+.page-hd { margin-bottom: 28px; }
+.page-eyebrow { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.page-title { font-family: var(--display); font-size: 42px; line-height: 1; color: var(--text); letter-spacing: 1px; }
+.page-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* ── Slide type tabs ── */
+.slide-type-row { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+.slide-type-tab {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); padding: 10px 18px; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+}
+.slide-type-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Controls panel (outside slide) ── */
+.controls-panel {
+  background: var(--s1); border: 1px solid var(--border);
+  padding: 18px 20px; margin-bottom: 28px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.controls-panel-label {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted2);
+  margin-bottom: 2px;
+}
+.control-row { display: flex; align-items: flex-start; gap: 16px; }
+.ctrl-lbl {
+  font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  padding-top: 6px; width: 44px; flex-shrink: 0;
+}
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--border);
+  padding: 5px 12px; cursor: pointer; transition: all 0.12s;
+  text-transform: uppercase;
+}
+.chip:hover { color: var(--text); border-color: var(--muted); }
+.chip.active { color: #080808; background: var(--accent); border-color: var(--accent); }
+.chip.league-context { border-color: #3a3a2a; color: #887f30; } /* parent league in set-mode */
+
+/* ── Slide stage ── */
+.slide-stage { display: flex; gap: 40px; align-items: flex-start; }
+.slide-stage-main { flex-shrink: 0; }
+
+/* ── THE SLIDE (5.5" × 9.5" @ 96dpi = 528 × 912) ── */
+.slide {
+  width: 528px;
+  height: 912px;
+  background: #0a0a0a;
+  border: 1.5px solid #2c2c2c;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  font-family: var(--mono);
+}
+
+.slide-accent { height: 4px; flex-shrink: 0; background: var(--accent); }
+
+.slide-inner {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows:
+    88px   /* header   */
+    1px    /* divider  */
+    1fr    /* top sales — fills remaining */
+    1px    /* divider  */
+    108px  /* case stats */
+    1px    /* divider  */
+    156px  /* variant chart */
+    1px    /* divider  */
+    60px   /* snapshot */
+    38px;  /* footer   */
+  padding: 18px 22px 0;
+  gap: 13px 0;
+}
+
+/* ─── Header ─── */
+.sl-hd { display: flex; align-items: flex-start; justify-content: space-between; overflow: hidden; }
+.sl-hd-left { flex: 1; min-width: 0; }
+.sl-eyebrow {
+  font-size: 8px; letter-spacing: 3px; text-transform: uppercase;
+  color: #555; margin-bottom: 3px;
+}
+.sl-headline {
+  font-family: var(--display); font-size: 38px; line-height: 0.92;
+  color: #efefef; letter-spacing: 1px;
+}
+.sl-sub { font-size: 8px; color: #444; margin-top: 7px; letter-spacing: 1px; }
+.sl-logo-wrap { width: 54px; height: 54px; flex-shrink: 0; margin-left: 12px; margin-top: 4px; }
+.sl-logo { width: 54px; height: 54px; object-fit: contain; opacity: 0.8; display: none; }
+.sl-logo-ph { width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #222; }
+
+/* ─── Section shared ─── */
+.sl-divider { height: 1px; background: #1c1c1c; }
+.sl-sec { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.sl-sec-hd { display: flex; align-items: baseline; gap: 8px; margin-bottom: 9px; flex-shrink: 0; }
+.sl-sec-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: gold; }
+.sl-sec-sub   { font-size: 6px; color: #303030; letter-spacing: 0.5px; }
+
+/* ─── Top 5 Sales ─── */
+.sl-sales { flex: 1; overflow: hidden; }
+.sl-sale-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px solid #131313;
+}
+.sl-sale-row:last-child { border-bottom: none; }
+.sl-sale-rank { width: 18px; text-align: center; font-size: 8px; color: #333; flex-shrink: 0; }
+.sl-sale-rank.top3 { color: #555; }
+.sl-sale-img-wrap { width: 36px; height: 36px; flex-shrink: 0; background: #111; overflow: hidden; }
+.sl-sale-img { width: 36px; height: 36px; object-fit: contain; }
+.sl-sale-body { flex: 1; min-width: 0; }
+.sl-sale-player { font-size: 11px; color: #d8d8d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sl-sale-meta   { display: flex; align-items: center; gap: 6px; margin-top: 1px; }
+.sl-sale-var    { font-size: 7px; letter-spacing: 1px; text-transform: uppercase; }
+.sl-sale-set    { font-size: 7px; color: #333; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.sl-sale-afa    { font-size: 7px; color: #f5c842; }
+.sl-sale-price  { font-family: var(--display); font-size: 19px; color: #efefef; flex-shrink: 0; text-align: right; min-width: 72px; }
+.sl-sale-date   { font-size: 7px; color: #333; flex-shrink: 0; text-align: right; width: 46px; }
+
+/* ─── Case Stats ─── */
+.sl-case-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+.sl-case-box { background: #0f0f0f; border: 1px solid #1a1a1a; padding: 9px 11px; }
+.sl-case-lbl { font-size: 6px; letter-spacing: 1.5px; text-transform: uppercase; color: #444; margin-bottom: 3px; }
+.sl-case-val { font-family: var(--display); font-size: 24px; line-height: 1; color: #efefef; }
+.sl-case-val.up   { color: #3ddc84; }
+.sl-case-val.down { color: #ff4040; }
+.sl-case-sub { font-size: 7px; color: #353535; margin-top: 3px; }
+
+/* ─── Variant Chart ─── */
+.sl-vbar-wrap { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
+.sl-vbar-row  { display: flex; align-items: center; gap: 7px; }
+.sl-vbar-lbl  { width: 58px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: #555; flex-shrink: 0; text-align: right; }
+.sl-vbar-track { flex: 1; height: 18px; background: #0f0f0f; position: relative; overflow: hidden; }
+.sl-vbar-fill  { height: 100%; position: absolute; left: 0; top: 0; opacity: 0.82; }
+.sl-vbar-price { width: 64px; font-family: var(--display); font-size: 14px; color: #ccc; flex-shrink: 0; padding-left: 7px; }
+.sl-vbar-sales { font-size: 7px; color: #383838; flex-shrink: 0; width: 36px; text-align: right; }
+
+/* ─── Snapshot ─── */
+.sl-snap-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; height: 100%; }
+.sl-snap-cell { text-align: center; display: flex; flex-direction: column; justify-content: center; background: #0d0d0d; border: 1px solid #181818; padding: 6px 4px; }
+.sl-snap-val  { font-family: var(--display); font-size: 18px; color: #e0e0e0; line-height: 1; }
+.sl-snap-lbl  { font-size: 6px; color: yellow; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
+
+/* ─── Footer ─── */
+.sl-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid #161616; padding: 0 0 12px;
+  padding-top: 9px;
+}
+.sl-footnote { font-size: 6.5px; color: #303030; letter-spacing: 0.5px; flex: 1; }
+.sl-brand    { font-size: 6.5px; color: #242424; letter-spacing: 2px; text-transform: uppercase; flex-shrink: 0; }
+
+/* ── Loading state ── */
+.slide-loading {
+  border: 1.5px solid #2c2c2c;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  background: #0a0a0a;
+}
+.slide-loading.portrait  { width: 528px; height: 912px; }
+.slide-loading.landscape { width: 912px; height: 528px; }
+
+/* ── LANDSCAPE SLIDE (9.5" × 5.5" @ 96dpi = 912 × 528) ── */
+.slide-ls {
+  width: 912px;
+  height: 528px;
+  background: #0a0a0a;
+  border: 1.5px solid #2c2c2c;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  font-family: var(--mono);
+}
+
+.sl-ls-inner {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  /* header | divider | 3-col body | divider | footer */
+  grid-template-rows: 65px 1px 1fr 1px 28px;
+  padding: 18px 22px 14px;
+  gap: 12px 0;
+}
+
+/* ─── LS Header (reuses portrait .sl-hd classes, just slightly smaller text) ─── */
+.sl-ls-headline {
+  font-family: var(--display); font-size: 32px; line-height: 0.92;
+  color: #efefef; letter-spacing: 1px;
+}
+
+/* ─── 3-column body ─── */
+.sl-ls-cols {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr 1px 1fr;
+  column-gap: 14px;
+  min-height: 0;
+  overflow: hidden;
+}
+.sl-ls-col-divider { background: #1c1c1c; }
+.sl-ls-col {
+  min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* ─── LS Case stat boxes — 2-row layout (price+value top, ROI bottom) ─── */
+.sl-ls-case-grid {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.sl-ls-case-roi {
+  grid-column: 1 / -1; /* ROI spans full width for emphasis */
+}
+
+/* ─── LS Snapshot row inside middle column ─── */
+.sl-ls-snap-inner {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px; flex: 1;
+}
+
+/* ─── LS Variant bars — taller fills ─── */
+.sl-ls-vbar-wrap { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
+.sl-ls-vbar-row  { display: flex; align-items: center; gap: 7px; }
+.sl-ls-vbar-track { flex: 1; height: 22px; background: #0f0f0f; position: relative; overflow: hidden; }
+.sl-ls-vbar-fill  { height: 100%; position: absolute; left: 0; top: 0; opacity: 0.85; }
+
+/* ─── LS Footer ─── */
+.sl-ls-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid #161616; padding-top: 8px;
+}
+
+/* ─── Inner-column mini-divider ─── */
+.sl-col-divider { height: 1px; background: #1a1a1a; margin: 10px 0; flex-shrink: 0; }
+
+/* ─── LS v2: 2-column layout ─── */
+.sl-ls-cols-v2 {
+  display: grid;
+  grid-template-columns: 1.1fr 1px 1fr;
+  column-gap: 14px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── LS v2: Case stats 2×2 grid ─── */
+.sl-ls-case-grid-v2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+/* ─── LS v2: Bigger sale images, smaller player name, no date ─── */
+.sl-sale-row-ls {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 0;
+  border-bottom: 1px solid #131313;
+}
+.sl-sale-row-ls:last-child { border-bottom: none; }
+.sl-sale-img-wrap-lg { width: 52px; height: 52px; flex-shrink: 0; background: #111; overflow: hidden; }
+.sl-sale-img-lg { width: 52px; height: 52px; object-fit: contain; }
+.sl-sale-player-sm { font-size: 9px; color: #d8d8d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ══════════════════════════════════════════════════════════
+   BREAKER REPORT DECK
+   ══════════════════════════════════════════════════════════ */
+.br-text-input {
+  font-family: var(--mono); font-size: 9px; background: var(--bg);
+  border: 1px solid var(--border); color: var(--text);
+  padding: 5px 10px; outline: none; letter-spacing: 0.5px; width: 220px;
+}
+.br-text-input:focus { border-color: var(--muted); }
+.breaker-deck { display: none; }
+.breaker-deck.active { display: block; }
+.br-toolbar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap;
+}
+.br-btn {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); background: transparent; border: 1px solid var(--border);
+  padding: 7px 14px; cursor: pointer; transition: all 0.12s;
+}
+.br-btn:hover { color: var(--text); border-color: var(--muted); }
+.btn-pdf {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: #080808; background: var(--accent); border: none; padding: 8px 22px;
+  cursor: pointer; margin-left: auto; transition: opacity 0.12s;
+}
+.btn-pdf:hover { opacity: 0.85; }
+.btn-pdf:disabled { opacity: 0.4; cursor: not-allowed; }
+.br-slide-card { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 48px; }
+.br-slide-meta { width: 120px; flex-shrink: 0; padding-top: 6px; }
+.br-slide-num { font-family: var(--display); font-size: 40px; color: #1c1c1c; line-height: 1; }
+.br-slide-title-lbl {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: #333; margin: 3px 0 14px;
+}
+.br-slide-check {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+}
+.br-slide-check input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+
+/* Slide frame */
+.brs {
+  width: 912px; height: 528px; background: #060606; border: 1.5px solid #242424;
+  overflow: hidden; position: relative; font-family: var(--mono); flex-shrink: 0;
+}
+.brs-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; z-index: 2; }
+.brs-brand { font-size: 7px; letter-spacing: 2px; color: #222; text-transform: uppercase; flex-shrink: 0; }
+.brs-hd {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 18px 24px 0 28px; flex-shrink: 0;
+}
+.brs-eyebrow { font-size: 7px; letter-spacing: 3px; text-transform: uppercase; color: #333; margin-bottom: 4px; }
+.brs-title { font-family: var(--display); font-size: 28px; line-height: 1; letter-spacing: 1px; color: #f0f0f0; }
+.brs-sub { font-size: 8px; color: #444; margin-top: 3px; letter-spacing: 0.5px; }
+.brs-takeaway {
+  position: absolute; bottom: 0; left: 0; right: 0; background: #0c0c0c;
+  border-top: 1px solid #1a1a1a; padding: 9px 24px 9px 28px;
+  display: flex; align-items: center; gap: 8px; z-index: 2;
+}
+.brs-ta-arrow { color: #444; font-size: 10px; flex-shrink: 0; }
+.brs-ta-text {
+  font-size: 9px; color: #888; flex: 1; letter-spacing: 0.3px; outline: none;
+  background: transparent; font-family: var(--mono); line-height: 1.4;
+}
+.brs-ta-text:empty::before { content: attr(data-ph); color: #282828; pointer-events: none; }
+.brs-ta-text:focus { color: #ccc; }
+
+/* Slide 1: Cover */
+.brs-cover-inner {
+  display: flex; align-items: center; height: 100%; padding: 28px 32px 28px 28px; gap: 0;
+}
+.brs-cover-left { flex: 1; }
+.brs-cover-gl { font-size: 8px; letter-spacing: 4px; text-transform: uppercase; color: #282828; margin-bottom: 14px; }
+.brs-cover-hl { font-family: var(--display); font-size: 96px; line-height: 0.88; letter-spacing: 1px; }
+.brs-cover-period { font-size: 10px; color: #444; margin-top: 18px; letter-spacing: 3px; text-transform: uppercase; }
+.brs-cover-brand-bar { position: absolute; bottom: 16px; right: 24px; }
+.brs-cover-right { width: 220px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.brs-cover-img { width: 180px; height: 240px; object-fit: contain; opacity: 0.9; }
+
+/* Slide 2: Top Sales */
+.brs-sales-body { padding: 12px 24px 44px 28px; height: calc(100% - 62px); overflow: hidden; }
+.brs-sale-grid { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
+.brs-sale-row {
+  display: flex; align-items: center; gap: 9px; padding: 7px 10px 7px 0;
+  border-bottom: 1px solid #0f0f0f;
+}
+.brs-sale-row:nth-child(even) { border-left: 1px solid #0f0f0f; padding: 7px 0 7px 10px; }
+.brs-sale-rank { font-size: 9px; color: #252525; width: 14px; flex-shrink: 0; }
+.brs-sale-img-wrap { width: 38px; height: 38px; flex-shrink: 0; overflow: hidden; }
+.brs-sale-img { width: 38px; height: 38px; object-fit: contain; }
+.brs-sale-body { flex: 1; min-width: 0; }
+.brs-sale-player { font-size: 10px; color: #d0d0d0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brs-sale-meta { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+.brs-sale-var { font-size: 6.5px; letter-spacing: 1px; text-transform: uppercase; }
+.brs-sale-set { font-size: 6.5px; color: #2e2e2e; }
+.brs-sale-right { text-align: right; flex-shrink: 0; }
+.brs-sale-price { font-family: var(--display); font-size: 17px; color: #efefef; line-height: 1; }
+.brs-sale-date { font-size: 6.5px; color: #2e2e2e; }
+
+/* Slide 3: Set Spotlight */
+.brs-spotlight-body { display: flex; padding: 10px 24px 44px 28px; height: calc(100% - 62px); }
+.brs-spotlight-left {
+  width: 262px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px;
+  padding-right: 16px; border-right: 1px solid #161616;
+}
+.brs-spotlight-right { flex: 1; padding-left: 16px; display: flex; flex-direction: column; }
+.brs-stat-box { background: #0c0c0c; border: 1px solid #181818; padding: 8px 10px; flex-shrink: 0; }
+.brs-stat-lbl { font-size: 6px; letter-spacing: 1.5px; text-transform: uppercase; color: #383838; margin-bottom: 3px; }
+.brs-stat-val { font-family: var(--display); font-size: 22px; line-height: 1; color: #e8e8e8; }
+.brs-stat-val.up { color: #3ddc84; }
+.brs-stat-val.down { color: #ff4040; }
+.brs-stat-sub { font-size: 6.5px; color: #2e2e2e; margin-top: 2px; }
+.brs-hist-lbl { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: #383838; margin-bottom: 5px; flex-shrink: 0; }
+.brs-hist-wrap { flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: flex-start; }
+.brs-total-sales { font-size: 7px; color: #2e2e2e; margin-top: 4px; flex-shrink: 0; }
+
+/* Slide 4: Chase the Chase */
+.brs-chase-body {
+  padding: 14px 24px 44px 28px; height: calc(100% - 62px);
+  display: flex; flex-direction: column; justify-content: space-around;
+}
+.brs-vbar-row { display: flex; align-items: center; gap: 10px; }
+.brs-vbar-lbl { width: 68px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: #484848; text-align: right; flex-shrink: 0; }
+.brs-vbar-track { flex: 1; height: 26px; background: #0d0d0d; position: relative; overflow: hidden; border: 1px solid #181818; }
+.brs-vbar-fill { height: 100%; position: absolute; left: 0; top: 0; opacity: 0.82; }
+.brs-vbar-price { font-family: var(--display); font-size: 20px; color: #ccc; flex-shrink: 0; padding-left: 10px; min-width: 72px; }
+.brs-vbar-count { font-size: 7px; color: #2e2e2e; flex-shrink: 0; width: 54px; text-align: right; }
+
+/* Slide 5: Ace of Base */
+.brs-ace-body { display: flex; padding: 10px 24px 44px 28px; height: calc(100% - 62px); }
+.brs-ace-left { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-right: 20px; }
+.brs-ace-price-lbl { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: #383838; margin-bottom: 5px; }
+.brs-ace-price { font-family: var(--display); font-size: 76px; line-height: 1; color: #f0f0f0; }
+.brs-ace-sales-lbl { font-size: 8px; color: #484848; margin-top: 5px; }
+.brs-ace-slider-wrap { margin-top: 22px; }
+.brs-ace-right {
+  width: 194px; flex-shrink: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; border-left: 1px solid #161616; padding-left: 20px;
+}
+.brs-ace-fig { width: 128px; height: 160px; object-fit: contain; }
+.brs-ace-player-name { font-family: var(--display); font-size: 15px; color: #d0d0d0; margin-top: 8px; text-align: center; }
+
+/* Percentile slider */
+.brs-pct-names { display: flex; justify-content: space-between; font-size: 7px; color: #383838; margin-bottom: 5px; }
+.brs-pct-track {
+  position: relative; height: 8px; border-radius: 4px;
+  background: linear-gradient(to right, #1565c0, #0288d1, #26a69a, #66bb6a, #f5c842, #ff9800);
+}
+.brs-pct-dot {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #e8ff47; border: 2px solid #060606; box-shadow: 0 0 8px rgba(232,255,71,0.5);
+}
+.brs-pct-prices { display: flex; justify-content: space-between; font-size: 8px; margin-top: 7px; font-family: var(--mono); }
+.brs-pct-label { font-size: 8px; color: #e8ff47; text-align: center; margin-top: 5px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+/* ── Slide notes panel ── */
+.slide-notes {
+  flex: 1; max-width: 320px; padding: 20px 0;
+}
+.notes-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+.note-row { border-left: 2px solid var(--border); padding: 8px 0 8px 14px; margin-bottom: 12px; }
+.note-key { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2); margin-bottom: 3px; }
+.note-val { font-size: 11px; color: var(--text); }
+.note-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <nav class="nav">
+    <a href="index.html">Sales Intel</a>
+    <a href="guide.html">Price Guide</a>
+    <a href="listings.html">Listings Intel</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <div class="nav-dropdown">
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <div class="nav-dropdown-menu">
+        <a href="player-index.html">Player Indexes</a>
+      </div>
+    </div>
+  </nav>
+  <div class="header-right">
+    <span id="user-email-label" style="font-size:9px;letter-spacing:1px;color:var(--muted)"></span>
+  </div>
+</header>
+<div class="admin-subnav">
+  <a href="admin.html">Admin</a>
+  <a href="admin_views.html">Analytics</a>
+  <a href="admin_slides.html" class="active">Slides</a>
+  <a href="social-studio.html">Social Studio</a>
+</div>
+
+<!-- Auth gate -->
+<script>
+(function() {
+  try {
+    const s = localStorage.getItem('sb-sabzbyuqrondoayhwoth-auth-token');
+    if (!s || !JSON.parse(s)?.access_token) { window.location.href = 'admin.html'; }
+    else {
+      const tok = JSON.parse(s);
+      const el = document.getElementById('user-email-label');
+      if (el && tok.user?.email) el.textContent = tok.user.email;
+    }
+  } catch(e) { window.location.href = 'admin.html'; }
+})();
+</script>
+
+<div class="slides-wrap">
+
+  <!-- Page header -->
+  <div class="page-hd">
+    <div class="page-eyebrow">Admin · Content Tools</div>
+    <div class="page-title">Market Slides</div>
+    <div class="page-sub">Screenshot-ready graphics for team presentations · Set Stats (portrait/landscape) · Breaker Report deck with PDF export</div>
+  </div>
+
+  <!-- Slide type tabs -->
+  <div class="slide-type-row">
+    <div class="slide-type-tab active"   onclick="setSlideMode('landscape')">Set Stats · Landscape</div>
+    <div class="slide-type-tab"          onclick="setSlideMode('breaker')">Breaker Report</div>
+  </div>
+
+  <!-- Controls (outside slide, safe to screenshot just the slide below) -->
+  <div class="controls-panel" id="setstats-controls">
+    <div class="controls-panel-label">Scope selector · choose a league or a specific set</div>
+    <div class="control-row">
+      <div class="ctrl-lbl">League</div>
+      <div class="chip-group" id="league-chips"></div>
+    </div>
+    <div class="control-row" id="set-row" style="display:none">
+      <div class="ctrl-lbl">Set</div>
+      <div class="chip-group" id="set-chips"></div>
+    </div>
+  </div>
+
+  <!-- Breaker Report controls -->
+  <div class="controls-panel" id="breaker-controls" style="display:none">
+    <div class="controls-panel-label">Breaker Report configuration</div>
+    <div class="control-row">
+      <div class="ctrl-lbl">Month</div>
+      <input id="br-month" type="text" class="br-text-input" placeholder="March 2026"
+             oninput="if(slideMode==='breaker')renderBreakerDeck()">
+    </div>
+    <div class="control-row">
+      <div class="ctrl-lbl">Spotlight Set</div>
+      <div class="chip-group" id="br-set-chips"></div>
+    </div>
+    <div class="control-row">
+      <div class="ctrl-lbl">Ace Player</div>
+      <div class="chip-group" id="br-player-chips" style="max-height:72px;overflow-y:auto;padding:2px 0"></div>
+    </div>
+  </div>
+
+  <!-- Slide + notes -->
+  <div class="slide-stage" id="slide-stage">
+    <div class="slide-stage-main">
+      <!-- Loading placeholder -->
+      <div id="slide-loading" class="slide-loading portrait">
+        loading<span>.</span><span>.</span><span>.</span>
+      </div>
+
+      <!-- PORTRAIT SLIDE (5.5" × 9.5") -->
+      <div id="slide" class="slide" style="display:none">
+
+        <!-- Accent line (color set by JS per league) -->
+        <div class="slide-accent" id="sl-accent"></div>
+
+        <div class="slide-inner">
+
+          <!-- 1. Header -->
+          <div class="sl-hd">
+            <div class="sl-hd-left">
+              <div class="sl-eyebrow" id="sl-eyebrow">—</div>
+              <div class="sl-headline" id="sl-headline">Market Intel</div>
+              <div class="sl-sub" id="sl-sub">—</div>
+            </div>
+            <div class="sl-logo-wrap">
+              <img id="sl-logo" class="sl-logo" src="" alt=""
+                   onerror="this.style.display='none';document.getElementById('sl-logo-ph').style.display='flex'">
+              <div id="sl-logo-ph" class="sl-logo-ph" style="display:none">👻</div>
+            </div>
+          </div>
+
+          <div class="sl-divider"></div>
+
+          <!-- 2. Top 5 Sales -->
+          <div class="sl-sec">
+            <div class="sl-sec-hd">
+              <span class="sl-sec-label">Top 5 Sales</span>
+              <span class="sl-sec-sub" id="sl-sales-sub">All-time · All Sets</span>
+            </div>
+            <div class="sl-sales" id="sl-top-sales"></div>
+          </div>
+
+          <div class="sl-divider"></div>
+
+          <!-- 3. Case Economics -->
+          <div class="sl-sec">
+            <div class="sl-sec-hd">
+              <span class="sl-sec-label">Case Economics</span>
+              <span class="sl-sec-sub">Model Blend · 90-Day Prices</span>
+            </div>
+            <div class="sl-case-grid" id="sl-case-stats"></div>
+          </div>
+
+          <div class="sl-divider"></div>
+
+          <!-- 4. Variant Price Chart -->
+          <div class="sl-sec">
+            <div class="sl-sec-hd">
+              <span class="sl-sec-label">Avg. Price by Variant</span>
+              <span class="sl-sec-sub">Player-equally weighted · top 3</span>
+            </div>
+            <div class="sl-vbar-wrap" id="sl-vbar-wrap"></div>
+          </div>
+
+          <div class="sl-divider"></div>
+
+          <!-- 5. Market Snapshot -->
+          <div class="sl-sec">
+            <div class="sl-snap-row" id="sl-snapshot"></div>
+          </div>
+
+          <!-- 6. Footer -->
+          <div class="sl-footer">
+            <div class="sl-footnote" id="sl-footnote">—</div>
+            <div class="sl-brand">ghostladder.com</div>
+          </div>
+
+        </div><!-- /slide-inner -->
+      </div><!-- /portrait slide -->
+
+      <!-- LANDSCAPE SLIDE (9.5" × 5.5") -->
+      <div id="slide-ls" class="slide-ls" style="display:none">
+
+        <div class="slide-accent" id="lsl-accent"></div>
+
+        <div class="sl-ls-inner">
+
+          <!-- Header -->
+          <div class="sl-hd">
+            <div class="sl-hd-left">
+              <div class="sl-eyebrow" id="lsl-eyebrow">—</div>
+              <div class="sl-ls-headline" id="lsl-headline">Market Intel</div>
+              <div class="sl-sub" id="lsl-sub">—</div>
+            </div>
+            <div class="sl-logo-wrap">
+              <img id="lsl-logo" class="sl-logo" src="" alt=""
+                   onerror="this.style.display='none';document.getElementById('lsl-logo-ph').style.display='flex'">
+              <div id="lsl-logo-ph" class="sl-logo-ph" style="display:none">👻</div>
+            </div>
+          </div>
+
+          <div class="sl-divider"></div>
+
+          <!-- 2-column body -->
+          <div class="sl-ls-cols-v2">
+
+            <!-- Col 1: Top 5 Sales -->
+            <div class="sl-ls-col">
+              <div class="sl-sec-hd">
+                <span class="sl-sec-label">Top 5 Sales</span>
+                <span class="sl-sec-sub" id="lsl-sales-sub">All-time</span>
+              </div>
+              <div id="lsl-top-sales" style="flex:1;overflow:hidden"></div>
+            </div>
+
+            <div class="sl-ls-col-divider"></div>
+
+            <!-- Col 2: Case Economics + Avg Parallel Price -->
+            <div class="sl-ls-col">
+              <div class="sl-sec-hd">
+                <span class="sl-sec-label">Case Economics</span>
+                <span class="sl-sec-sub">Model Blend · 90D</span>
+              </div>
+              <div class="sl-ls-case-grid-v2" id="lsl-case-stats" style="flex-shrink:0"></div>
+
+              <div class="sl-col-divider"></div>
+
+              <div class="sl-sec-hd">
+                <span class="sl-sec-label">Avg. Parallel Price</span>
+                <span class="sl-sec-sub">Top 5 · equally weighted</span>
+              </div>
+              <div class="sl-ls-vbar-wrap" id="lsl-vbar-wrap"></div>
+            </div>
+
+          </div><!-- /2-col -->
+
+          <div class="sl-divider"></div>
+
+          <!-- Footer -->
+          <div class="sl-ls-footer">
+            <div class="sl-footnote" id="lsl-footnote">—</div>
+            <div class="sl-brand">ghostladder.com</div>
+          </div>
+
+        </div><!-- /sl-ls-inner -->
+      </div><!-- /landscape slide -->
+
+    </div><!-- /slide-stage-main -->
+
+    <!-- Notes panel -->
+    <div class="slide-notes" id="slide-notes" style="display:none">
+      <div class="notes-title">Slide Stats</div>
+      <div id="notes-content"></div>
+    </div>
+  </div><!-- /slide-stage -->
+
+<!-- ── Breaker Report Deck ────────────────────────────────────────────── -->
+<div id="breaker-deck" class="breaker-deck">
+
+  <div class="br-toolbar">
+    <button class="br-btn" onclick="brToggleAll(true)">Select All</button>
+    <button class="br-btn" onclick="brToggleAll(false)">Deselect All</button>
+    <button class="btn-pdf" id="btn-pdf" onclick="exportBreakerPDF()">↓ Download PDF</button>
+  </div>
+
+  <!-- 01 · Cover -->
+  <div class="br-slide-card">
+    <div class="br-slide-meta">
+      <div class="br-slide-num">01</div>
+      <div class="br-slide-title-lbl">Cover</div>
+      <label class="br-slide-check"><input type="checkbox" class="br-export-check" data-slide="brs-cover" checked> Include</label>
+    </div>
+    <div class="brs" id="brs-cover">
+      <div class="brs-accent" id="brs-cover-accent"></div>
+      <div class="brs-cover-inner">
+        <div class="brs-cover-left">
+          <div class="brs-cover-gl">GHOSTLADDER</div>
+          <div class="brs-cover-hl" id="brs-cover-hl">BREAKER<br>REPORT</div>
+          <div class="brs-cover-period" id="brs-cover-period">—</div>
+        </div>
+        <div class="brs-cover-right">
+          <img id="brs-cover-img" class="brs-cover-img" src="" alt="" style="display:none" onerror="this.style.display='none'">
+        </div>
+      </div>
+      <div class="brs-cover-brand-bar"><span class="brs-brand">ghostladder.com</span></div>
+    </div>
+  </div>
+
+  <!-- 02 · Top Sales -->
+  <div class="br-slide-card">
+    <div class="br-slide-meta">
+      <div class="br-slide-num">02</div>
+      <div class="br-slide-title-lbl">Top Sales</div>
+      <label class="br-slide-check"><input type="checkbox" class="br-export-check" data-slide="brs-topsales" checked> Include</label>
+    </div>
+    <div class="brs" id="brs-topsales">
+      <div class="brs-accent" id="brs-sales-accent"></div>
+      <div class="brs-hd">
+        <div>
+          <div class="brs-eyebrow">GhostLadder Market Report</div>
+          <div class="brs-title">TOP SALES</div>
+          <div class="brs-sub" id="brs-sales-sub">Last 30 days · All active sets</div>
+        </div>
+        <span class="brs-brand">ghostladder.com</span>
+      </div>
+      <div class="brs-sales-body">
+        <div class="brs-sale-grid" id="brs-sales-grid"></div>
+      </div>
+      <div class="brs-takeaway">
+        <span class="brs-ta-arrow">→</span>
+        <div class="brs-ta-text" contenteditable="plaintext-only" data-ph="Add a takeaway for this slide..."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 · Set Spotlight -->
+  <div class="br-slide-card">
+    <div class="br-slide-meta">
+      <div class="br-slide-num">03</div>
+      <div class="br-slide-title-lbl">Set Spotlight</div>
+      <label class="br-slide-check"><input type="checkbox" class="br-export-check" data-slide="brs-spotlight" checked> Include</label>
+    </div>
+    <div class="brs" id="brs-spotlight">
+      <div class="brs-accent" id="brs-spotlight-accent"></div>
+      <div class="brs-hd">
+        <div>
+          <div class="brs-eyebrow">Set Spotlight · Case Economics</div>
+          <div class="brs-title" id="brs-spotlight-title">—</div>
+          <div class="brs-sub">Model blend · 90-day prices</div>
+        </div>
+        <span class="brs-brand">ghostladder.com</span>
+      </div>
+      <div class="brs-spotlight-body">
+        <div class="brs-spotlight-left" id="brs-spotlight-left"></div>
+        <div class="brs-spotlight-right">
+          <div class="brs-hist-lbl">Case Value Distribution · 1,000 Simulations</div>
+          <div class="brs-hist-wrap" id="brs-hist-wrap"><div style="color:#2a2a2a;font-size:9px;padding-top:12px">Loading...</div></div>
+          <div class="brs-total-sales" id="brs-total-sales"></div>
+        </div>
+      </div>
+      <div class="brs-takeaway">
+        <span class="brs-ta-arrow">→</span>
+        <div class="brs-ta-text" contenteditable="plaintext-only" data-ph="Add a takeaway for this slide..."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 04 · Chase the Chase -->
+  <div class="br-slide-card">
+    <div class="br-slide-meta">
+      <div class="br-slide-num">04</div>
+      <div class="br-slide-title-lbl">Chase the Chase</div>
+      <label class="br-slide-check"><input type="checkbox" class="br-export-check" data-slide="brs-chase" checked> Include</label>
+    </div>
+    <div class="brs" id="brs-chase">
+      <div class="brs-accent" id="brs-chase-accent"></div>
+      <div class="brs-hd">
+        <div>
+          <div class="brs-eyebrow">GhostLadder Market Report</div>
+          <div class="brs-title">CHASE THE CHASE</div>
+          <div class="brs-sub">Top variants by avg price · All active sets</div>
+        </div>
+        <span class="brs-brand">ghostladder.com</span>
+      </div>
+      <div class="brs-chase-body" id="brs-chase-body"></div>
+      <div class="brs-takeaway">
+        <span class="brs-ta-arrow">→</span>
+        <div class="brs-ta-text" contenteditable="plaintext-only" data-ph="Add a takeaway for this slide..."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 · Ace of Base -->
+  <div class="br-slide-card">
+    <div class="br-slide-meta">
+      <div class="br-slide-num">05</div>
+      <div class="br-slide-title-lbl">Ace of Base</div>
+      <label class="br-slide-check"><input type="checkbox" class="br-export-check" data-slide="brs-ace" checked> Include</label>
+    </div>
+    <div class="brs" id="brs-ace">
+      <div class="brs-accent" id="brs-ace-accent"></div>
+      <div class="brs-hd">
+        <div>
+          <div class="brs-eyebrow">Ace of Base</div>
+          <div class="brs-title" id="brs-ace-title">—</div>
+          <div class="brs-sub" id="brs-ace-sub">—</div>
+        </div>
+        <span class="brs-brand">ghostladder.com</span>
+      </div>
+      <div class="brs-ace-body">
+        <div class="brs-ace-left">
+          <div class="brs-ace-price-lbl">Avg. Base Price</div>
+          <div class="brs-ace-price" id="brs-ace-price">—</div>
+          <div class="brs-ace-sales-lbl" id="brs-ace-sales-lbl">—</div>
+          <div class="brs-ace-slider-wrap" id="brs-ace-slider"></div>
+        </div>
+        <div class="brs-ace-right">
+          <img id="brs-ace-fig" class="brs-ace-fig" src="" alt="" style="display:none" onerror="this.style.display='none'">
+          <div class="brs-ace-player-name" id="brs-ace-player-name">—</div>
+        </div>
+      </div>
+      <div class="brs-takeaway">
+        <span class="brs-ta-arrow">→</span>
+        <div class="brs-ta-text" contenteditable="plaintext-only" data-ph="Add a takeaway for this slide..."></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /breaker-deck -->
+
+</div><!-- /slides-wrap -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────────────────────
+const SB_URL  = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_ANON = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const R_H = { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let allData       = null;   // populated by loadData(); also read by estimate-engine.js
+let scope         = null;   // { type: 'league'|'set', value: string }
+let slideMode     = 'landscape'; // 'landscape' | 'breaker'
+let brSpotlightSet  = null; // set name for Slide 3 (Set Spotlight)
+let brAcePlayer     = null; // player name for Slide 5 (Ace of Base)
+
+const LEAGUE_COLORS = {
+  NBA:  '#e8ff47',
+  WNBA: '#ff9f43',
+  MLB:  '#4fd1ff',
+};
+const VCOLORS = {
+  Fire: '#ff4040', Chrome: '#4fd1ff', Gold: '#f5c842',
+  Emerald: '#3ddc84', Victory: '#c084fc', Vides: '#ff9f43',
+  'Bet On Women': '#ff80c8', SP: '#c084fc', Base: '#555',
+};
+const VARIANT_ORDER = ['Fire','Chrome','Gold','Emerald','Victory','Vides','Bet On Women','SP','Base'];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Supabase helpers
+// ─────────────────────────────────────────────────────────────────────────────
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, { headers: R_H });
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+async function rpc(fn, p = {}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST', headers: R_H, body: JSON.stringify(p)
+  });
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+async function sbGetAll(table, qs, pageSize = 1000) {
+  let all = [], offset = 0;
+  while (true) {
+    const page = await sbGet(table, `${qs}&limit=${pageSize}&offset=${offset}`);
+    all = all.concat(page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+const _slug    = n => (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/\./g,'').replace(/[^a-z0-9\s]/g,'').trim().replace(/\s+/g,'_');
+const _slugSet = n => (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+const _normVar = v => {
+  const l = (v||'').toLowerCase();
+  if (l.includes('fire'))    return 'fire';
+  if (l.includes('gold'))    return 'gold';
+  if (l.includes('chrome'))  return 'chrome';
+  if (l.includes('emerald')) return 'emerald';
+  if (l.includes('victory')) return 'victory';
+  if (l.includes('vides'))   return 'vides';
+  if (l.includes('bet'))     return 'bet-on-women';
+  if (l.includes('sp'))      return 'sp';
+  return 'base';
+};
+const figUrl = (player, variant, setName) =>
+  `assets/figures/${_slugSet(setName)}/${_slug(player)}_${_normVar(variant)}.png`;
+
+function fmt$(v) {
+  if (!v && v !== 0) return '—';
+  if (v >= 1000) return '$' + (v/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+  return '$' + Math.round(v).toLocaleString();
+}
+function fmtFull$(v) {
+  if (!v && v !== 0) return '—';
+  return '$' + Math.round(v).toLocaleString();
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'2-digit' });
+}
+function today() {
+  return new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+// Best price from a PI row — uses 90d-default recency (matches sets.html default)
+function bestPrice(p) {
+  if (!p) return null;
+  if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
+  if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+  if (p.lastSalePrice > 0) return p.lastSalePrice;
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data loading
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const [pi, rawSalesRaw, setsData, setMathData, paramsData, gradedSalesData] = await Promise.all([
+      rpc('get_price_intelligence'),
+      sbGetAll('sales',
+        'select=player,set_id,variant,price,date,afa_grade' +
+        '&or=(status.neq.invalid,status.is.null)&flagged=neq.true&order=date.desc'),
+      sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true&order=name.asc'),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&or=(status.neq.invalid,status.is.null)'),
+    ]);
+
+    // set_id → name/cfg
+    const setIdToName = {};
+    setsData.forEach(s => { setIdToName[s.id] = s.name; });
+
+    // PI map
+    const piMap = {};
+    pi.filter(r => r.player && r.player !== 'Unknown').forEach(r => {
+      piMap[`${r.set_name}|||${r.player}|||${r.variant}`] = {
+        set: r.set_name, player: r.player, variant: r.variant,
+        totalSales: +r.total_sales || 0,
+        avgPrice:   +r.avg_price   || 0,
+        avg30d:     +r.avg_30d     || 0, sales30d: +r.sales_30d || 0,
+        avg90d:     +r.avg_90d     || 0, sales90d: +r.sales_90d || 0,
+        lastSaleDate:  r.last_sale_date,
+        lastSalePrice: +r.last_sale_price || 0,
+      };
+    });
+
+    // set_math
+    const setMath = {};
+    setMathData.forEach(row => {
+      const setName = setIdToName[row.set_id];
+      if (!setName) return;
+      if (!setMath[setName]) setMath[setName] = [];
+      setMath[setName].push({ player: row.player, variant: row.variant, population: +row.population });
+    });
+
+    // Attach set_name to raw sales
+    const rawSales = rawSalesRaw.map(s => ({
+      ...s,
+      set_name: setIdToName[s.set_id] || null,
+      league:   setsData.find(x => x.id === s.set_id)?.league || null,
+    })).filter(s => s.set_name && s.price > 0);
+
+    // products array for estimate engine
+    const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
+      set: r.set_name, player: r.player, variant: r.variant,
+      totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+      avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+      avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+      lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+    }));
+
+    // Grading normalization (removes graded sale inflation from estimates)
+    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
+    applyGradingNorm(products, gradedNormMap);
+
+    const setLeagueMap = {};
+    setsData.forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
+
+    const activeWeights = (paramsData || [])[0] || null;
+
+    // allData is read by estimate-engine.js global functions
+    allData = { setsData, piMap, setMath, rawSales, products, activeWeights, setLeagueMap, signalMap: {} };
+
+    buildControls();
+    buildBreakerControls();
+    document.getElementById('slide-loading').style.display = 'none';
+    document.getElementById('slide').style.display = slideMode === 'portrait' ? 'flex' : 'none';
+    document.getElementById('slide-ls').style.display = slideMode === 'landscape' ? 'flex' : 'none';
+    document.getElementById('slide-notes').style.display = 'block';
+
+    // Default: first league
+    const firstLeague = [...new Set(setsData.map(s => (s.league||'').toUpperCase()).filter(Boolean))].sort()[0];
+    if (firstLeague) selectLeague(firstLeague);
+
+  } catch(e) {
+    document.getElementById('slide-loading').innerHTML =
+      `<span style="color:#ff4040;font-size:10px">Error: ${e.message}</span>`;
+    console.error(e);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Slide mode toggle (portrait ↔ landscape)
+// ─────────────────────────────────────────────────────────────────────────────
+function setSlideMode(mode) {
+  slideMode = mode;
+  const isBreaker = mode === 'breaker';
+
+  // Tab active states
+  document.querySelectorAll('.slide-type-tab').forEach((t, i) => {
+    t.classList.toggle('active',
+      (i === 0 && mode === 'landscape') ||
+      (i === 1 && mode === 'breaker'));
+  });
+
+  const portrait   = document.getElementById('slide');
+  const landscape  = document.getElementById('slide-ls');
+  const stage      = document.getElementById('slide-stage');
+  const deck       = document.getElementById('breaker-deck');
+  const setCtrl    = document.getElementById('setstats-controls');
+  const brCtrl     = document.getElementById('breaker-controls');
+  const notes      = document.getElementById('slide-notes');
+
+  if (portrait)  portrait.style.display  = mode === 'portrait'  ? 'flex' : 'none';
+  if (landscape) landscape.style.display = mode === 'landscape' ? 'flex' : 'none';
+  if (stage)     stage.style.display     = isBreaker ? 'none' : 'flex';
+  if (deck)      deck.classList.toggle('active', isBreaker);
+  if (setCtrl)   setCtrl.style.display   = isBreaker ? 'none' : 'flex';
+  if (brCtrl)    brCtrl.style.display    = isBreaker ? 'flex' : 'none';
+  if (notes)     notes.style.display     = (!isBreaker && allData) ? 'block' : 'none';
+
+  if (isBreaker && allData) renderBreakerDeck();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Controls
+// ─────────────────────────────────────────────────────────────────────────────
+function buildControls() {
+  const leagues = [...new Set(allData.setsData.map(s => (s.league||'').toUpperCase()).filter(Boolean))].sort();
+
+  // League chips
+  const lcEl = document.getElementById('league-chips');
+  lcEl.innerHTML = leagues.map(lg =>
+    `<button class="chip" data-league="${lg}" onclick="selectLeague('${lg}')">${lg}</button>`
+  ).join('');
+}
+
+function selectLeague(league) {
+  scope = { type: 'league', value: league };
+
+  // League chip active states
+  document.querySelectorAll('#league-chips .chip').forEach(b =>
+    b.classList.toggle('active', b.dataset.league === league)
+  );
+
+  // Set chips for this league
+  const setsInLeague = allData.setsData.filter(s => (s.league||'').toUpperCase() === league);
+  const setRow = document.getElementById('set-row');
+  const scEl   = document.getElementById('set-chips');
+
+  if (setsInLeague.length) {
+    setRow.style.display = 'flex';
+    scEl.innerHTML = setsInLeague.map(s => {
+      const esc = s.name.replace(/'/g,"\\'");
+      return `<button class="chip" data-set="${s.name}" onclick="selectSet('${esc}')">${s.name}</button>`;
+    }).join('');
+  } else {
+    setRow.style.display = 'none';
+  }
+
+  renderSlide();
+}
+
+function selectSet(setName) {
+  scope = { type: 'set', value: setName };
+  const cfg = allData.setsData.find(s => s.name === setName);
+  const league = (cfg?.league || '').toUpperCase();
+
+  // Set chip active state; show league chip as context (not active)
+  document.querySelectorAll('#set-chips .chip').forEach(b =>
+    b.classList.toggle('active', b.dataset.set === setName)
+  );
+  document.querySelectorAll('#league-chips .chip').forEach(b => {
+    b.classList.remove('active');
+    if (b.dataset.league === league) b.classList.add('league-context');
+    else b.classList.remove('league-context');
+  });
+
+  renderSlide();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Resolve scope → list of set names + cfgs
+// ─────────────────────────────────────────────────────────────────────────────
+function scopeSets() {
+  if (!scope || !allData) return [];
+  if (scope.type === 'set') {
+    const cfg = allData.setsData.find(s => s.name === scope.value);
+    return cfg ? [cfg] : [];
+  }
+  // league
+  return allData.setsData.filter(s => (s.league||'').toUpperCase() === scope.value);
+}
+
+function scopeLeague() {
+  if (!scope) return '';
+  if (scope.type === 'league') return scope.value;
+  return (allData.setsData.find(s => s.name === scope.value)?.league || '').toUpperCase();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compute case stats for a set (model-blend, 90d prices)
+// ─────────────────────────────────────────────────────────────────────────────
+function computeSetStats(setName, cfg) {
+  const mathRows  = allData.setMath[setName] || [];
+  const casePack  = +cfg.figures_per_case || 12;
+  const casePrice = +cfg.case_price || 0;
+  const hitRatio  = +cfg.hit_ratio  || 1.02;
+
+  // Avg Base — player-equally-weighted
+  const baseVals = {};
+  mathRows.filter(r => r.variant === 'Base').forEach(r => {
+    const pi = allData.piMap[`${setName}|||${r.player}|||Base`];
+    const p  = pi ? bestPrice(pi) : null;
+    if (p && p > 0) baseVals[r.player] = p;
+  });
+  const avgBase = Object.values(baseVals).length
+    ? Math.round(Object.values(baseVals).reduce((a,b) => a+b,0) / Object.values(baseVals).length)
+    : null;
+
+  // Avg Hit — population-weighted, model-blend fills gaps
+  const setProds = allData.products.filter(p => p.set === setName && p.player && p.player !== 'Unknown');
+  const { estimates: setEst } = buildEstimates(setName, setProds, allData.activeWeights);
+
+  let fullGMV = 0, fullPop = 0;
+  const nonBase = mathRows.filter(r => r.variant !== 'Base' && r.population > 0);
+  nonBase.forEach(({ player, variant, population }) => {
+    const pi       = allData.piMap[`${setName}|||${player}|||${variant}`];
+    let   usePrice = pi ? bestPrice(pi) : null;
+    // model-blend: fill gap with estimate
+    if (!usePrice) {
+      const est = setEst[`${player}|||${variant}`];
+      if (est && est.price > 0) usePrice = est.price;
+    }
+    if (usePrice && usePrice > 0) { fullGMV += population * usePrice; fullPop += population; }
+  });
+  const avgHit = fullPop > 0 ? Math.round(fullGMV / fullPop) : null;
+
+  let expectedValue = null, roi = null;
+  if (avgHit && avgBase && casePrice > 0) {
+    expectedValue = Math.round((casePack - hitRatio) * avgBase + hitRatio * avgHit);
+    roi = Math.round(((expectedValue - casePrice) / casePrice) * 100);
+  }
+
+  const totalSalesHere = allData.rawSales.filter(s => s.set_name === setName).length;
+
+  return { avgBase, avgHit, expectedValue, roi, casePrice, casePack, hitRatio, totalSales: totalSalesHere };
+}
+
+// Aggregate case stats across multiple sets (for league view)
+function computeScopeEconomics(setCfgs) {
+  const perSet = setCfgs.map(cfg => computeSetStats(cfg.name, cfg));
+  const valid  = perSet.filter(s => s.roi !== null && s.expectedValue !== null);
+  if (!valid.length) return { casePrice: null, expectedValue: null, roi: null };
+
+  const avgCasePrice  = Math.round(valid.reduce((s,x) => s + x.casePrice, 0) / valid.length);
+  const avgCaseValue  = Math.round(valid.reduce((s,x) => s + x.expectedValue, 0) / valid.length);
+  const avgROI        = Math.round(valid.reduce((s,x) => s + x.roi, 0) / valid.length);
+  const baseValid     = valid.filter(x => x.avgBase);
+  const hitValid      = valid.filter(x => x.avgHit);
+  const avgBase       = baseValid.length ? Math.round(baseValid.reduce((s,x) => s + x.avgBase, 0) / baseValid.length) : null;
+  const avgHit        = hitValid.length  ? Math.round(hitValid.reduce((s,x) => s + x.avgHit, 0) / hitValid.length) : null;
+  return { casePrice: avgCasePrice, expectedValue: avgCaseValue, roi: avgROI, setCount: valid.length, avgBase, avgHit };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compute variant averages for scope
+// ─────────────────────────────────────────────────────────────────────────────
+function computeVariantAvgs(setCfgs) {
+  // player-equally-weighted average per variant, across all sets in scope
+  const byVariant = {}; // variant → { sum, count }
+
+  setCfgs.forEach(cfg => {
+    const setName = cfg.name;
+    // Get all non-Base player-variant combos in this set
+    const keys = Object.keys(allData.piMap).filter(k => k.startsWith(setName + '|||'));
+    const playersByVariant = {};
+
+    keys.forEach(k => {
+      const [, player, variant] = k.split('|||');
+      if (variant === 'Base') return;
+      const pi = allData.piMap[k];
+      const p  = bestPrice(pi);
+      if (!p || p <= 0) return;
+      if (!playersByVariant[variant]) playersByVariant[variant] = {};
+      // one price per player per variant (take max if multiple sets same player)
+      if (!playersByVariant[variant][player] || p > playersByVariant[variant][player])
+        playersByVariant[variant][player] = p;
+    });
+
+    Object.entries(playersByVariant).forEach(([variant, players]) => {
+      const vals = Object.values(players);
+      if (!vals.length) return;
+      const avg = vals.reduce((a,b) => a+b,0) / vals.length;
+      if (!byVariant[variant]) byVariant[variant] = { sum: 0, count: 0, playerCount: 0 };
+      byVariant[variant].sum         += avg * vals.length;
+      byVariant[variant].count       += vals.length;
+      byVariant[variant].playerCount += vals.length;
+    });
+  });
+
+  return Object.entries(byVariant)
+    .map(([variant, d]) => ({ variant, avgPrice: Math.round(d.sum / d.count), playerCount: d.playerCount }))
+    .filter(v => v.avgPrice > 0)
+    .sort((a, b) => {
+      const ai = VARIANT_ORDER.indexOf(a.variant), bi = VARIANT_ORDER.indexOf(b.variant);
+      return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render slide
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSlide() {
+  if (!allData || !scope) return;
+
+  const setCfgs = scopeSets();
+  if (!setCfgs.length) return;
+
+  const league     = scopeLeague();
+  const accentColor = LEAGUE_COLORS[league] || '#e8ff47';
+  const isSetMode   = scope.type === 'set';
+  const scopeLabel  = isSetMode ? scope.value : `${league} League`;
+
+  // ── Accent line color
+  document.getElementById('sl-accent').style.background = accentColor;
+
+  // ── Header
+  document.getElementById('sl-eyebrow').textContent  = league || 'GHOSTLADDER';
+  document.getElementById('sl-headline').textContent = isSetMode ? 'Set Stats' : 'Market Intel';
+  document.getElementById('sl-sub').textContent      = isSetMode
+    ? scope.value
+    : `${setCfgs.length} active set${setCfgs.length !== 1 ? 's' : ''} · ${league}`;
+
+  // Logo: use first set's image_url in set mode
+  const logoImg = document.getElementById('sl-logo');
+  const logoPh  = document.getElementById('sl-logo-ph');
+  const logoSrc = isSetMode ? (setCfgs[0]?.image_url || '') : '';
+  if (logoSrc) {
+    logoImg.src = logoSrc;
+    logoImg.style.display = 'block';
+    logoPh.style.display  = 'none';
+  } else {
+    logoImg.style.display = 'none';
+    logoPh.style.display  = 'flex';
+  }
+
+  // ── Shared computations (used by both portrait and landscape)
+  const setNames      = setCfgs.map(c => c.name);
+  const saleSub       = isSetMode ? scope.value : `${league} · All Sets`;
+  const econ          = computeScopeEconomics(setCfgs);
+  const variantData   = computeVariantAvgs(setCfgs);
+  const scopeSales    = allData.rawSales.filter(s => setNames.includes(s.set_name));
+  const totalSales    = scopeSales.length;
+  const players       = new Set(scopeSales.map(s => s.player));
+  const mostRecent    = scopeSales[0]; // already sorted desc
+  const recentDateStr = mostRecent?.date
+    ? new Date(mostRecent.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
+    : '—';
+  const footnote = `Based on ${totalSales.toLocaleString()} real secondary market sales · As of ${today()}`;
+
+  // ── PORTRAIT slide population ──────────────────────────────────────────────
+  document.getElementById('sl-sales-sub').textContent = `All-time · ${saleSub}`;
+  renderTopSales(setNames, 'sl-top-sales');
+  renderCaseStats(econ, accentColor);
+  renderVariantChart(variantData.slice(0, 3), accentColor);
+  renderSnapshot(totalSales, players.size, setCfgs.length, recentDateStr);
+  document.getElementById('sl-footnote').textContent = footnote;
+
+  // ── LANDSCAPE slide population ─────────────────────────────────────────────
+  document.getElementById('lsl-accent').style.background   = accentColor;
+  document.getElementById('lsl-eyebrow').textContent       = league || 'GHOSTLADDER';
+  document.getElementById('lsl-headline').textContent      = isSetMode ? 'Set Stats' : 'Market Intel';
+  document.getElementById('lsl-sub').textContent           = isSetMode
+    ? scope.value : `${setCfgs.length} active set${setCfgs.length !== 1 ? 's' : ''} · ${league}`;
+
+  const lslLogoImg = document.getElementById('lsl-logo');
+  const lslLogoPh  = document.getElementById('lsl-logo-ph');
+  if (logoSrc) {
+    lslLogoImg.src = logoSrc; lslLogoImg.style.display = 'block'; lslLogoPh.style.display = 'none';
+  } else {
+    lslLogoImg.style.display = 'none'; lslLogoPh.style.display = 'flex';
+  }
+
+  document.getElementById('lsl-sales-sub').textContent = `All-time · ${saleSub}`;
+  renderTopSalesLs(setNames, 'lsl-top-sales');
+  renderCaseStatsLs(econ, accentColor);
+  renderVariantChartLs(variantData.slice(0, 5), accentColor);
+  document.getElementById('lsl-footnote').textContent = footnote;
+
+  // ── Notes panel
+  renderNotes(econ, totalSales, players.size, variantData, setCfgs.length);
+}
+
+// ─── Top 5 Sales section ────────────────────────────────────────────────────
+function renderTopSales(setNames, elId = 'sl-top-sales') {
+  const filtered = allData.rawSales.filter(s => setNames.includes(s.set_name));
+  const top5 = [...filtered].sort((a,b) => b.price - a.price).slice(0, 5);
+
+  const el = document.getElementById(elId);
+  if (!top5.length) { el.innerHTML = '<div style="color:#333;font-size:10px;padding:8px 0">No sales data</div>'; return; }
+
+  el.innerHTML = top5.map((s, i) => {
+    const rankCls  = i < 3 ? 'top3' : '';
+    const varColor = VCOLORS[s.variant] || '#555';
+    const img      = figUrl(s.player, s.variant, s.set_name);
+    const afaBadge = s.afa_grade
+      ? `<span class="sl-sale-afa">🏆 ${s.afa_grade}</span>` : '';
+    // Show set name only in league mode (multiple sets)
+    const setLine  = setNames.length > 1
+      ? `<span class="sl-sale-set">${s.set_name}</span>` : '';
+
+    return `<div class="sl-sale-row">
+      <div class="sl-sale-rank ${rankCls}">#${i+1}</div>
+      <div class="sl-sale-img-wrap">
+        <img class="sl-sale-img" src="${img}" alt="${s.player}"
+             onerror="this.style.display='none'">
+      </div>
+      <div class="sl-sale-body">
+        <div class="sl-sale-player">${s.player}</div>
+        <div class="sl-sale-meta">
+          <span class="sl-sale-var" style="color:${varColor}">${s.variant}</span>
+          ${setLine}${afaBadge}
+        </div>
+      </div>
+      <div class="sl-sale-price">${fmtFull$(s.price)}</div>
+      <div class="sl-sale-date">${fmtDate(s.date)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Top 5 Sales (landscape variant: bigger images, smaller names, no date) ──
+function renderTopSalesLs(setNames, elId) {
+  const filtered = allData.rawSales.filter(s => setNames.includes(s.set_name));
+  const top5 = [...filtered].sort((a,b) => b.price - a.price).slice(0, 5);
+
+  const el = document.getElementById(elId);
+  if (!top5.length) { el.innerHTML = '<div style="color:#333;font-size:10px;padding:8px 0">No sales data</div>'; return; }
+
+  el.innerHTML = top5.map((s, i) => {
+    const rankCls  = i < 3 ? 'top3' : '';
+    const varColor = VCOLORS[s.variant] || '#555';
+    const img      = figUrl(s.player, s.variant, s.set_name);
+    const afaBadge = s.afa_grade
+      ? `<span class="sl-sale-afa">🏆 ${s.afa_grade}</span>` : '';
+    const setLine  = setNames.length > 1
+      ? `<span class="sl-sale-set">${s.set_name}</span>` : '';
+
+    return `<div class="sl-sale-row-ls">
+      <div class="sl-sale-rank ${rankCls}">#${i+1}</div>
+      <div class="sl-sale-img-wrap-lg">
+        <img class="sl-sale-img-lg" src="${img}" alt="${s.player}"
+             onerror="this.style.display='none'">
+      </div>
+      <div class="sl-sale-body">
+        <div class="sl-sale-player-sm">${s.player}</div>
+        <div class="sl-sale-meta">
+          <span class="sl-sale-var" style="color:${varColor}">${s.variant}</span>
+          ${setLine}${afaBadge}
+        </div>
+      </div>
+      <div class="sl-sale-price">${fmtFull$(s.price)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Case Economics section ─────────────────────────────────────────────────
+function renderCaseStats(econ, accentColor) {
+  const roiVal  = econ.roi;
+  const roiCls  = roiVal === null ? '' : roiVal >= 0 ? 'up' : 'down';
+  const roiTxt  = roiVal === null ? '—'
+    : (roiVal >= 0 ? '+' : '') + roiVal + '%';
+  const roiSub  = econ.setCount > 1
+    ? `avg across ${econ.setCount} sets` : 'model blend · 90d';
+
+  document.getElementById('sl-case-stats').innerHTML = `
+    <div class="sl-case-box">
+      <div class="sl-case-lbl">Avg. Case Price</div>
+      <div class="sl-case-val">${econ.casePrice ? fmtFull$(econ.casePrice) : '—'}</div>
+      <div class="sl-case-sub">retail / wholesale</div>
+    </div>
+    <div class="sl-case-box">
+      <div class="sl-case-lbl">Avg. Case Value</div>
+      <div class="sl-case-val">${econ.expectedValue ? fmtFull$(econ.expectedValue) : '—'}</div>
+      <div class="sl-case-sub">secondary market</div>
+    </div>
+    <div class="sl-case-box">
+      <div class="sl-case-lbl">Avg. ROI</div>
+      <div class="sl-case-val ${roiCls}">${roiTxt}</div>
+      <div class="sl-case-sub">${roiSub}</div>
+    </div>`;
+}
+
+// ─── Variant Bar Chart ───────────────────────────────────────────────────────
+function renderVariantChart(variants, accentColor) {
+  const el = document.getElementById('sl-vbar-wrap');
+  if (!variants.length) {
+    el.innerHTML = '<div style="color:#333;font-size:9px;padding-top:8px">No variant data</div>';
+    return;
+  }
+  const maxPrice = Math.max(...variants.map(v => v.avgPrice));
+
+  el.innerHTML = variants.map(v => {
+    const barColor = VCOLORS[v.variant] || accentColor;
+    const pct      = maxPrice > 0 ? (v.avgPrice / maxPrice) * 100 : 0;
+    return `<div class="sl-vbar-row">
+      <div class="sl-vbar-lbl">${v.variant}</div>
+      <div class="sl-vbar-track">
+        <div class="sl-vbar-fill" style="width:${pct.toFixed(1)}%;background:${barColor}"></div>
+      </div>
+      <div class="sl-vbar-price">${fmt$(v.avgPrice)}</div>
+      <div class="sl-vbar-sales">${v.playerCount} players</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Market Snapshot row ─────────────────────────────────────────────────────
+function renderSnapshot(totalSales, playerCount, setCount, recentDate) {
+  document.getElementById('sl-snapshot').innerHTML = `
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val">${totalSales.toLocaleString()}</div>
+      <div class="sl-snap-lbl">Total Sales</div>
+    </div>
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val">${playerCount}</div>
+      <div class="sl-snap-lbl">Players</div>
+    </div>
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val">${setCount}</div>
+      <div class="sl-snap-lbl">${setCount === 1 ? 'Set' : 'Sets'}</div>
+    </div>
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val" style="font-size:13px">${recentDate}</div>
+      <div class="sl-snap-lbl">Last Sale</div>
+    </div>`;
+}
+
+// ─── Landscape: Case Economics (2×2: base val, hit val, case val, ROI) ────────
+function renderCaseStatsLs(econ, accentColor) {
+  const roiVal = econ.roi;
+  const roiCls = roiVal === null ? '' : roiVal >= 0 ? 'up' : 'down';
+  const roiTxt = roiVal === null ? '—' : (roiVal >= 0 ? '+' : '') + roiVal + '%';
+
+  document.getElementById('lsl-case-stats').innerHTML = `
+    <div class="sl-case-box">
+      <div class="sl-case-lbl">Avg. Base Value</div>
+      <div class="sl-case-val">${econ.avgBase ? fmtFull$(econ.avgBase) : '—'}</div>
+    </div>
+    <div class="sl-case-box">
+      <div class="sl-case-lbl">Avg. Hit Value</div>
+      <div class="sl-case-val">${econ.avgHit ? fmtFull$(econ.avgHit) : '—'}</div>
+    </div>
+    <div class="sl-case-box">
+      <div class="sl-case-lbl">Est. Case Value</div>
+      <div class="sl-case-val">${econ.expectedValue ? fmtFull$(econ.expectedValue) : '—'}</div>
+    </div>
+    <div class="sl-case-box">
+      <div class="sl-case-lbl">Expected Case ROI</div>
+      <div class="sl-case-val ${roiCls}">${roiTxt}</div>
+    </div>`;
+}
+
+// ─── Landscape: Variant bars (taller, landscape-specific CSS classes) ─────────
+function renderVariantChartLs(variants, accentColor) {
+  const el = document.getElementById('lsl-vbar-wrap');
+  if (!variants.length) {
+    el.innerHTML = '<div style="color:#333;font-size:9px;padding-top:8px">No variant data</div>';
+    return;
+  }
+  const maxPrice = Math.max(...variants.map(v => v.avgPrice));
+
+  el.innerHTML = variants.map(v => {
+    const barColor = VCOLORS[v.variant] || accentColor;
+    const pct      = maxPrice > 0 ? (v.avgPrice / maxPrice) * 100 : 0;
+    return `<div class="sl-ls-vbar-row">
+      <div class="sl-vbar-lbl">${v.variant}</div>
+      <div class="sl-ls-vbar-track">
+        <div class="sl-ls-vbar-fill" style="width:${pct.toFixed(1)}%;background:${barColor}"></div>
+      </div>
+      <div class="sl-vbar-price">${fmt$(v.avgPrice)}</div>
+      <div class="sl-vbar-sales">${v.playerCount}p</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Landscape: Snapshot (2×2 grid inside middle column) ─────────────────────
+function renderSnapshotLs(totalSales, playerCount, setCount, recentDate) {
+  document.getElementById('lsl-snapshot').innerHTML = `
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val">${totalSales.toLocaleString()}</div>
+      <div class="sl-snap-lbl">Total Sales</div>
+    </div>
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val">${playerCount}</div>
+      <div class="sl-snap-lbl">Players</div>
+    </div>
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val">${setCount}</div>
+      <div class="sl-snap-lbl">${setCount === 1 ? 'Set' : 'Sets'}</div>
+    </div>
+    <div class="sl-snap-cell">
+      <div class="sl-snap-val" style="font-size:13px">${recentDate}</div>
+      <div class="sl-snap-lbl">Last Sale</div>
+    </div>`;
+}
+
+// ─── Notes panel ──────────────────────────────────────────────────────────────
+function renderNotes(econ, totalSales, playerCount, variantData, setCount) {
+  const lines = [
+    { key: 'Case ROI',    val: econ.roi !== null ? (econ.roi >= 0 ? '+' : '') + econ.roi + '%' : '—',
+                          sub: 'Model blend · 90-day prices' },
+    { key: 'Case Price',  val: econ.casePrice ? fmtFull$(econ.casePrice) : '—', sub: 'Avg retail' },
+    { key: 'Case Value',  val: econ.expectedValue ? fmtFull$(econ.expectedValue) : '—', sub: 'Avg secondary mkt' },
+    { key: 'Top Variant', val: variantData[0]?.variant || '—', sub: variantData[0] ? fmt$(variantData[0].avgPrice) + ' avg' : '' },
+    { key: 'Total Sales', val: totalSales.toLocaleString(), sub: `${playerCount} players · ${setCount} set${setCount !== 1 ? 's' : ''}` },
+  ];
+  document.getElementById('notes-content').innerHTML = lines.map(n => `
+    <div class="note-row">
+      <div class="note-key">${n.key}</div>
+      <div class="note-val">${n.val}</div>
+      ${n.sub ? `<div class="note-sub">${n.sub}</div>` : ''}
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Breaker Report — Controls
+// ─────────────────────────────────────────────────────────────────────────────
+function buildBreakerControls() {
+  if (!allData) return;
+
+  // Default month
+  const monthEl = document.getElementById('br-month');
+  if (monthEl && !monthEl.value) {
+    monthEl.value = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  // Default spotlight set: first NBA 2025-26 set, else first NBA set, else first set
+  if (!brSpotlightSet) {
+    const nba = allData.setsData.filter(s => (s.league||'').toUpperCase() === 'NBA');
+    brSpotlightSet = (nba.find(s => s.name.includes('2025')) || nba[0] || allData.setsData[0])?.name || null;
+  }
+
+  // Set chips
+  const setChips = document.getElementById('br-set-chips');
+  if (setChips) {
+    setChips.innerHTML = allData.setsData.map(s => {
+      const esc = s.name.replace(/'/g, "\\'");
+      return `<button class="chip${s.name === brSpotlightSet ? ' active' : ''}"
+        data-set="${s.name}" onclick="selectBrSet('${esc}')">${s.name}</button>`;
+    }).join('');
+  }
+
+  buildAcePlayerChips();
+}
+
+function selectBrSet(setName) {
+  brSpotlightSet = setName;
+  document.querySelectorAll('#br-set-chips .chip').forEach(b =>
+    b.classList.toggle('active', b.dataset.set === setName)
+  );
+  brAcePlayer = null;
+  buildAcePlayerChips();
+  if (slideMode === 'breaker') renderBreakerDeck();
+}
+
+function buildAcePlayerChips() {
+  if (!brSpotlightSet || !allData) return;
+  const players = Object.keys(allData.piMap)
+    .filter(k => k.startsWith(brSpotlightSet + '|||') && k.endsWith('|||Base'))
+    .map(k => k.split('|||')[1])
+    .sort();
+
+  if (!brAcePlayer) {
+    brAcePlayer = players.find(p => p.toLowerCase().includes('flagg'))
+      || players.find(p => p.toLowerCase().includes('cooper'))
+      || players[0] || null;
+  }
+
+  const pChips = document.getElementById('br-player-chips');
+  if (pChips) {
+    pChips.innerHTML = players.map(p => {
+      const esc = p.replace(/'/g, "\\'");
+      return `<button class="chip${p === brAcePlayer ? ' active' : ''}"
+        data-player="${p}" onclick="selectBrPlayer('${esc}')">${p}</button>`;
+    }).join('');
+  }
+}
+
+function selectBrPlayer(playerName) {
+  brAcePlayer = playerName;
+  document.querySelectorAll('#br-player-chips .chip').forEach(b =>
+    b.classList.toggle('active', b.dataset.player === playerName)
+  );
+  if (slideMode === 'breaker') renderBreakerDeck();
+}
+
+function brToggleAll(checked) {
+  document.querySelectorAll('.br-export-check').forEach(c => c.checked = checked);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Breaker Report — Monte Carlo Simulation
+// ─────────────────────────────────────────────────────────────────────────────
+function simulateCases(setCfg, n = 1000) {
+  const setName   = setCfg.name;
+  const casePack  = +setCfg.figures_per_case || 12;
+  const hitRatio  = +setCfg.hit_ratio  || 1;
+  const casePrice = +setCfg.case_price || 0;
+
+  // Base price pool from real sales
+  const baseSales = allData.rawSales
+    .filter(s => s.set_name === setName && (s.variant||'').toLowerCase() === 'base' && s.price > 0)
+    .map(s => s.price);
+  if (!baseSales.length) return null;
+
+  // Hit price pool (population-weighted; fill gaps with model estimates)
+  const hitPrices = [];
+  const mathRows  = allData.setMath[setName] || [];
+  const setProds  = allData.products.filter(p => p.set === setName);
+  const { estimates: setEst } = buildEstimates(setName, setProds, allData.activeWeights);
+
+  mathRows.filter(r => r.variant !== 'Base' && r.population > 0).forEach(({ player, variant, population }) => {
+    const pi = allData.piMap[`${setName}|||${player}|||${variant}`];
+    let price = pi ? bestPrice(pi) : null;
+    if (!price) { const est = setEst[`${player}|||${variant}`]; if (est?.price > 0) price = est.price; }
+    if (!price || price <= 0) return;
+    const copies = Math.min(Math.ceil(population), 6);
+    for (let i = 0; i < copies; i++) hitPrices.push(price);
+  });
+  if (!hitPrices.length) return null;
+
+  // Simulate
+  const vals = [];
+  for (let c = 0; c < n; c++) {
+    let v = 0;
+    const hits  = Math.floor(hitRatio) + (Math.random() < (hitRatio % 1) ? 1 : 0);
+    const bases = casePack - hits;
+    for (let b = 0; b < bases; b++) v += baseSales[Math.floor(Math.random() * baseSales.length)];
+    for (let h = 0; h < hits;  h++) v += hitPrices[Math.floor(Math.random() * hitPrices.length)];
+    vals.push(v);
+  }
+  vals.sort((a, b) => a - b);
+
+  return {
+    caseValues: vals,
+    jackpotMin: vals[Math.floor(n * 0.9)],
+    jackpotMax: vals[n - 1],
+    median:     vals[Math.floor(n / 2)],
+    mean:       Math.round(vals.reduce((s, v) => s + v, 0) / n),
+    casePrice,  n,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Breaker Report — Histogram renderer
+// ─────────────────────────────────────────────────────────────────────────────
+function renderBreakerHistogram(simResult, accentColor) {
+  const el = document.getElementById('brs-hist-wrap');
+  if (!simResult) { el.innerHTML = '<div style="color:#2a2a2a;font-size:9px">Insufficient data for simulation</div>'; return; }
+
+  const { caseValues, jackpotMin, casePrice, n } = simResult;
+  const W = 510, H = 162;
+  const PAD = { left: 8, right: 8, top: 36, bottom: 24 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  // Build buckets
+  const NB = 38;
+  const minV = caseValues[0], maxV = caseValues[n - 1];
+  const bSz  = (maxV - minV) / NB;
+  const buckets = Array(NB).fill(0);
+  caseValues.forEach(v => { const bi = Math.min(Math.floor((v - minV) / bSz), NB - 1); buckets[bi]++; });
+  const maxC   = Math.max(...buckets);
+  const jpBuck = Math.max(0, Math.floor((jackpotMin - minV) / bSz));
+  const bW     = cW / NB;
+
+  // Bars
+  const bars = buckets.map((cnt, i) => {
+    const x  = PAD.left + i * bW;
+    const bh = maxC > 0 ? (cnt / maxC) * cH : 0;
+    const y  = PAD.top + cH - bh;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(bW-0.8,0.5).toFixed(1)}" height="${bh.toFixed(1)}"
+      fill="${i >= jpBuck ? accentColor : '#1e1e1e'}" opacity="${i >= jpBuck ? '0.88' : '0.75'}"/>`;
+  }).join('');
+
+  // Jackpot zone shaded background
+  const jpX   = PAD.left + jpBuck * bW;
+  const jpBg  = `<rect x="${jpX.toFixed(1)}" y="${PAD.top}" width="${(PAD.left + cW - jpX).toFixed(1)}" height="${cH}"
+    fill="${accentColor}" opacity="0.04"/>`;
+
+  // Jackpot annotation (top-left of zone)
+  const labelX = Math.min(jpX + 4, W - 140);
+  const jpAnnotation = `
+    <line x1="${jpX.toFixed(1)}" y1="${PAD.top - 2}" x2="${jpX.toFixed(1)}" y2="${PAD.top + cH}"
+      stroke="${accentColor}" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+    <text x="${labelX.toFixed(1)}" y="${(PAD.top - 22).toFixed(1)}" fill="${accentColor}"
+      font-size="8" font-family="DM Mono,monospace" letter-spacing="1.5">JACKPOT ZONE · TOP 10%</text>
+    <text x="${labelX.toFixed(1)}" y="${(PAD.top - 10).toFixed(1)}" fill="${accentColor}"
+      font-size="7" font-family="DM Mono,monospace" opacity="0.7">${fmt$(jackpotMin)} — ${fmt$(maxV)}</text>`;
+
+  // Case price reference line
+  const cpX = casePrice > minV && casePrice < maxV
+    ? PAD.left + ((casePrice - minV) / (maxV - minV)) * cW : null;
+  const cpLine = cpX ? `
+    <line x1="${cpX.toFixed(1)}" y1="${PAD.top}" x2="${cpX.toFixed(1)}" y2="${PAD.top + cH}"
+      stroke="#3a3a3a" stroke-width="1" stroke-dasharray="2 4"/>
+    <text x="${(cpX + 3).toFixed(1)}" y="${(PAD.top + cH - 3).toFixed(1)}"
+      fill="#333" font-size="6" font-family="DM Mono,monospace">CASE COST</text>` : '';
+
+  // X-axis labels
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => {
+    const x = PAD.left + t * cW;
+    return `<text x="${x.toFixed(1)}" y="${H - 4}" fill="#333" font-size="7"
+      text-anchor="middle" font-family="DM Mono,monospace">${fmt$(minV + t * (maxV - minV))}</text>`;
+  }).join('');
+
+  el.innerHTML = `<svg width="${W}" height="${H}" style="display:block;overflow:visible">
+    ${jpBg}${bars}${cpLine}${jpAnnotation}${ticks}
+  </svg>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Breaker Report — Percentile slider
+// ─────────────────────────────────────────────────────────────────────────────
+function renderBreakerSlider(playerName, setName) {
+  const el = document.getElementById('brs-ace-slider');
+  const basePrices = {};
+  Object.keys(allData.piMap)
+    .filter(k => k.startsWith(setName + '|||') && k.endsWith('|||Base'))
+    .forEach(k => {
+      const [, player] = k.split('|||');
+      const p = bestPrice(allData.piMap[k]);
+      if (p && p > 0) basePrices[player] = p;
+    });
+
+  const sorted = Object.entries(basePrices).sort((a, b) => a[1] - b[1]);
+  if (!sorted.length || !basePrices[playerName]) {
+    el.innerHTML = '<div style="color:#2a2a2a;font-size:8px;margin-top:8px">Insufficient base sales data</div>';
+    return;
+  }
+
+  const targetPrice = basePrices[playerName];
+  const minPlayer   = sorted[0][0], minPrice = sorted[0][1];
+  const maxPlayer   = sorted[sorted.length - 1][0], maxPrice = sorted[sorted.length - 1][1];
+  const rank        = sorted.filter(([, p]) => p <= targetPrice).length;
+  const pct         = Math.round((rank / sorted.length) * 100);
+  const dotPct      = maxPrice > minPrice
+    ? ((targetPrice - minPrice) / (maxPrice - minPrice)) * 100 : 50;
+
+  const label = pct >= 90 ? 'TOP 10% OF BASE CARDS IN SET'
+    : pct >= 75 ? 'TOP 25% · HIGH DEMAND'
+    : pct >= 50 ? 'ABOVE AVERAGE FOR THIS SET'
+    : pct >= 25 ? 'BELOW AVERAGE FOR THIS SET'
+    : 'BOTTOM QUARTER OF BASE CARDS';
+
+  el.innerHTML = `
+    <div class="brs-pct-names">
+      <span>${minPlayer}</span><span>${maxPlayer}</span>
+    </div>
+    <div class="brs-pct-track">
+      <div class="brs-pct-dot" style="left:${dotPct.toFixed(1)}%"></div>
+    </div>
+    <div class="brs-pct-prices">
+      <span style="color:#4a90d9">${fmt$(minPrice)}</span>
+      <span style="color:#ff9800">${fmt$(maxPrice)}</span>
+    </div>
+    <div class="brs-pct-label">${pct}th percentile · ${label}</div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Breaker Report — Main renderer
+// ─────────────────────────────────────────────────────────────────────────────
+function renderBreakerDeck() {
+  if (!allData) return;
+
+  const spotlightCfg    = allData.setsData.find(s => s.name === brSpotlightSet);
+  const spotlightLeague = spotlightCfg ? (spotlightCfg.league || '').toUpperCase() : 'NBA';
+  const accentColor     = LEAGUE_COLORS[spotlightLeague] || '#e8ff47';
+  const monthLabel      = (document.getElementById('br-month')?.value ||
+    new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })).toUpperCase();
+
+  // Accent lines on all slides
+  ['brs-cover-accent','brs-sales-accent','brs-spotlight-accent','brs-chase-accent','brs-ace-accent']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.background = accentColor; });
+
+  // ── 01 Cover ────────────────────────────────────────────────────────────────
+  const coverHl = document.getElementById('brs-cover-hl');
+  if (coverHl) coverHl.style.color = accentColor;
+  const coverPeriod = document.getElementById('brs-cover-period');
+  if (coverPeriod) coverPeriod.textContent = monthLabel;
+  const coverImg = document.getElementById('brs-cover-img');
+  if (coverImg && spotlightCfg?.image_url) {
+    coverImg.src = spotlightCfg.image_url; coverImg.style.display = 'block';
+  }
+
+  // ── 02 Top Sales (last 30 days, all active sets) ─────────────────────────────
+  const cutoff30  = new Date(Date.now() - 30 * 86400000).toISOString().substring(0, 10);
+  const recent30  = allData.rawSales.filter(s => s.date >= cutoff30).sort((a, b) => b.price - a.price).slice(0, 6);
+  const salesGrid = document.getElementById('brs-sales-grid');
+  if (salesGrid) {
+    salesGrid.innerHTML = recent30.length ? recent30.map((s, i) => {
+      const vc = VCOLORS[s.variant] || '#555';
+      return `<div class="brs-sale-row">
+        <div class="brs-sale-rank">#${i+1}</div>
+        <div class="brs-sale-img-wrap">
+          <img class="brs-sale-img" src="${figUrl(s.player, s.variant, s.set_name)}" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="brs-sale-body">
+          <div class="brs-sale-player">${s.player}</div>
+          <div class="brs-sale-meta">
+            <span class="brs-sale-var" style="color:${vc}">${s.variant}</span>
+            <span class="brs-sale-set">${s.set_name}</span>
+          </div>
+        </div>
+        <div class="brs-sale-right">
+          <div class="brs-sale-price">${fmtFull$(s.price)}</div>
+          <div class="brs-sale-date">${fmtDate(s.date)}</div>
+        </div>
+      </div>`;
+    }).join('')
+    : '<div style="color:#2a2a2a;font-size:9px;grid-column:1/-1;padding:24px 0">No sales in last 30 days</div>';
+  }
+
+  // ── 03 Set Spotlight ─────────────────────────────────────────────────────────
+  if (spotlightCfg) {
+    const stats   = computeSetStats(brSpotlightSet, spotlightCfg);
+    const roiCls  = stats.roi !== null ? (stats.roi >= 0 ? 'up' : 'down') : '';
+    const roiTxt  = stats.roi !== null ? (stats.roi >= 0 ? '+' : '') + stats.roi + '%' : '—';
+    const slTitle = document.getElementById('brs-spotlight-title');
+    if (slTitle) slTitle.textContent = brSpotlightSet;
+    const slLeft = document.getElementById('brs-spotlight-left');
+    if (slLeft) slLeft.innerHTML = `
+      <div class="brs-stat-box">
+        <div class="brs-stat-lbl">Avg. Base Value</div>
+        <div class="brs-stat-val">${stats.avgBase ? fmtFull$(stats.avgBase) : '—'}</div>
+        <div class="brs-stat-sub">Real sales only</div>
+      </div>
+      <div class="brs-stat-box">
+        <div class="brs-stat-lbl">Avg. Hit Value</div>
+        <div class="brs-stat-val">${stats.avgHit ? fmtFull$(stats.avgHit) : '—'}</div>
+        <div class="brs-stat-sub">Population-weighted est.</div>
+      </div>
+      <div class="brs-stat-box">
+        <div class="brs-stat-lbl">Avg. Case Value</div>
+        <div class="brs-stat-val">${stats.expectedValue ? fmtFull$(stats.expectedValue) : '—'}</div>
+        <div class="brs-stat-sub">Secondary market blend</div>
+      </div>
+      <div class="brs-stat-box">
+        <div class="brs-stat-lbl">Case ROI</div>
+        <div class="brs-stat-val ${roiCls}">${roiTxt}</div>
+        <div class="brs-stat-sub">vs. case cost</div>
+      </div>`;
+    const totalSalesEl = document.getElementById('brs-total-sales');
+    if (totalSalesEl) totalSalesEl.textContent =
+      `${stats.totalSales.toLocaleString()} verified secondary market sales`;
+    const simResult = simulateCases(spotlightCfg, 1000);
+    renderBreakerHistogram(simResult, accentColor);
+  }
+
+  // ── 04 Chase the Chase (all active sets, excl. Base) ─────────────────────────
+  const allVarData = computeVariantAvgs(allData.setsData).filter(v => v.variant !== 'Base').slice(0, 5);
+  const maxVP      = Math.max(...allVarData.map(v => v.avgPrice), 1);
+  const chaseBody  = document.getElementById('brs-chase-body');
+  if (chaseBody) {
+    chaseBody.innerHTML = allVarData.map(v => {
+      const bc = VCOLORS[v.variant] || accentColor;
+      return `<div class="brs-vbar-row">
+        <div class="brs-vbar-lbl">${v.variant}</div>
+        <div class="brs-vbar-track">
+          <div class="brs-vbar-fill" style="width:${((v.avgPrice/maxVP)*100).toFixed(1)}%;background:${bc}"></div>
+        </div>
+        <div class="brs-vbar-price">${fmt$(v.avgPrice)}</div>
+        <div class="brs-vbar-count">${v.playerCount} players</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── 05 Ace of Base ───────────────────────────────────────────────────────────
+  if (brAcePlayer && brSpotlightSet) {
+    const acePI    = allData.piMap[`${brSpotlightSet}|||${brAcePlayer}|||Base`];
+    const aceAvg   = acePI ? bestPrice(acePI) : null;
+    const aceSales = acePI?.totalSales || 0;
+    const aceTitle = document.getElementById('brs-ace-title');
+    const aceSub   = document.getElementById('brs-ace-sub');
+    const acePrEl  = document.getElementById('brs-ace-price');
+    const aceSLbl  = document.getElementById('brs-ace-sales-lbl');
+    const acePN    = document.getElementById('brs-ace-player-name');
+    const aceFig   = document.getElementById('brs-ace-fig');
+    if (aceTitle) aceTitle.textContent = brAcePlayer.toUpperCase();
+    if (aceSub)   aceSub.textContent   = `Base · ${brSpotlightSet}`;
+    if (acePrEl)  acePrEl.textContent  = aceAvg ? fmtFull$(aceAvg) : '—';
+    if (aceSLbl)  aceSLbl.textContent  = `${aceSales} verified base sales`;
+    if (acePN)    acePN.textContent    = brAcePlayer;
+    if (aceFig)   { aceFig.src = figUrl(brAcePlayer, 'Base', brSpotlightSet); aceFig.style.display = 'block'; }
+    renderBreakerSlider(brAcePlayer, brSpotlightSet);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Breaker Report — PDF Export
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Fetch all <img> in an element and swap their src to base64 data URLs so
+// html2canvas can draw them without tainting the canvas.
+// Returns a restore function that swaps srcs back.
+async function inlineSlideImages(el) {
+  const imgs = [...el.querySelectorAll('img')].filter(img => {
+    const src = img.getAttribute('src');
+    return src && !src.startsWith('data:') && img.style.display !== 'none';
+  });
+
+  const restoreFns = await Promise.all(imgs.map(async img => {
+    const origSrc = img.src;
+    try {
+      const resp = await fetch(origSrc, { mode: 'cors', cache: 'force-cache' });
+      if (!resp.ok) throw new Error('not ok');
+      const blob = await resp.blob();
+      const b64  = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload  = () => res(reader.result);
+        reader.onerror = rej;
+        reader.readAsDataURL(blob);
+      });
+      img.src = b64;
+      return () => { img.src = origSrc; };
+    } catch {
+      // Image can't be fetched — hide it during capture to avoid taint
+      const origDisplay = img.style.display;
+      img.style.display = 'none';
+      return () => { img.style.display = origDisplay; };
+    }
+  }));
+
+  return () => restoreFns.forEach(fn => fn());
+}
+
+async function exportBreakerPDF() {
+  const btn = document.getElementById('btn-pdf');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating PDF...'; }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const checks    = [...document.querySelectorAll('.br-export-check')].filter(c => c.checked);
+    if (!checks.length) { alert('No slides selected.'); return; }
+
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [912, 528] });
+    let first = true;
+
+    for (const chk of checks) {
+      const el = document.getElementById(chk.dataset.slide);
+      if (!el) continue;
+      if (!first) pdf.addPage([912, 528], 'landscape');
+      first = false;
+
+      // Inline images → capture → restore
+      const restore = await inlineSlideImages(el);
+      const canvas  = await html2canvas(el, {
+        width: 912, height: 528, scale: 2,
+        backgroundColor: '#060606', logging: false,
+      });
+      restore();
+
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, 912, 528);
+    }
+
+    const month = (document.getElementById('br-month')?.value || 'report')
+      .toLowerCase().replace(/\s+/g, '-');
+    pdf.save(`ghostladder-breaker-report-${month}.pdf`);
+  } catch(e) {
+    console.error('PDF export failed:', e);
+    alert('PDF export failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↓ Download PDF'; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
