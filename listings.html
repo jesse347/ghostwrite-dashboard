@@ -6,40 +6,9 @@
 <title>ghostladder · live market</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="ghostladder.css">
 <style>
-:root {
-  --bg: #080808;
-  --s1: #101010;
-  --s2: #161616;
-  --s3: #1e1e1e;
-  --border: #282828;
-  --accent: #e8ff47;
-  --accent-dim: rgba(232,255,71,0.10);
-  --red: #ff4040;
-  --green: #3ddc84;
-  --orange: #ffb347;
-  --blue: #5b9cf6;
-  --text: #f0f0f0;
-  --muted: #666;
-  --muted2: #999;
-  --mono: 'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --serif: 'Instrument Serif', serif;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--mono);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  pointer-events: none; z-index: 9999;
-}
+:root { --orange: #ffb347; --blue: #5b9cf6; }
 
 /* ── Header ── */
 
@@ -53,7 +22,7 @@ body::after {
 
 /* ── Section labels ── */
 .section-label {
-  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 14px;
   display: flex; align-items: center; gap: 10px;
 }
@@ -74,7 +43,7 @@ body::after {
   width: 0; height: 2px; background: var(--accent); transition: width 0.4s ease;
 }
 .stat-card:hover::before { width: 100%; }
-.stat-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
 .stat-value { font-family: var(--display); font-size: 36px; letter-spacing: 1px; line-height: 1; margin-bottom: 6px; }
 .stat-value.accent { color: var(--accent); }
 .stat-value.green { color: var(--green); }
@@ -91,10 +60,10 @@ body::after {
   background: var(--s1); border: 1px solid var(--border); padding: 24px;
 }
 .panel-title {
-  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
   margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;
 }
-.panel-title span { color: var(--muted2); font-size: 9px; }
+.panel-title span { color: var(--muted2); font-size: 10px; }
 
 /* ── Chart containers ── */
 .chart-wrap { position: relative; width: 100%; }
@@ -120,7 +89,7 @@ body::after {
 /* ── Ask vs Sale table ── */
 .avs-table { width: 100%; border-collapse: collapse; font-size: 10px; }
 .avs-table thead th {
-  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
   text-align: left; padding: 0 8px 10px 0; border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -136,7 +105,7 @@ body::after {
 
 /* Variant tag */
 .v-tag {
-  display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+  display: inline-block; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
   padding: 1px 5px; border: 1px solid;
 }
 /* .v-* variant classes come from variants.css */
@@ -151,7 +120,7 @@ body::after {
 .set-row-meta { font-size: 9px; color: var(--muted); }
 .set-price-bar { height: 4px; background: var(--s3); position: relative; }
 .set-price-fill { height: 100%; background: var(--accent); opacity: 0.5; transition: width 0.6s; }
-.set-price-range { display: flex; justify-content: space-between; margin-top: 4px; font-size: 8px; color: var(--muted); }
+.set-price-range { display: flex; justify-content: space-between; margin-top: 4px; font-size: 9px; color: var(--muted); }
 
 /* ── Age histogram ── */
 .age-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
@@ -161,14 +130,14 @@ body::after {
   transition: height 0.5s cubic-bezier(0.16,1,0.3,1);
   min-height: 2px;
 }
-.age-label { font-size: 7px; color: var(--muted); letter-spacing: 0.5px; white-space: nowrap; }
+.age-label { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; white-space: nowrap; }
 
 /* ── Quality panel ── */
 .quality-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--s3); }
 .quality-row:last-child { border-bottom: none; }
 .quality-label { font-size: 10px; color: var(--muted2); }
 .quality-val { font-family: var(--display); font-size: 22px; }
-.quality-sub { font-size: 8px; color: var(--muted); margin-top: 2px; }
+.quality-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
 
 /* ── Auction spotlight ── */
 .auction-list { display: flex; flex-direction: column; gap: 10px; }
@@ -180,7 +149,7 @@ body::after {
 .auction-title { font-size: 10px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .auction-player { font-size: 9px; color: var(--muted); margin-top: 2px; }
 .auction-price { font-family: var(--display); font-size: 20px; color: var(--orange); text-align: right; }
-.auction-meta  { font-size: 8px; color: var(--muted); text-align: right; }
+.auction-meta  { font-size: 10px; color: var(--muted); text-align: right; }
 
 /* ── Loading ── */
 .loading-overlay {
@@ -217,8 +186,6 @@ thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
   .two-col, .three-col { grid-template-columns: 1fr; }
 }
 </style>
-<link rel="stylesheet" href="nav.css">
-<link rel="stylesheet" href="variants.css">
 <script src="estimate-engine.js"></script>
 </head>
 <body>
@@ -337,7 +304,11 @@ async function loadData() {
       avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
       lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
     }));
-    products.forEach(p => { p.rawAvgPrice = p.avgPrice; });
+    products.forEach(p => {
+      p.rawAvgPrice = p.avgPrice;
+      p.rawAvg30d   = p.avg30d;
+      p.rawAvg90d   = p.avg90d;
+    });
     const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
     applyGradingNorm(products, gradedNormMap);
 

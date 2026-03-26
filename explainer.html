@@ -5,35 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ghostladder · Why We Built an Estimation Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="ghostladder.css">
 <style>
 :root {
-  --bg:      #080808;
-  --s1:      #0f0f0f;
-  --s2:      #161616;
-  --s3:      #1e1e1e;
-  --border:  #222;
-  --accent:  #e8ff47;
-  --text:    #efefef;
-  --muted:   #555;
-  --muted2:  #333;
-  --mono:    'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --serif:   'Instrument Serif', serif;
-  --green:   #3ddc84;
-  --red:     #ff4455;
   --purple:  #c084fc;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); min-height: 100vh; }
-body { color: var(--text); font-family: var(--mono); font-size: 13px; line-height: 1.7; }
+body { line-height: 1.7; }
 
 .page { max-width: 840px; margin: 0 auto; padding: 60px 32px 120px; }
 
 /* ── Typography ── */
 .post-eyebrow {
-  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 16px;
 }
 .post-title {
@@ -49,7 +33,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 13px; line-heigh
 
 .section { margin-bottom: 72px; }
 .section-eyebrow {
-  font-size: 8px; letter-spacing: 3px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
   color: var(--accent); margin-bottom: 12px;
 }
 .section-title {
@@ -121,7 +105,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 56px 0; 
 .mc.real  .mc-price { color: var(--accent); }
 .mc.est   .mc-price { color: var(--purple); }
 .mc.empty .mc-price { color: var(--muted2); }
-.mc-sub { font-size: 8px; margin-top: 1px; }
+.mc-sub { font-size: 9px; margin-top: 1px; }
 .mc.real  .mc-sub { color: rgba(232,255,71,0.45); }
 .mc.est   .mc-sub { color: rgba(192,132,252,0.45); }
 .mc.empty .mc-sub { color: var(--muted2); }
@@ -151,18 +135,18 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 56px 0; 
 }
 .bp-comp-info { flex: 1; }
 .bp-comp-label { font-size: 10px; color: var(--text); }
-.bp-comp-note  { font-size: 8px; color: var(--muted); margin-top: 2px; }
+.bp-comp-note  { font-size: 9px; color: var(--muted); margin-top: 2px; }
 .bp-comp-right { text-align: right; flex-shrink: 0; }
 .bp-comp-price { font-family: var(--display); font-size: 15px; color: var(--text); }
-.bp-comp-wt    { font-size: 8px; color: var(--muted); margin-top: 1px; }
+.bp-comp-wt    { font-size: 9px; color: var(--muted); margin-top: 1px; }
 .bp-result {
   display: flex; justify-content: space-between; align-items: center;
   padding: 12px 13px; border: 1px solid rgba(192,132,252,0.30);
   background: rgba(192,132,252,0.05);
 }
 .bp-result-left {}
-.bp-result-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--purple); }
-.bp-result-conf  { font-size: 8px; color: var(--muted); margin-top: 3px; }
+.bp-result-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--purple); }
+.bp-result-conf  { font-size: 9px; color: var(--muted); margin-top: 3px; }
 .bp-result-price { font-family: var(--display); font-size: 24px; color: var(--purple); }
 
 /* ── Callout ── */
@@ -228,7 +212,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 56px 0; 
 }
 .mode-cell { background: var(--s1); padding: 18px 18px; }
 .mode-eyebrow {
-  font-size: 7px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
 }
 .mode-name { font-family: var(--display); font-size: 18px; margin-bottom: 8px; }
 .mode-desc { font-size: 10px; color: var(--muted); line-height: 1.7; }

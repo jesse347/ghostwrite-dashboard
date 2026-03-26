@@ -5,29 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ghostladder · GL50 index</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="nav.css">
-<link rel="stylesheet" href="variants.css">
+<link rel="stylesheet" href="ghostladder.css">
 <style>
-:root {
-  --bg:      #080808;
-  --s1:      #0f0f0f;
-  --s2:      #161616;
-  --s3:      #1e1e1e;
-  --border:  #222;
-  --accent:  #e8ff47;
-  --text:    #efefef;
-  --muted:   #555;
-  --muted2:  #333;
-  --mono:    'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --serif:   'Instrument Serif', serif;
-  --green:   #3ddc84;
-  --red:     #ff4455;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); min-height: 100vh; }
-body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
 /* ── Page ── */
 .page { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
@@ -38,7 +17,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
 .hero-left {}
 .index-eyebrow {
-  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 10px;
 }
 .index-name {
@@ -53,7 +32,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 
 .hero-right { text-align: right; }
 .index-value-label {
-  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 6px;
 }
 .index-value {
@@ -79,7 +58,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   background: var(--s1); padding: 16px 20px;
 }
 .strip-label {
-  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 6px;
 }
 .strip-val {
@@ -101,11 +80,11 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   display: flex; align-items: center; justify-content: space-between;
 }
 .chart-title {
-  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
 }
 .chart-legend { display: flex; gap: 20px; align-items: center; }
 .legend-item { display: flex; align-items: center; gap: 6px;
-  font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
 .legend-line { width: 20px; height: 2px; }
 
 .chart-wrap { padding: 24px; position: relative; }
@@ -143,7 +122,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   opacity: 0; transition: opacity 0.1s;
 }
 .chart-tooltip.visible { opacity: 1; }
-.tt-date { font-size: 8px; color: var(--muted); letter-spacing: 1px;
+.tt-date { font-size: 9px; color: var(--muted); letter-spacing: 1px;
   text-transform: uppercase; margin-bottom: 6px; }
 .tt-val { font-family: var(--display); font-size: 22px; color: var(--accent); }
 .tt-change { font-size: 9px; margin-top: 3px; }
@@ -163,13 +142,13 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   display: flex; align-items: center; justify-content: space-between;
 }
 .table-title {
-  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
 }
 .table-meta { font-size: 9px; color: var(--muted2); }
 
 .components-table { width: 100%; border-collapse: collapse; }
 .components-table th {
-  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--muted); padding: 10px 16px; text-align: left;
   border-bottom: 1px solid var(--border2);
   white-space: nowrap; cursor: pointer; user-select: none;
@@ -201,7 +180,7 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
 /* Variant badge */
 .variant-badge {
   display: inline-block;
-  font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
   padding: 2px 6px; font-weight: 500;
   border: 1px solid currentColor; border-radius: 1px;
 }

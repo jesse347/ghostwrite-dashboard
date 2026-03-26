@@ -159,6 +159,11 @@ function applyGradingNorm(products, gradedNormMap) {
     const g = gradedNormMap[k];
     if (!g || g.count === 0) return;
 
+    // Stash unadjusted (raw) averages so display code can show actual sale prices
+    prod._rawAvgPrice = prod.avgPrice;
+    prod._rawAvg30d   = prod.avg30d;
+    prod._rawAvg90d   = prod.avg90d;
+
     // ── All-time average ──────────────────────────────────────────────────
     if (prod.totalSales > 0) {
       if (g.count >= prod.totalSales) {

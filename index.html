@@ -6,44 +6,8 @@
 <title>ghostladder · market intel</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="ghostladder.css">
 <style>
-:root {
-  --bg: #080808;
-  --s1: #101010;
-  --s2: #161616;
-  --s3: #1e1e1e;
-  --border: #282828;
-  --accent: #e8ff47;
-  --accent-dim: rgba(232,255,71,0.12);
-  --red: #ff4040;
-  --green: #3ddc84;
-  --text: #f0f0f0;
-  --muted: #666;
-  --muted2: #999;
-  --mono: 'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --serif: 'Instrument Serif', serif;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--mono);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Grain */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 9999;
-}
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 
@@ -94,8 +58,8 @@ body::after {
 
 /* ── Section titles ─────────────────────────────────────────────────────────── */
 .section-label {
-  font-size: 9px;
-  letter-spacing: 3px;
+  font-size: 10px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 14px;
@@ -137,7 +101,7 @@ body::after {
 }
 .stat-card:hover::before { width: 100%; }
 .stat-label {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--muted);
@@ -270,7 +234,7 @@ body::after {
   margin-top: 8px;
 }
 .product-card-meta {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   letter-spacing: 0.5px;
 }
@@ -308,7 +272,7 @@ body::after {
   padding: 22px;
 }
 .panel-title {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--muted2);
@@ -351,7 +315,7 @@ body::after {
 /* ── Recent sales ───────────────────────────────────────────────────────────── */
 .sales-table { width: 100%; border-collapse: collapse; }
 .sales-table th {
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--muted);
@@ -378,7 +342,7 @@ body::after {
 /* ── Set+variant table ──────────────────────────────────────────────────────── */
 .sv-table { width: 100%; border-collapse: collapse; }
 .sv-table th {
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--muted);
@@ -524,7 +488,7 @@ body::after {
 /* ── Movers + Top Players tables ──────────────────────────────────────────── */
 .movers-table, .top-players-table { width: 100%; border-collapse: collapse; }
 .movers-table th, .top-players-table th {
-  font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--muted); text-align: left; padding: 0 0 10px;
   border-bottom: 1px solid var(--border);
 }
@@ -583,8 +547,6 @@ body::after {
 /* ── Wordmark ── */
 
 </style>
-<link rel="stylesheet" href="nav.css">
-<link rel="stylesheet" href="variants.css">
 </head>
 <body>
 

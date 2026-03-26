@@ -5,47 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ghostladder · sets</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="nav.css">
-<link rel="stylesheet" href="variants.css">
+<link rel="stylesheet" href="ghostladder.css">
 <style>
-:root {
-  --bg:      #080808;
-  --s1:      #101010;
-  --s2:      #161616;
-  --s3:      #1e1e1e;
-  --border:  #282828;
-  --accent:  #e8ff47;
-  --accent-dim: rgba(232,255,71,0.12);
-  --red:     #ff4040;
-  --green:   #3ddc84;
-  --orange:  #ff9f43;
-  --text:    #f0f0f0;
-  --muted:   #666;
-  --muted2:  #999;
-  --mono:    'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --serif:   'Instrument Serif', serif;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); min-height: 100vh; }
-body { color: var(--text); font-family: var(--mono); font-size: 12px; }
+:root { --orange: #ff9f43; }
 
 /* ── Page layout ── */
 .page { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
 
 /* ── Page header ── */
-.page-eyebrow {
-  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 10px;
-}
-.page-title {
-  font-family: var(--display); font-size: 48px; letter-spacing: 1px;
-  line-height: 1; color: var(--text); margin-bottom: 8px;
-}
-.page-title em { color: var(--accent); font-style: normal; }
 .page-sub {
-  font-size: 10px; letter-spacing: 1px; color: var(--muted);
+  font-size: 13px; letter-spacing: 1px; color: var(--muted);
   margin-bottom: 32px;
 }
 
@@ -189,11 +158,11 @@ input[type=range].recency-slider::-moz-range-thumb {
   background: var(--s2); padding: 12px 14px;
 }
 .stat-lbl {
-  font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 5px;
 }
 .stat-val {
-  font-family: var(--display); font-size: 20px; letter-spacing: 0.5px;
+  font-family: var(--display); font-size: 26px; letter-spacing: 0.5px;
   line-height: 1; color: var(--text);
 }
 .stat-val.accent  { color: var(--accent); }
@@ -255,13 +224,13 @@ input[type=range].recency-slider::-moz-range-thumb {
 .set-hits-panel.open { display: block; }
 
 .hits-panel-header {
-  font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
 }
 .hits-mode-tag {
   background: var(--s3); border: 1px solid var(--border);
   border-radius: 2px; padding: 2px 7px;
-  font-size: 7px; letter-spacing: 1px; color: var(--muted2);
+  font-size: 9px; letter-spacing: 1px; color: var(--muted2);
 }
 .hits-mode-tag .htag-sales { color: var(--accent); }
 .hits-mode-tag .htag-est   { color: rgba(192,132,252,0.75); }
@@ -278,7 +247,7 @@ input[type=range].recency-slider::-moz-range-thumb {
 .hit-card:hover { border-color: #444; }
 .hit-rank {
   position: absolute; top: 6px; left: 6px; z-index: 2;
-  font-size: 8px; font-family: var(--mono);
+  font-size: 9px; font-family: var(--mono);
   background: rgba(0,0,0,0.7); padding: 1px 5px; border-radius: 2px;
   color: var(--muted2);
 }
@@ -310,7 +279,7 @@ input[type=range].recency-slider::-moz-range-thumb {
 .mini-grid-wrap { overflow-x: auto; }
 .mini-col-headers { display: grid; gap: 2px; margin-bottom: 2px; }
 .mini-col-header {
-  font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--muted); text-align: center; padding: 4px 2px;
 }
 .mini-row { display: grid; gap: 2px; margin-bottom: 2px; align-items: stretch; }
@@ -366,7 +335,7 @@ input[type=range].recency-slider::-moz-range-thumb {
 }
 
 .mini-grid-label {
-  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 12px;
 }
 
@@ -485,23 +454,27 @@ const RECENCY_LABELS = ['all-time avg', '90d avg', '30d avg', 'last sale'];
 // ── Recency: pick best price from PI row given current slider ─────────────────
 function bestPrice(p) {
   if (!p) return null;
+  // Use raw (unadjusted) averages for display — grading norm only affects engine estimates.
+  const avg = p.rawAvgPrice || p.avgPrice || 0;
+  const a30 = p.rawAvg30d   || p.avg30d   || 0;
+  const a90 = p.rawAvg90d   || p.avg90d   || 0;
   switch (recencyLevel) {
     case 3: // last sale
       return p.lastSalePrice > 0 ? p.lastSalePrice : null;
     case 2: // 30d
-      if (p.avg30d  && p.sales30d  >= 1) return p.avg30d;
-      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
-      if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+      if (a30 && p.sales30d  >= 1) return a30;
+      if (a90 && p.sales90d  >= 1) return a90;
+      if (avg && p.totalSales >= 1) return avg;
       if (p.lastSalePrice > 0) return p.lastSalePrice;
       return null;
     case 1: // 90d (default)
-      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
-      if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+      if (a90 && p.sales90d  >= 1) return a90;
+      if (avg && p.totalSales >= 1) return avg;
       if (p.lastSalePrice > 0) return p.lastSalePrice;
       return null;
     case 0: // all-time
     default:
-      if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+      if (avg && p.totalSales >= 1) return avg;
       if (p.lastSalePrice > 0) return p.lastSalePrice;
       return null;
   }
@@ -567,6 +540,13 @@ async function loadData() {
       avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
       lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
     }));
+
+    // Snapshot raw PI averages before normalization for display purposes.
+    products.forEach(p => {
+      p.rawAvgPrice = p.avgPrice;
+      p.rawAvg30d   = p.avg30d;
+      p.rawAvg90d   = p.avg90d;
+    });
 
     // Normalize product averages to remove graded-sale inflation so the
     // engine uses accurate ungraded-equivalent prices when building comps.

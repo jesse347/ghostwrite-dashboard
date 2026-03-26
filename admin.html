@@ -5,17 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ghostladder · admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="ghostladder.css">
 <style>
-:root {
-  --bg: #080808; --s1: #0f0f0f; --s2: #161616; --s3: #1e1e1e;
-  --border: #222; --accent: #e8ff47; --text: #efefef; --muted: #555;
-  --muted2: #888; --green: #3ddc84; --red: #ff4455; --purple: #c084fc;
-  --mono: 'DM Mono', monospace; --display: 'Bebas Neue', sans-serif;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; min-height: 100vh; }
-
 /* ── Login screen ─────────────────────────────────────────────────────────── */
 #login-screen {
   position: fixed; inset: 0; z-index: 1000;
@@ -28,7 +19,7 @@ html, body { background: var(--bg); color: var(--text); font-family: var(--mono)
 }
 .login-logo { font-family: var(--display); font-size: 22px; letter-spacing: 3px; color: var(--text); }
 .login-logo em { color: var(--accent); font-style: normal; }
-.login-eyebrow { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.login-eyebrow { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .login-error { font-size: 10px; color: var(--red); min-height: 16px; letter-spacing: 0.3px; }
 .login-input {
   background: var(--s2); border: 1px solid var(--border); color: var(--text);
@@ -55,7 +46,7 @@ html, body { background: var(--bg); color: var(--text); font-family: var(--mono)
 }
 .logout-btn:hover { border-color: var(--red); color: var(--red); }
 .restricted-badge {
-  font-size: 8px; letter-spacing: 1.5px; background: var(--red);
+  font-size: 9px; letter-spacing: 1.5px; background: var(--red);
   color: #fff; padding: 2px 7px; font-family: var(--mono); vertical-align: middle;
 }
 
@@ -146,7 +137,7 @@ html, body { background: var(--bg); color: var(--text); font-family: var(--mono)
 .rc-fields { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
 .rc-field { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 130px; }
 .rc-field-afa { flex: 0 0 90px; min-width: 90px; }
-.rc-label { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.rc-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 .rc-select, .rc-input {
   background: var(--bg); border: 1px solid var(--border); color: var(--text);
   font-family: var(--mono); font-size: 11px; padding: 5px 8px;
@@ -200,14 +191,14 @@ html, body { background: var(--bg); color: var(--text); font-family: var(--mono)
 .add-form-wrap { max-width: 680px; }
 .form-section { margin-bottom: 36px; }
 .form-section-title {
-  font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent);
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent);
   margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
 }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-group.span2 { grid-column: 1 / -1; }
 .form-label {
-  font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
 }
 .form-label .req { color: var(--red); margin-left: 2px; }
 .form-input, .form-select, .form-textarea {
@@ -573,7 +564,7 @@ document.getElementById('flagged-refresh-btn').addEventListener('click', () => {
 async function loadReferenceData() {
   const [s, m] = await Promise.all([
     fetch(`${SB_URL}/rest/v1/sets?select=id,name,league&active=eq.true&order=name.asc`, { headers: R_H }).then(r => r.json()),
-    fetch(`${SB_URL}/rest/v1/set_math?select=set_id,player,variant&order=player.asc`,   { headers: R_H }).then(r => r.json()),
+    fetch(`${SB_URL}/rest/v1/set_math?select=id,set_id,player,variant&order=player.asc`, { headers: R_H }).then(r => r.json()),
   ]);
   setsData = Array.isArray(s) ? s : [];
   mathData = Array.isArray(m) ? m : [];
@@ -1033,6 +1024,10 @@ document.getElementById('add-sale-form').addEventListener('submit', async e => {
   const btn = document.getElementById('add-submit-btn');
   btn.disabled = true; btn.textContent = 'Adding Sale…';
 
+  // Look up set_math_id from cached mathData
+  const mathMatch = mathData.find(m => m.set_id === setId && m.player === player && m.variant === variant);
+  const setMathId = mathMatch ? mathMatch.id : null;
+
   const payload = {
     set_id:        setId,
     player,
@@ -1041,13 +1036,15 @@ document.getElementById('add-sale-form').addEventListener('submit', async e => {
     price,
     date,
     source:        document.getElementById('f-source').value  || 'eBay',
-    status:        document.getElementById('f-status').value  || null,
+    status:        'valid',
     ebay_url:      document.getElementById('f-url').value     || null,
     image_url:     document.getElementById('f-image').value   || null,
     afa_grade:     document.getElementById('f-afa').value     || null,
     notes:         document.getElementById('f-notes').value   || null,
     is_multi_sale: document.getElementById('f-multi').checked,
     flagged:       false,
+    set_math_id:   setMathId,
+    multi_sale_id: 1,
   };
 
   try {

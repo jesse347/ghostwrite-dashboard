@@ -5,27 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Slides — GhostLadder</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="ghostladder.css">
 <script src="estimate-engine.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-:root {
-  --bg: #080808; --s1: #0f0f0f; --s2: #161616; --s3: #1e1e1e;
-  --border: #282828; --border2: #333;
-  --accent: #e8ff47; --chrome: #4fd1ff;
-  --text: #f0f0f0; --muted: #666; --muted2: #999;
-  --red: #ff4040; --green: #3ddc84; --orange: #ff9f43; --purple: #c084fc;
-  --mono: 'DM Mono', monospace; --display: 'Bebas Neue', sans-serif;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
-
 /* ── Slides page layout ── */
 .slides-wrap { max-width: 1400px; padding: 32px 32px 80px; }
 
 .page-hd { margin-bottom: 28px; }
-.page-eyebrow { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.page-eyebrow { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .page-title { font-family: var(--display); font-size: 42px; line-height: 1; color: var(--text); letter-spacing: 1px; }
 .page-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
 
@@ -45,17 +34,17 @@ body { background: var(--bg); color: var(--text); font-family: var(--mono); min-
   display: flex; flex-direction: column; gap: 12px;
 }
 .controls-panel-label {
-  font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted2);
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted2);
   margin-bottom: 2px;
 }
 .control-row { display: flex; align-items: flex-start; gap: 16px; }
 .ctrl-lbl {
-  font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
   padding-top: 6px; width: 44px; flex-shrink: 0;
 }
 .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
   color: var(--muted); background: var(--bg); border: 1px solid var(--border);
   padding: 5px 12px; cursor: pointer; transition: all 0.12s;
   text-transform: uppercase;
@@ -1018,6 +1007,13 @@ async function loadData() {
       avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
       lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
     }));
+
+    // Snapshot raw PI averages before normalization for display purposes.
+    products.forEach(p => {
+      p.rawAvgPrice = p.avgPrice;
+      p.rawAvg30d   = p.avg30d;
+      p.rawAvg90d   = p.avg90d;
+    });
 
     // Grading normalization (removes graded sale inflation from estimates)
     const gradedNormMap = buildGradedNormMap(gradedSalesData || []);

@@ -5,25 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ghostladder · price guide</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ghostladder.css">
 <style>
 :root {
   --bg: #0a0a0a;
   --surf1: #111111;
   --surf2: #181818;
-  --border: #242424;
   --border2: #1a1a1a;
-  --accent: #e8ff47;
-  --text: #f0f0f0;
-  --muted: #888;
-  --muted2: #555;
-  --display: 'Bebas Neue', sans-serif;
-  --mono: 'DM Mono', monospace;
   --body: 'DM Sans', sans-serif;
   --flag-red: #ff4040;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 13px; min-height: 100vh; }
+body { font-family: var(--body); }
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 
@@ -60,7 +53,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 /* ── Product table ───────────────────────────────────────────────────────────── */
 .guide-table { width: 100%; border-collapse: collapse; }
 .guide-table thead th {
-  font-family: var(--display); font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: var(--display); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--muted); text-align: left; padding: 0 12px 10px 0; border-bottom: 1px solid var(--border);
   cursor: pointer; user-select: none; white-space: nowrap;
 }
@@ -73,10 +66,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 .guide-table tbody tr:hover { background: var(--surf1); }
 .guide-table tbody tr.selected { background: var(--surf2); border-left: 2px solid var(--accent); }
 .guide-table td {
-  padding: 10px 12px 10px 0; font-size: 12px; color: var(--muted2); vertical-align: middle;
+  padding: 10px 12px 10px 0; font-size: 13px; color: var(--muted2); vertical-align: middle;
 }
 .td-player { color: var(--text) !important; font-weight: 500; }
-.td-set { font-size: 9px; color: var(--muted) !important; letter-spacing: 0.5px; }
+.td-set { font-size: 11px; color: var(--muted) !important; letter-spacing: 0.5px; }
 .td-price { font-family: var(--display); font-size: 16px; color: var(--accent) !important; }
 .td-last { font-family: var(--display); font-size: 13px; color: var(--text) !important; }
 .td-ask      { font-family: var(--display); font-size: 13px; color: var(--chrome) !important; }
@@ -85,19 +78,19 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 
 /* ── Estimate badge ──────────────────────────────────────────────────────────── */
 .est-badge {
-  display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+  display: inline-block; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
   padding: 1px 4px; border: 1px solid var(--muted2); color: var(--muted2);
   border-radius: 2px; margin-left: 4px; vertical-align: middle;
 }
 .stale-badge {
-  display: inline-block; font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+  display: inline-block; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
   padding: 1px 4px; border: 1px solid var(--muted2); color: var(--muted2);
   border-radius: 2px; vertical-align: middle;
 }
 
 /* ── Engine badge ────────────────────────────────────────────────────────────── */
 .engine-badge {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--muted2); padding: 8px 0 14px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
 }
 .engine-badge span { color: var(--chrome); }
@@ -105,7 +98,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 .est-badge.chrome { border-color: var(--chrome); color: var(--chrome); }
 
 .v-tag {
-  display: inline-block; font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  display: inline-block; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
   padding: 2px 6px; border: 1px solid; border-radius: 2px;
 }
 /* .v-* variant classes come from variants.css */
@@ -133,7 +126,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
   display: flex; gap: 24px; padding: 14px 24px; border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.drawer-stat-label { font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.drawer-stat-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
 .drawer-stat-value { font-family: var(--display); font-size: 18px; color: var(--accent); }
 
 .drawer-listings { flex: 1; overflow-y: auto; padding: 16px 24px; }
@@ -203,8 +196,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
-<link rel="stylesheet" href="nav.css">
-<link rel="stylesheet" href="variants.css">
 </head>
 <body>
 
@@ -236,8 +227,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--body); font
       <div id="variant-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
       <span class="result-count" id="result-count"></span>
     </div>
-
-    <div class="engine-badge">v2 engine · <span id="engine-tag">—</span></div>
 
     <div id="table-wrap">
       <div class="loading-wrap">
@@ -318,6 +307,27 @@ async function sbPatch(table, match, data) {
   if (!r.ok) throw new Error('PATCH ' + r.status);
 }
 
+// ── Figure URL helpers ──────────────────────────────────────────────────────
+function _slugPlayer(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\./g,'').replace(/[^a-z0-9\s]/g,'').trim().replace(/\s+/g,'_');
+}
+function _slugSet(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+}
+function _normVar(v) {
+  const l=(v||'').toLowerCase();
+  if(l.includes('fire'))return'fire'; if(l.includes('chrome'))return'chrome';
+  if(l.includes('gold'))return'gold'; if(l.includes('emerald'))return'emerald';
+  if(l.includes('victory'))return'victory'; if(l.includes('vides'))return'vides';
+  if(l.includes('bet'))return'bet-on-women'; if(l.includes('sp'))return'sp';
+  return'base';
+}
+function figureUrl(player, variant, setName) {
+  return `assets/figures/${_slugSet(setName)}/${_slugPlayer(player)}_${_normVar(variant)}.png`;
+}
+
 function normProduct(r) {
   const setStr = (r.set_name || '').toUpperCase();
   return {
@@ -366,7 +376,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     // applyGradingNorm zeros avgPrice when all sales are graded so the engine
     // doesn't treat a graded-only price as an ungraded comp. But the guide
     // table should still show the real (graded) average for those combos.
-    allProducts.forEach(p => { p.rawAvgPrice = p.avgPrice; });
+    allProducts.forEach(p => {
+      p.rawAvgPrice = p.avgPrice;
+      p.rawAvg30d   = p.avg30d;
+      p.rawAvg90d   = p.avg90d;
+    });
 
     // Normalize product averages to remove graded-sale inflation so the
     // engine uses accurate ungraded-equivalent prices when building comps.
@@ -562,7 +576,7 @@ function renderTable(products) {
       </td>
       <td><span class="v-tag ${vClass}">${p.variant}</span></td>
       <td class="td-price">${(p.rawAvgPrice || p.avgPrice) ? '$' + Math.round(p.rawAvgPrice || p.avgPrice) : '—'}</td>
-      <td class="td-price">${p.avg30d ? '$' + Math.round(p.avg30d) : '—'}</td>
+      <td class="td-price">${(p.rawAvg30d || p.avg30d) ? '$' + Math.round(p.rawAvg30d || p.avg30d) : '—'}</td>
       <td class="td-last">${p.lastSalePrice ? '$' + Math.round(p.lastSalePrice) : '—'}</td>
       <td class="td-sales">${p.totalSales || 0}</td>
       <td class="td-sales">${p.sales30d || 0}</td>
@@ -671,7 +685,7 @@ async function openDrawer(product) {
     if (!listings.length) {
       document.getElementById('drawer-listings').innerHTML = '<div class="empty">no listings found</div>';
     } else {
-      document.getElementById('drawer-listings').innerHTML = listings.map(l => renderListingCard(l)).join('');
+      document.getElementById('drawer-listings').innerHTML = listings.map(l => renderListingCard(l, product)).join('');
     }
   } catch(e) {
     document.getElementById('drawer-listings').innerHTML = '<div class="empty">failed to load listings</div>';
@@ -686,16 +700,27 @@ function closeDrawer() {
 }
 
 // ── Listing card ─────────────────────────────────────────────────────────────
-function renderListingCard(listing) {
+function renderListingCard(listing, product) {
   const saleId = listing.id;
   const flagClass = listing.flagged ? 'flagged' : '';
   const flagLabel = listing.flagged ? '⚑ flagged' : 'flag';
   const flagBtnClass = listing.flagged ? 'flagged' : '';
 
-  const imgHtml = listing.image
-    ? `<img class="listing-img" src="${listing.image}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-    + `<div class="listing-img-placeholder" style="display:none">👻</div>`
-    : `<div class="listing-img-placeholder">👻</div>`;
+  const figSrc = product ? figureUrl(product.player, product.variant, product.set) : '';
+  let imgHtml;
+  if (listing.image) {
+    imgHtml = `<img class="listing-img" src="${listing.image}" alt="" loading="lazy"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="listing-img-placeholder" style="display:none">
+         ${figSrc ? `<img class="listing-img" src="${figSrc}" alt="" style="object-fit:contain;background:#111" onerror="this.parentElement.textContent='👻'">` : '👻'}
+       </div>`;
+  } else {
+    imgHtml = figSrc
+      ? `<img class="listing-img" src="${figSrc}" alt="" loading="lazy" style="object-fit:contain;background:#111"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+         <div class="listing-img-placeholder" style="display:none">👻</div>`
+      : `<div class="listing-img-placeholder">👻</div>`;
+  }
 
   const dateStr = listing.date
     ? new Date(listing.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})

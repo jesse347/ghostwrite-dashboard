@@ -5,41 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ghostladder · case simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="nav.css">
-<link rel="stylesheet" href="variants.css">
+<link rel="stylesheet" href="ghostladder.css">
 <style>
-:root {
-  --bg: #080808;
-  --s1: #0f0f0f;
-  --s2: #161616;
-  --s3: #1e1e1e;
-  --border: #222;
-  --accent: #e8ff47;
-  --text: #efefef;
-  --muted: #666;
-  --muted2: #444;
-  --mono: 'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --green: #3ddc84;
-  --red: #ff4455;
-  --orange: #ff9f43;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); min-height: 100vh; }
-body { color: var(--text); font-family: var(--mono); font-size: 12px; }
-
-/* Grain overlay */
-body::after {
-  content: ''; position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  pointer-events: none; z-index: 9999;
-}
 
 .page { max-width: 1100px; margin: 0 auto; padding: 32px; }
 .page-header { margin-bottom: 28px; position: relative; }
 .page-title { font-family: var(--display); font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; }
-.page-title em { color: var(--accent); font-style: normal; }
-.page-sub { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.page-sub { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 
 .set-selector { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
 .set-btn {
@@ -54,8 +26,8 @@ body::after {
 
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
 .stat-card { background: var(--s1); border: 1px solid var(--border); padding: 18px 20px; }
-.stat-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.stat-value { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -1px; }
+.stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.stat-value { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -1px; }
 .stat-value.green { color: var(--green); }
 .stat-value.red { color: var(--red); }
 .stat-value.accent { color: var(--accent); }
@@ -164,7 +136,7 @@ body::after {
 .box-slot.guaranteed-slot:not(.revealed) { border-color: var(--muted2); border-style: dashed; }
 
 /* Front face internals */
-.box-num { position: absolute; top: 5px; left: 7px; font-size: 7px; color: var(--muted2); letter-spacing: 1px; }
+.box-num { position: absolute; top: 5px; left: 7px; font-size: 9px; color: var(--muted2); letter-spacing: 1px; }
 .box-empty-icon { font-size: 18px; opacity: 0.12; }
 
 /* ── Figure card (back face) layers ── */
@@ -197,7 +169,7 @@ body::after {
   padding: 6px 6px 5px;
 }
 .box-card-variant {
-  font-family: var(--display); font-size: 6.5px; letter-spacing: 1.5px;
+  font-family: var(--display); font-size: 10px; letter-spacing: 1.5px;
   text-transform: uppercase; margin-bottom: 1px;
 }
 .box-card-player {
@@ -217,24 +189,24 @@ body::after {
 /* Badges on back face */
 .box-card-est-badge {
   position: absolute; top: 4px; right: 4px; z-index: 5;
-  font-size: 5px; font-family: var(--display); letter-spacing: 0.5px; padding: 1px 3px;
+  font-size: 9px; font-family: var(--display); letter-spacing: 0.5px; padding: 1px 3px;
   color: var(--accent); background: rgba(232,255,71,0.12); border: 1px solid rgba(232,255,71,0.3);
 }
 .box-card-star {
   position: absolute; top: 4px; left: 6px; z-index: 5;
-  font-size: 7px; color: var(--accent); opacity: 0.7;
+  font-size: 9px; color: var(--accent); opacity: 0.7;
 }
 
 .result-bar { display: none; border-top: 1px solid var(--border); padding-top: 20px; align-items: center; gap: 32px; flex-wrap: wrap; }
 .result-bar.visible { display: flex; }
-.result-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.result-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .result-big { font-family: var(--display); font-size: 28px; font-weight: 700; letter-spacing: -1px; }
 .result-big.green { color: var(--green); }
 .result-big.red { color: var(--red); }
 .result-breakdown { margin-left: auto; font-size: 9px; color: var(--muted); line-height: 1.8; text-align: right; }
 
 .prob-row { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
-.prob-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.prob-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 .prob-bars { display: flex; flex-direction: column; gap: 6px; }
 .prob-item { display: flex; align-items: center; gap: 10px; }
 .prob-variant { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; width: 64px; text-align: right; flex-shrink: 0; }
@@ -244,10 +216,10 @@ body::after {
 .prob-odds { font-size: 8px; color: var(--muted2); flex-shrink: 0; }
 
 .history-section { margin-top: 28px; }
-.history-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.history-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
 .history-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .history-table { width: 100%; border-collapse: collapse; }
-.history-table th { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.history-table th { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
 .history-table td { font-size: 10px; padding: 8px 10px; border-bottom: 1px solid rgba(34,34,34,0.5); color: var(--muted); }
 .history-table td:first-child { color: var(--muted2); font-size: 9px; }
 .history-table td.hit-col { font-weight: 700; }
@@ -276,21 +248,21 @@ body::after {
 .d-variant { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
 
 .d-section { margin-bottom: 20px; }
-.d-section-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.d-section-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 .d-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-.d-stat-label { font-size: 9px; color: var(--muted); }
+.d-stat-label { font-size: 10px; color: var(--muted); }
 .d-stat-val { font-size: 11px; color: var(--text); }
 .d-stat-val.accent { color: var(--accent); font-family: var(--display); }
 
 .proj-final { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 16px; text-align: center; }
-.proj-final-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.proj-final-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
 .proj-final-val { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--accent); }
 .proj-final-note { font-size: 9px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
 .ai-override-note { background: rgba(176,240,255,0.06); border: 1px solid rgba(176,240,255,0.2); padding: 10px 12px; margin-top: 10px; font-size: 9px; color: #b0f0ff; line-height: 1.5; }
 .ai-override-note strong { display: block; margin-bottom: 4px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
 
 /* ── Estimate drawer — method badges ── */
-.method-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 9px; border-radius: 2px; margin-bottom: 12px; font-weight: 700; }
+.method-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 9px; border-radius: 2px; margin-bottom: 12px; font-weight: 700; }
 .method-badge.direct { background: rgba(232,255,71,0.12); color: var(--accent);   border: 1px solid rgba(232,255,71,0.35); }
 .method-badge.blend  { background: rgba(79,209,255,0.10); color: var(--chrome);  border: 1px solid rgba(79,209,255,0.30); }
 .method-badge.range  { background: rgba(255,179,71,0.10); color: #ffb347;        border: 1px solid rgba(255,179,71,0.30); }
@@ -320,7 +292,7 @@ body::after {
 
 /* ── Estimate mode toggle ── */
 .estimate-toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.estimate-toggle-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.estimate-toggle-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 .estimate-toggle { display: flex; background: var(--s2); border: 1px solid var(--border); }
 .tog-btn {
   font-family: var(--mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
@@ -332,14 +304,14 @@ body::after {
 /* Model estimate badge on box card */
 .box-model-badge {
   position: absolute; top: 4px; right: 4px;
-  font-size: 6px; font-family: var(--display); font-weight: 700;
+  font-size: 9px; font-family: var(--display); font-weight: 700;
   letter-spacing: 0.5px; padding: 1px 4px;
   color: #b0f0ff; background: rgba(176,240,255,0.12);
   border: 1px solid rgba(176,240,255,0.3);
 }
 
 .sales-hero { background: rgba(232,255,71,0.06); border: 1px solid rgba(232,255,71,0.25); padding: 16px; text-align: center; margin-bottom: 20px; }
-.sales-hero-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.sales-hero-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
 .sales-hero-val { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--accent); }
 .sales-hero-sub { font-size: 9px; color: var(--muted); margin-top: 6px; }
 
@@ -353,7 +325,7 @@ body::after {
 .listing-date { font-size: 9px; color: var(--muted2); }
 .listing-link { font-size: 8px; color: var(--muted); text-decoration: none; }
 .listing-link:hover { color: var(--text); }
-.afa-badge { font-size: 8px; color: #ffd700; }
+.afa-badge { font-size: 9px; color: #ffd700; }
 .no-listings { font-size: 9px; color: var(--muted2); letter-spacing: 1px; padding: 16px 0; text-align: center; }
 
 .hit-tooltip {
@@ -394,7 +366,7 @@ body::after {
   display: none; align-items: center; gap: 32px; flex-wrap: wrap;
 }
 .sim-summary.visible { display: flex; }
-.sim-sum-label { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.sim-sum-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .sim-sum-val { font-family: var(--display); font-size: 20px; font-weight: 700; }
 .sim-sum-val.green { color: var(--green); }
 .sim-sum-val.red   { color: var(--red); }
@@ -709,6 +681,13 @@ async function loadData() {
       avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
       lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
     }));
+
+    // Snapshot raw PI averages before normalization for display purposes.
+    products.forEach(p => {
+      p.rawAvgPrice = p.avgPrice;
+      p.rawAvg30d   = p.avg30d;
+      p.rawAvg90d   = p.avg90d;
+    });
 
     // Normalize product averages to remove graded-sale inflation so the
     // engine uses accurate ungraded-equivalent prices when building comps.
@@ -1085,9 +1064,12 @@ function getPrice(player, variant, products, projections, refreshed) {
 function bestPriceSim(p) {
   // 90d-first priority — matches sets.html default (recencyLevel 1)
   // so Avg Base, Avg Hit Value, Expected ROI, and pool pricing all use the same timeframe
+  // Use raw (unadjusted) averages for display — grading norm only affects engine estimates.
   if (!p) return null;
-  if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
-  if (p.avgPrice && p.totalSales >= 1) return p.avgPrice;
+  const a90 = p.rawAvg90d || p.avg90d || 0;
+  const avg = p.rawAvgPrice || p.avgPrice || 0;
+  if (a90 && p.sales90d  >= 1) return a90;
+  if (avg && p.totalSales >= 1) return avg;
   if (p.lastSalePrice > 0) return p.lastSalePrice;
   return null;
 }
@@ -1135,9 +1117,12 @@ function hideCaseGhost() {
 
 function bestPriceFull(p) {
   if (!p) return null;
-  if (p.avg30d  && p.sales30d  >= 1) return {price:p.avg30d,  recency:'30d',      sales:p.sales30d};
-  if (p.avg90d  && p.sales90d  >= 1) return {price:p.avg90d,  recency:'90d',      sales:p.sales90d};
-  if (p.avgPrice && p.totalSales >= 1) return {price:p.avgPrice,recency:'all-time',sales:p.totalSales};
+  const a30 = p.rawAvg30d || p.avg30d || 0;
+  const a90 = p.rawAvg90d || p.avg90d || 0;
+  const avg = p.rawAvgPrice || p.avgPrice || 0;
+  if (a30 && p.sales30d  >= 1) return {price:a30,  recency:'30d',      sales:p.sales30d};
+  if (a90 && p.sales90d  >= 1) return {price:a90,  recency:'90d',      sales:p.sales90d};
+  if (avg && p.totalSales >= 1) return {price:avg,recency:'all-time',sales:p.totalSales};
   return null;
 }
 
@@ -1570,7 +1555,7 @@ function renderSalesBody(pull) {
   const listings = (allData.allListings||[])
     .filter(l => l.set===activeSet && l.player===pull.player && l.variant===pull.variant)
     .sort((a,b) => parseDate(b.date)-parseDate(a.date));
-  const dp = bestPriceSim(rd)||rd?.avgPrice||0;
+  const dp = bestPriceSim(rd)||(rd?.rawAvgPrice||rd?.avgPrice)||0;
   const sl = rd?.sales30d ? `${rd.sales30d} sales in last 30d · ${rd.totalSales||0} all-time` : `${rd?.totalSales||0} total sales`;
 
   document.getElementById('d-body').innerHTML = `
@@ -1581,9 +1566,9 @@ function renderSalesBody(pull) {
     </div>
     <div class="d-section">
       <div class="d-section-title">Price history</div>
-      <div class="d-stat"><span class="d-stat-label">30d avg</span><span class="d-stat-val accent">${rd?.avg30d?'$'+Math.round(rd.avg30d):'—'}</span></div>
-      <div class="d-stat"><span class="d-stat-label">90d avg</span><span class="d-stat-val">${rd?.avg90d?'$'+Math.round(rd.avg90d):'—'}</span></div>
-      <div class="d-stat"><span class="d-stat-label">All-time avg</span><span class="d-stat-val">${rd?.avgPrice?'$'+Math.round(rd.avgPrice):'—'}</span></div>
+      <div class="d-stat"><span class="d-stat-label">30d avg</span><span class="d-stat-val accent">${(rd?.rawAvg30d||rd?.avg30d)?'$'+Math.round(rd.rawAvg30d||rd.avg30d):'—'}</span></div>
+      <div class="d-stat"><span class="d-stat-label">90d avg</span><span class="d-stat-val">${(rd?.rawAvg90d||rd?.avg90d)?'$'+Math.round(rd.rawAvg90d||rd.avg90d):'—'}</span></div>
+      <div class="d-stat"><span class="d-stat-label">All-time avg</span><span class="d-stat-val">${(rd?.rawAvgPrice||rd?.avgPrice)?'$'+Math.round(rd.rawAvgPrice||rd.avgPrice):'—'}</span></div>
       <div class="d-stat"><span class="d-stat-label">Last sale</span><span class="d-stat-val">${rd?.lastSalePrice?'$'+Math.round(rd.lastSalePrice):'—'}</span></div>
     </div>
     <div class="d-section">

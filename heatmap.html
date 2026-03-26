@@ -5,35 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ghostladder · market heat map</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="nav.css">
-<link rel="stylesheet" href="variants.css">
+<link rel="stylesheet" href="ghostladder.css">
 <style>
 :root {
-  --bg: #080808;
-  --s1: #0f0f0f;
-  --s2: #161616;
-  --s3: #1e1e1e;
-  --border: #222;
-  --accent: #e8ff47;
-  --text: #efefef;
-  --muted: #666;
-  --muted2: #444;
-  --mono: 'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
   --hot3: #ff2d2d; --hot2: #ff6b35; --hot1: #ffb347;
   --flat: #1e1e1e;
   --cold1: #47a3ff; --cold2: #2d7fff; --cold3: #1a5ccc;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); min-height: 100vh; }
-body { color: var(--text); font-family: var(--mono); font-size: 12px; }
-
-/* ── Nav ── */
 
 /* ── Page header ── */
 .page-header { padding: 32px 32px 0; }
 .page-title { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -1px; margin-bottom: 6px; }
-.page-sub { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.page-sub { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 
 /* ── AI Insights banner ── */
 .insights-banner {
@@ -43,25 +26,25 @@ body { color: var(--text); font-family: var(--mono); font-size: 12px; }
   display: none;
 }
 .insights-banner.visible { display: block; }
-.insights-header { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.insights-header { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
 .insights-list { display: flex; gap: 24px; flex-wrap: wrap; }
 .insight-item { font-size: 10px; color: var(--muted); max-width: 280px; line-height: 1.5; }
 .insight-item::before { content: '→ '; color: var(--accent); }
-.insights-date { font-size: 8px; color: var(--muted2); margin-top: 8px; letter-spacing: 1px; }
+.insights-date { font-size: 9px; color: var(--muted2); margin-top: 8px; letter-spacing: 1px; }
 
 /* ── Controls ── */
 .controls { padding: 20px 32px 0; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
 #set-tabs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
-.control-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.control-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
 
 /* ── Recency slider ── */
 .recency-wrap { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .recency-track { width: 220px; display: flex; flex-direction: column; gap: 4px; }
-.recency-labels { display: flex; justify-content: space-between; font-size: 7px; letter-spacing: 1px; color: var(--muted2); text-transform: uppercase; }
+.recency-labels { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: 1px; color: var(--muted2); text-transform: uppercase; }
 input[type=range].recency-slider { width: 100%; height: 2px; -webkit-appearance: none; appearance: none; background: var(--border); outline: none; cursor: pointer; }
 input[type=range].recency-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 0; background: var(--accent); cursor: pointer; }
 input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; border-radius: 0; background: var(--accent); cursor: pointer; border: none; }
-.recency-current { font-size: 8px; letter-spacing: 1px; color: var(--accent); text-transform: uppercase; min-width: 64px; text-align: right; }
+.recency-current { font-size: 9px; letter-spacing: 1px; color: var(--accent); text-transform: uppercase; min-width: 64px; text-align: right; }
 
 .set-tab {
   font-family: var(--display); font-size: 11px; font-weight: 700;
@@ -92,15 +75,15 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
 .legend-heat { display: flex; align-items: center; gap: 8px; }
 .legend-swatches { display: flex; gap: 2px; }
 .legend-swatch { width: 16px; height: 6px; border-radius: 1px; }
-.legend-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+.legend-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
 .legend-proj { display: flex; align-items: center; gap: 8px; }
-.est-badge { font-size: 7px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px; color: var(--accent); background: rgba(232,255,71,0.12); border: 1px solid rgba(232,255,71,0.3); padding: 2px 5px; border-radius: 2px; }
-.ai-badge { font-size: 7px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px; color: #b0f0ff; background: rgba(176,240,255,0.1); border: 1px solid rgba(176,240,255,0.25); padding: 2px 5px; border-radius: 2px; margin-left: 8px; }
+.est-badge { font-size: 9px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px; color: var(--accent); background: rgba(232,255,71,0.12); border: 1px solid rgba(232,255,71,0.3); padding: 2px 5px; border-radius: 2px; }
+.ai-badge { font-size: 9px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px; color: #b0f0ff; background: rgba(176,240,255,0.1); border: 1px solid rgba(176,240,255,0.25); padding: 2px 5px; border-radius: 2px; margin-left: 8px; }
 
 /* ── Grid ── */
 .grid-wrap { padding: 20px 32px; overflow-x: auto; }
 .col-headers { display: grid; gap: 2px; margin-bottom: 2px; }
-.col-header { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-align: center; padding: 6px 4px; }
+.col-header { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-align: center; padding: 6px 4px; }
 .heatmap-row { display: grid; gap: 2px; margin-bottom: 2px; align-items: stretch; }
 .row-info { padding-right: 12px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
 .row-name { font-size: 10px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -123,7 +106,7 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
 
 .cell-badge {
   position: absolute; top: 3px; right: 3px;
-  font-size: 6px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px;
+  font-size: 9px; font-family: var(--display); font-weight: 700; letter-spacing: 0.5px;
   padding: 1px 4px; border-radius: 2px; line-height: 1.4;
 }
 .cell-badge.est { color: var(--accent); background: rgba(232,255,71,0.15); }
@@ -153,7 +136,7 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
 /* ── Summary ── */
 .summary-row { display: flex; gap: 24px; padding: 20px 32px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 .summary-stat { flex: 1; min-width: 120px; }
-.summary-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.summary-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .summary-val { font-family: var(--display); font-size: 20px; color: var(--accent); }
 .summary-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
 
@@ -201,7 +184,7 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
 .listing-date { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; }
 .listing-link { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; text-decoration: none; border: 1px solid var(--border); padding: 2px 7px; border-radius: 2px; transition: all 0.15s; }
 .listing-link:hover { color: var(--accent); border-color: var(--accent); }
-.afa-badge { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 6px; border: 1px solid #ffd700; color: #ffd700; border-radius: 2px; font-family: var(--display); }
+.afa-badge { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 6px; border: 1px solid #ffd700; color: #ffd700; border-radius: 2px; font-family: var(--display); }
 .d-stat-val { font-size: 13px; color: var(--text); }
 .d-stat-val.up { color: var(--hot2); }
 .d-stat-val.down { color: var(--cold1); }
@@ -224,13 +207,13 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
   padding: 10px 12px; margin-top: 10px;
   font-size: 9px; color: #b0f0ff; line-height: 1.5;
 }
-.ai-override-note strong { display: block; margin-bottom: 4px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
+.ai-override-note strong { display: block; margin-bottom: 4px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
 
 /* ── Redesigned estimate drawer ───────────────────────────────────────────── */
 /* Method badge */
 .method-badge {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
   padding: 3px 9px; border-radius: 2px; margin-bottom: 12px; font-weight: 700;
 }
 .method-badge.direct { background: rgba(232,255,71,0.12); color: var(--accent);  border: 1px solid rgba(232,255,71,0.35); }
@@ -249,9 +232,9 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
   padding: 14px 14px; display: flex; align-items: center; gap: 12px;
   flex: 1; min-width: 160px; min-height: 80px;
 }
-.comp-fig-set   { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-fig-set   { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .comp-fig-price { font-family: var(--display); font-size: 18px; color: var(--accent); margin: 3px 0; }
-.comp-fig-meta  { font-size: 9px; color: var(--muted2); }
+.comp-fig-meta  { font-size: 10px; color: var(--muted2); }
 
 /* Anchor rows (blend/ratio methods) */
 .anchor-row {
@@ -287,7 +270,7 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
 .tip.visible { opacity: 1; }
 .tt-head { font-family: var(--display); font-size: 11px; margin-bottom: 8px; }
 .tt-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
-.tt-l { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.tt-l { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
 .tt-v { font-size: 10px; }
 .tt-v.up { color: var(--hot2); }
 .tt-v.down { color: var(--cold1); }
@@ -488,22 +471,24 @@ function shortVariantName(v) {
 // falling back toward all-time avg if the preferred window has no data.
 function recencyPrice(p) {
   if (!p) return 0;
-  // rawAvgPrice is the pre-normalization average (includes graded sales).
-  // Used as final fallback so all-graded combos still display a price.
-  const rawFallback = p.rawAvgPrice || p.lastSalePrice || 0;
+  // Use raw (unadjusted) averages for display — grading norm only affects engine estimates.
+  const avg   = p.rawAvgPrice || p.avgPrice || 0;
+  const a30   = p.rawAvg30d   || p.avg30d   || 0;
+  const a90   = p.rawAvg90d   || p.avg90d   || 0;
+  const rawFallback = avg || p.lastSalePrice || 0;
   switch (recencyLevel) {
     case 3: // last sale
-      return p.lastSalePrice > 0 ? p.lastSalePrice : (p.rawAvgPrice || p.avgPrice || 0);
+      return p.lastSalePrice > 0 ? p.lastSalePrice : rawFallback;
     case 2: // 30d → 90d → all-time
-      if (p.avg30d  && p.sales30d  >= 1) return p.avg30d;
-      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
-      return p.avgPrice || rawFallback;
+      if (a30 && p.sales30d >= 1) return a30;
+      if (a90 && p.sales90d >= 1) return a90;
+      return avg || rawFallback;
     case 1: // 90d → all-time
-      if (p.avg90d  && p.sales90d  >= 1) return p.avg90d;
-      return p.avgPrice || rawFallback;
+      if (a90 && p.sales90d >= 1) return a90;
+      return avg || rawFallback;
     case 0: // all-time
     default:
-      return p.avgPrice || rawFallback;
+      return avg || rawFallback;
   }
 }
 
@@ -555,7 +540,11 @@ async function loadData() {
     // applyGradingNorm zeros avgPrice for all-graded combos so the engine
     // doesn't use graded prices as ungraded comps. rawAvgPrice preserves
     // the actual selling price (including graded) for display purposes.
-    products.forEach(p => { p.rawAvgPrice = p.avgPrice; });
+    products.forEach(p => {
+      p.rawAvgPrice = p.avgPrice;
+      p.rawAvg30d   = p.avg30d;
+      p.rawAvg90d   = p.avg90d;
+    });
 
     // Normalize product averages to remove graded-sale inflation so the
     // engine uses accurate ungraded-equivalent prices when building comps.
@@ -767,8 +756,8 @@ function renderHeatmap() {
       // ── Real data cell (Sales Only + Model Blend) ───────────────────────
       if (hasRealData) {
         const price    = recencyPrice(realData);
-        const p30      = realData.avg30d || 0;
-        const p90      = realData.avg90d || 0;
+        const p30      = realData.rawAvg30d || realData.avg30d || 0;
+        const p90      = realData.rawAvg90d || realData.avg90d || 0;
         const trendPct = (p30 && p90) ? Math.round(((p30 - p90) / p90) * 100) : null;
         const arrow    = heatArrow(trendPct);
         const salesLabel = recencyLevel === 3
@@ -948,7 +937,7 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
   // ── Known prices for this player ─────────────────────────────────────────
   const playerVariants = byPlayer[player] || {};
   const knownEntries = Object.entries(playerVariants)
-    .filter(([, d]) => d.avgPrice > 0)
+    .filter(([, d]) => (d.rawAvgPrice || d.avgPrice) > 0)
     .sort((a, b) => {
       const ord = { Base:0, Victory:1, Vides:2, Emerald:3, Gold:4, Chrome:5, Fire:6, SP:7 };
       return (ord[a[0]] ?? 99) - (ord[b[0]] ?? 99);
@@ -959,7 +948,7 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
       ${knownEntries.map(([v, d]) => `
         <div class="d-stat">
           <span class="d-stat-label">${v}</span>
-          <span class="d-stat-val accent">$${Math.round(d.avgPrice).toLocaleString()}
+          <span class="d-stat-val accent">$${Math.round(d.rawAvgPrice || d.avgPrice).toLocaleString()}
             <span style="font-size:10px;color:var(--muted);font-family:inherit"> · ${d.totalSales} sale${d.totalSales !== 1 ? 's' : ''}</span>
           </span>
         </div>`).join('')}
@@ -1350,21 +1339,30 @@ async function openSalesDrawer(player, variant) {
       `<div style="font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px">
         Last 90 days · ${sales.length} sale${sales.length !== 1 ? 's' : ''}
        </div>
-       ${sales.map(renderSaleCard).join('')}`;
+       ${sales.map(s => renderSaleCard(s, player, variant)).join('')}`;
   } catch(e) {
     document.getElementById('d-body').innerHTML =
       `<div style="color:var(--red);font-size:11px;padding:20px 0">Failed to load: ${e.message}</div>`;
   }
 }
 
-function renderSaleCard(sale) {
+function renderSaleCard(sale, player, variant) {
   const dateStr = sale.date
     ? new Date(sale.date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
     : '—';
-  const imgHtml = sale.image
-    ? `<img class="listing-img" src="${sale.image}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-       <div class="listing-img-placeholder" style="display:none">👻</div>`
-    : `<div class="listing-img-placeholder">👻</div>`;
+  const figSrc = `assets/figures/${slugifySetHm_(activeSet)}/${slugifyHm_(player)}_${normVarHm_(variant)}.png`;
+  let imgHtml;
+  if (sale.image) {
+    imgHtml = `<img class="listing-img" src="${sale.image}" alt="" loading="lazy"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="listing-img-placeholder" style="display:none">
+         <img class="listing-img" src="${figSrc}" alt="" style="object-fit:contain;background:#111" onerror="this.parentElement.textContent='👻'">
+       </div>`;
+  } else {
+    imgHtml = `<img class="listing-img" src="${figSrc}" alt="" loading="lazy" style="object-fit:contain;background:#111"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="listing-img-placeholder" style="display:none">👻</div>`;
+  }
   const linkHtml = sale.url
     ? `<a class="listing-link" href="${sale.url}" target="_blank" rel="noopener">↗ view</a>`
     : '';

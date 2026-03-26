@@ -1,0 +1,305 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ghostladder.css — Consolidated shared styles
+   Single CSS file linked by all dashboard pages.
+   Page-specific styles stay in each page's inline <style> block.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+
+/* ── Design Tokens ────────────────────────────────────────────────────────────
+   Core color palette, typography, and spacing variables.
+   Pages may extend :root with page-specific vars (e.g. --orange, --body).
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg:         #080808;
+  --s1:         #101010;
+  --s2:         #161616;
+  --s3:         #1e1e1e;
+  --border:     #2c2c2c;
+  --accent:     #e8ff47;
+  --accent-dim: rgba(232,255,71,0.12);
+  --red:        #ff4040;
+  --green:      #3ddc84;
+  --text:       #f0f0f0;
+  --muted:      #909090;
+  --muted2:     #aaa;
+  --mono:       'DM Mono', monospace;
+  --display:    'Bebas Neue', sans-serif;
+  --serif:      'Instrument Serif', serif;
+}
+
+
+/* ── Variant Color System ─────────────────────────────────────────────────────
+   Single source of truth for all variant colors across every page.
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  --base:         #555555;
+  --victory:      #e8ff47;
+  --vides:        #ff9f43;
+  --emerald:      #2ecc71;
+  --gold:         #ffd700;
+  --chrome:       #a8c8ff;
+  --fire:         #ff2d2d;
+  --bet-on-women: #8c08a7;
+  --sp:           #999fa0;
+}
+
+.v-base         { color: var(--base);         border-color: var(--base); }
+.v-victory      { color: var(--victory);      border-color: var(--victory); }
+.v-vides        { color: var(--vides);        border-color: var(--vides); }
+.v-emerald      { color: var(--emerald);      border-color: var(--emerald); }
+.v-gold         { color: var(--gold);         border-color: var(--gold); }
+.v-chrome       { color: var(--chrome);       border-color: var(--chrome); }
+.v-fire         { color: var(--fire);         border-color: var(--fire); }
+.v-bet-on-women { color: var(--bet-on-women); border-color: var(--bet-on-women); }
+.v-sp           { color: var(--sp);           border-color: var(--sp); }
+
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────────
+   Universal box-model, body defaults, and grain texture overlay.
+   ──────────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { background: var(--bg); min-height: 100vh; }
+body {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  overflow-x: hidden;
+}
+
+/* Film-grain texture overlay — decorative, non-interactive */
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999;
+}
+
+
+/* ── Navigation ───────────────────────────────────────────────────────────────
+   Sticky header bar, wordmark, nav links, dropdown menu.
+   ──────────────────────────────────────────────────────────────────────────── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,8,8,0.96); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* Wordmark */
+.logo {
+  font-family: var(--display); font-size: 20px;
+  letter-spacing: 3px; color: var(--text);
+  text-decoration: none; flex-shrink: 0;
+}
+.logo em { color: var(--accent); font-style: normal; }
+
+/* Nav links */
+.nav {
+  display: flex; gap: 0; align-items: center;
+  position: absolute; left: 0; right: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+.nav a { pointer-events: all; }
+.nav a {
+  font-family: var(--display); font-size: 12px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); text-decoration: none;
+  padding: 0 18px; height: 56px;
+  display: flex; align-items: center; gap: 6px;
+  transition: color 0.15s;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav a:hover  { color: var(--text); }
+.nav a.active { color: var(--text); border-bottom-color: var(--accent); }
+
+
+/* ── Admin Subnav ─────────────────────────────────────────────────────────────
+   Secondary nav bar below header on admin pages only.
+   ──────────────────────────────────────────────────────────────────────────── */
+.admin-subnav {
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  background: rgba(8,8,8,0.96);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 56px;
+  z-index: 99;
+}
+.admin-subnav a {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0 16px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.admin-subnav a:hover  { color: var(--text); }
+.admin-subnav a.active { color: var(--chrome, #4fd1ff); border-bottom-color: var(--chrome, #4fd1ff); }
+
+
+/* ── Nav Dropdown (GL50 → Player Indexes) ─────────────────────────────────── */
+.nav-dropdown {
+  position: relative;
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+}
+.nav-dropdown > a { pointer-events: all; }
+.nav-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgba(8,8,8,0.98);
+  border: 1px solid var(--border);
+  border-top: none;
+  min-width: 170px;
+  z-index: 200;
+  flex-direction: column;
+}
+.nav-dropdown:hover .nav-dropdown-menu { display: flex; }
+.nav-dropdown-menu a {
+  height: 44px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border);
+}
+.nav-dropdown-menu a:last-child { border-bottom: none; }
+.nav-dropdown-menu a:hover { background: var(--s1); color: var(--text); }
+
+
+/* ── BETA Badge ───────────────────────────────────────────────────────────── */
+.beta-badge {
+  font-size: 9px; letter-spacing: 1px;
+  background: var(--accent); color: #000;
+  padding: 1px 5px; border-radius: 2px; font-weight: 700;
+}
+
+
+/* ── Header Right (refresh, live badge, etc.) ─────────────────────────────── */
+.header-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted2);
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+.refresh-btn {
+  background: var(--s3); border: 1px solid var(--border);
+  color: var(--muted2); font-family: var(--mono);
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 6px 14px; cursor: pointer; transition: all 0.15s;
+}
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.scraped-badge { font-size: 9px; letter-spacing: 1px; color: var(--muted); }
+
+
+/* ── Page Header Block ────────────────────────────────────────────────────── */
+.page-header-block {
+  padding: 28px 32px 0;
+  position: relative;
+}
+.page-header-title {
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: 1px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.page-header-sub {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+
+/* ── Shared Page Layout Classes ───────────────────────────────────────────────
+   Common page-title pattern. Individual pages override font-size as needed.
+   ──────────────────────────────────────────────────────────────────────────── */
+.page-eyebrow {
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.page-title {
+  font-family: var(--display); font-size: 48px; letter-spacing: 1px;
+  line-height: 1; color: var(--text); margin-bottom: 8px;
+}
+.page-title em { color: var(--accent); font-style: normal; }
+.page-sub {
+  font-family: var(--serif); font-style: italic; font-size: 13px;
+  color: var(--muted2); margin-bottom: 32px;
+}
+
+
+/* ── Explainer Button & Panel ─────────────────────────────────────────────── */
+.explainer-btn {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.explainer-btn:hover { transform: scale(1.15); }
+
+.explainer-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% - 16px);
+  left: 32px;
+  z-index: 200;
+  width: 400px;
+  background: #f7f068;
+  color: #1a1a1a;
+  padding: 20px 22px 18px;
+  box-shadow: 4px 6px 0 rgba(0,0,0,0.5);
+  transform: rotate(-0.5deg);
+}
+.explainer-panel.visible { display: block; }
+.explainer-panel p {
+  font-family: 'Instrument Serif', 'Georgia', serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+.explainer-panel p:last-child { margin-bottom: 0; }
+.explainer-panel em  { font-style: italic; }
+.explainer-panel a   { color: #1a1a1a; font-weight: 700; }
+.explainer-panel a:hover { text-decoration: underline; }
+.explainer-close {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; color: rgba(0,0,0,0.4); padding: 2px 6px;
+}
+.explainer-close:hover { color: #1a1a1a; }

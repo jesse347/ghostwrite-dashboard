@@ -6,21 +6,10 @@
   <title>Analytics — GhostLadder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="ghostladder.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="estimate-engine.js"></script>
   <style>
-    :root {
-      --bg: #080808; --s1: #101010; --s2: #161616; --s3: #1e1e1e;
-      --border: #282828; --border2: #333;
-      --accent: #e8ff47; --chrome: #4fd1ff;
-      --text: #f0f0f0; --muted: #666; --muted2: #999;
-      --red: #ff4040; --green: #3ddc84; --orange: #ff9f43; --purple: #c084fc;
-      --mono: 'DM Mono', monospace; --display: 'Bebas Neue', sans-serif;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
-
     /* ── Page layout ── */
     .views-wrap {
       padding: 0 32px 80px;
@@ -53,7 +42,7 @@
       padding: 18px 20px 16px;
     }
     .summary-card-label {
-      font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
       color: var(--muted); margin-bottom: 8px;
     }
     .summary-card-value {
@@ -81,7 +70,7 @@
       line-height: 1;
     }
     .section-sub {
-      font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
       color: var(--muted); margin-top: 5px;
     }
     .section-controls {
@@ -128,7 +117,7 @@
       width: 100%; border-collapse: collapse;
     }
     .data-table th {
-      font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
       color: var(--muted); text-align: left; padding: 0 12px 10px 0;
       border-bottom: 1px solid var(--border2); font-weight: 400;
     }
@@ -145,11 +134,11 @@
     .td-price { color: var(--accent) !important; font-family: var(--display); font-size: 13px; }
     .td-link { color: var(--chrome); text-decoration: none; font-size: 9px; }
     .td-link:hover { text-decoration: underline; }
-    .td-afa { font-size: 8px; letter-spacing: 1px; }
+    .td-afa { font-size: 9px; letter-spacing: 1px; }
     .tag-afa {
       display: inline-block; padding: 2px 6px; border-radius: 2px;
       background: rgba(192,132,252,0.12); border: 1px solid rgba(192,132,252,0.3);
-      color: var(--purple); font-size: 7px; letter-spacing: 1px;
+      color: var(--purple); font-size: 9px; letter-spacing: 1px;
     }
     .td-date { font-size: 9px; }
     .td-set { font-size: 9px; color: var(--muted) !important; }
@@ -181,7 +170,7 @@
     }
     .time-labels {
       display: flex; justify-content: space-between;
-      font-size: 7px; letter-spacing: 1px; color: var(--muted);
+      font-size: 9px; letter-spacing: 1px; color: var(--muted);
       width: 180px;
     }
     .time-label-active { color: var(--accent); }
@@ -194,7 +183,7 @@
       box-shadow: 0 4px 24px rgba(0,0,0,0.5);
     }
     .mode-sidebar-title {
-      font-size: 7px; letter-spacing: 2px; text-transform: uppercase;
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
       color: var(--muted); margin-bottom: 10px; padding-bottom: 8px;
       border-bottom: 1px solid var(--border);
     }
@@ -217,11 +206,11 @@
       border-top: 1px solid var(--border);
     }
     .mode-affects-label {
-      font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
       color: var(--muted); margin-bottom: 6px;
     }
     .mode-affects-item {
-      font-size: 8px; color: var(--muted2); margin-bottom: 3px;
+      font-size: 9px; color: var(--muted2); margin-bottom: 3px;
       padding-left: 2px;
     }
 
@@ -235,7 +224,7 @@
     /* ── AFA Grade badge in table ── */
     .grade-badge {
       display: inline-block; padding: 2px 7px; border-radius: 2px;
-      font-size: 8px; letter-spacing: 1px; font-weight: 500;
+      font-size: 9px; letter-spacing: 1px; font-weight: 500;
       background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.25);
       color: var(--purple);
     }
@@ -267,7 +256,7 @@
     .ts-card:hover { border-color: var(--border2); }
     .ts-rank {
       position: absolute; top: 7px; left: 7px; z-index: 2;
-      font-size: 8px; letter-spacing: 1px; font-family: var(--mono);
+      font-size: 9px; letter-spacing: 1px; font-family: var(--mono);
       background: rgba(0,0,0,0.65); padding: 1px 6px; border-radius: 2px;
       color: var(--muted);
     }
@@ -290,16 +279,16 @@
       font-size: 10px; color: var(--text); font-weight: 500;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .ts-variant { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
+    .ts-variant { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
     .ts-set {
-      font-size: 8px; color: var(--muted);
+      font-size: 9px; color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
     }
     .ts-date { font-size: 9px; color: var(--muted); margin-top: 5px; }
     .ts-afa {
       display: inline-block; padding: 1px 5px; margin-top: 2px; border-radius: 2px;
       background: rgba(192,132,252,0.10); border: 1px solid rgba(192,132,252,0.28);
-      color: var(--purple); font-size: 7px; letter-spacing: 1px;
+      color: var(--purple); font-size: 9px; letter-spacing: 1px;
     }
 
   </style>
