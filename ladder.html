@@ -459,7 +459,7 @@
   <div class="ladder-search-row">
     <div class="ladder-search">
       <span class="search-icon">&#x1F50D;</span>
-      <input type="text" id="ladder-search-input" placeholder="Shohei Ohtani">
+      <input type="text" id="ladder-search-input" placeholder="Search player, parallel, set...">
       <button class="filter-btn" id="filter-toggle-btn" title="Filter" onclick="toggleFilterDrawer()">&#x2630;</button>
     </div>
   </div>
@@ -725,11 +725,15 @@ function applySort() {
 }
 
 // ── Filtering ──
+function fuzzyNorm(s) {
+  return (s || '').toLowerCase().replace(/[.\-']/g, '').replace(/\s+/g, ' ').trim();
+}
 function applyFilter() {
-  const q = (document.getElementById('ladder-search-input').value || '').toLowerCase().trim();
+  const raw = (document.getElementById('ladder-search-input').value || '').trim();
+  const q = fuzzyNorm(raw);
   filteredItems = allItems.filter(item => {
-    // Text search
-    if (q && !item.player.toLowerCase().includes(q) && !item.set_name.toLowerCase().includes(q)) return false;
+    // Text search — fuzzy match against player, variant, and set name
+    if (q && !fuzzyNorm(item.player).includes(q) && !fuzzyNorm(item.set_name).includes(q) && !fuzzyNorm(item.variant).includes(q)) return false;
     // League filter
     if (activeLeagues.size > 0 && !activeLeagues.has(SET_LEAGUE[item.set_name] || 'OTHER')) return false;
     // Set filter
@@ -921,6 +925,12 @@ window.addEventListener('scroll', () => {
     renderMore();
   }
 });
+
+// ── URL param: pre-fill search from ?q=... ──
+const urlQ = new URLSearchParams(window.location.search).get('q');
+if (urlQ) {
+  document.getElementById('ladder-search-input').value = urlQ;
+}
 
 // ── Init ──
 loadData();
