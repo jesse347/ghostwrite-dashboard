@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · ladder</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ghostladder.css">
+<style>
+
+/* ── Ladder page styles ── */
+.ladder-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+.ladder-title {
+  font-family: var(--display);
+  font-size: 48px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+/* ── Search bar ── */
+.ladder-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ladder-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 44px;
+  transition: border-color 0.15s;
+}
+.ladder-search:focus-within {
+  border-color: var(--muted);
+}
+.ladder-search input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  height: 100%;
+}
+.ladder-search input::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+.ladder-search .search-icon {
+  color: var(--muted);
+  font-size: 15px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.ladder-search .filter-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.ladder-search .filter-btn:hover,
+.ladder-search .filter-btn.active {
+  color: var(--accent);
+}
+
+/* ── Filter drawer ── */
+.ladder-filter-drawer {
+  display: none;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.ladder-filter-drawer.open { display: block; }
+.ladder-filter-section {
+  margin-bottom: 14px;
+}
+.ladder-filter-section:last-child { margin-bottom: 0; }
+.ladder-filter-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.ladder-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ladder-fchip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.12s;
+}
+.ladder-fchip:hover { border-color: var(--muted2); color: var(--text); }
+.ladder-fchip.active { border-color: var(--accent); color: var(--accent); background: rgba(232,255,71,0.05); }
+/* Variant chips use their own colors when active */
+.ladder-fchip.fv-fire.active    { border-color: var(--fire); color: var(--fire); background: rgba(255,64,64,0.08); }
+.ladder-fchip.fv-chrome.active  { border-color: var(--chrome); color: var(--chrome); background: rgba(100,180,255,0.08); }
+.ladder-fchip.fv-gold.active    { border-color: var(--gold); color: var(--gold); background: rgba(255,200,0,0.08); }
+.ladder-fchip.fv-emerald.active { border-color: var(--emerald); color: var(--emerald); background: rgba(61,220,132,0.08); }
+.ladder-fchip.fv-victory.active { border-color: var(--victory); color: var(--victory); background: rgba(160,90,255,0.08); }
+.ladder-fchip.fv-base.active    { border-color: #6699cc; color: #6699cc; background: rgba(102,153,204,0.08); }
+.ladder-fchip.fv-sp.active      { border-color: #ff9f43; color: #ff9f43; background: rgba(255,159,67,0.08); }
+.ladder-fchip.fv-bet-on-women.active { border-color: #ff69b4; color: #ff69b4; background: rgba(255,105,180,0.08); }
+.ladder-fchip.fv-vides.active   { border-color: #00c9a7; color: #00c9a7; background: rgba(0,201,167,0.08); }
+.ladder-fchip.fv-sapphire.active { border-color: #4169e1; color: #4169e1; background: rgba(65,105,225,0.08); }
+
+/* ── Sort row ── */
+.ladder-sort-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.ladder-sort {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 12px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.ladder-sort option {
+  background: var(--s2);
+  color: var(--text);
+}
+.ladder-sort-dir {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.12s;
+  line-height: 1;
+}
+.ladder-sort-dir:hover { border-color: var(--muted); }
+
+/* ── Card list ── */
+.ladder-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Card row ── */
+.ladder-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+  cursor: default;
+}
+.ladder-row:hover {
+  background: var(--s1);
+  margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-radius: 8px;
+}
+
+/* ── Figure image / placeholder ── */
+.ladder-fig {
+  width: 60px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ladder-fig img {
+  height: 100%;
+  object-fit: contain;
+}
+.ladder-fig .ghost-placeholder {
+  font-size: 28px;
+  opacity: 0.3;
+}
+
+/* ── Text block (center) ── */
+.ladder-info {
+  flex: 1;
+  min-width: 0;
+}
+.ladder-set {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ladder-player {
+  font-family: var(--display);
+  font-size: 20px;
+  color: var(--text);
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ladder-variant-badge {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid;
+  margin-bottom: 6px;
+}
+.ladder-meta {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ladder-meta .sep {
+  color: var(--border);
+}
+
+/* ── Value block (right) ── */
+.ladder-value {
+  text-align: right;
+  flex-shrink: 0;
+}
+.ladder-value-label {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.ladder-value-price {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+/* Color modes for the value price */
+.ladder-value-price.price-gold   { color: #d4a017; }
+.ladder-value-price.price-purple { color: #c084fc; }
+.ladder-value-price.price-white  { color: var(--text); }
+
+/* ── Loading / end states ── */
+.ladder-loading {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+.ladder-end {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Sales drawer ── */
+.ladder-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+}
+.ladder-overlay.open { display: block; }
+.ladder-drawer {
+  position: fixed; top: 0; right: -460px; bottom: 0;
+  width: 440px; max-width: 90vw;
+  background: var(--s1); border-left: 1px solid var(--border);
+  z-index: 201;
+  display: flex; flex-direction: column;
+  transition: right 0.25s ease;
+}
+.ladder-drawer.open { right: 0; }
+.ladder-drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ladder-drawer-player {
+  font-family: var(--display); font-size: 22px; color: var(--text);
+  letter-spacing: 0.5px;
+}
+.ladder-drawer-set {
+  font-size: 10px; color: var(--muted); letter-spacing: 0.5px;
+  text-transform: uppercase; margin-top: 2px;
+}
+.ladder-drawer-close {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  width: 28px; height: 28px; border-radius: 2px; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.15s;
+}
+.ladder-drawer-close:hover { border-color: var(--text); color: var(--text); }
+.ladder-drawer-stats {
+  display: flex; gap: 20px; padding: 14px 24px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.ld-stat-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.ld-stat-value { font-family: var(--display); font-size: 18px; color: var(--accent); }
+.ladder-drawer-sales {
+  flex: 1; overflow-y: auto; padding: 16px 24px;
+}
+.ld-sale-card {
+  display: flex; gap: 12px; padding: 12px;
+  margin-bottom: 10px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 3px;
+}
+.ld-sale-img {
+  width: 56px; height: 56px; object-fit: cover; border-radius: 2px; flex-shrink: 0;
+}
+.ld-sale-img-ph {
+  width: 56px; height: 56px; display: flex; align-items: center;
+  justify-content: center; font-size: 24px; opacity: 0.2; flex-shrink: 0;
+}
+.ld-sale-body { flex: 1; min-width: 0; }
+.ld-sale-title {
+  font-size: 11px; color: var(--muted2); line-height: 1.4;
+  margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ld-sale-meta {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.ld-sale-price { font-family: var(--display); font-size: 16px; color: var(--accent); }
+.ld-sale-date { font-size: 10px; color: var(--muted); }
+.ld-sale-afa {
+  font-size: 9px; padding: 2px 6px; border: 1px solid var(--accent);
+  color: var(--accent); border-radius: 2px;
+}
+.ld-sale-link {
+  font-size: 9px; color: var(--muted); text-decoration: none;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.ld-sale-link:hover { color: var(--text); }
+.ld-empty {
+  text-align: center; padding: 40px 0; color: var(--muted); font-size: 11px;
+}
+.ld-loading {
+  text-align: center; padding: 32px 0; color: var(--muted); font-size: 11px;
+}
+
+/* Clickable rows */
+.ladder-row.has-sales { cursor: pointer; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .ladder-page { padding: 16px; }
+  .ladder-title { font-size: 36px; }
+  .ladder-search { height: 40px; }
+  .ladder-filter-drawer { padding: 12px 14px; }
+  .ladder-fchip { font-size: 9px; padding: 3px 8px; }
+  .ladder-row { gap: 10px; }
+  .ladder-fig { width: 50px; height: 66px; }
+  .ladder-player { font-size: 17px; }
+  .ladder-value-price { font-size: 18px; }
+  .ladder-drawer { width: 100vw; max-width: 100vw; right: -100vw; }
+  .ladder-drawer.open { right: 0; }
+  .ld-sale-card { padding: 10px; gap: 10px; }
+  .ld-sale-img { width: 48px; height: 48px; }
+}
+
+@media (max-width: 480px) {
+  .ladder-page { padding: 16px 14px 60px; }
+  .ladder-title { font-size: 36px; }
+  .ladder-row { gap: 10px; }
+  .ladder-fig { width: 48px; height: 64px; }
+  .ladder-player { font-size: 17px; }
+  .ladder-value-price { font-size: 18px; }
+
+  .ladder-row {
+    flex-wrap: wrap;
+  }
+  .ladder-value {
+    width: 100%;
+    text-align: left;
+    padding-left: 62px;
+    margin-top: -4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ladder-value-label {
+    margin-bottom: 0;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <nav class="nav">
+    <a href="index.html">Home</a>
+    <a href="market-intel.html">Sales Intel</a>
+    <a href="ladder.html" class="active">Price Guide</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+  </nav>
+</header>
+
+<div class="ladder-page">
+
+  <div class="ladder-title">LADDER</div>
+
+  <!-- Search -->
+  <div class="ladder-search-row">
+    <div class="ladder-search">
+      <span class="search-icon">&#x1F50D;</span>
+      <input type="text" id="ladder-search-input" placeholder="Shohei Ohtani">
+      <button class="filter-btn" id="filter-toggle-btn" title="Filter" onclick="toggleFilterDrawer()">&#x2630;</button>
+    </div>
+  </div>
+
+  <!-- Filter drawer -->
+  <div class="ladder-filter-drawer" id="filter-drawer">
+    <div class="ladder-filter-section">
+      <div class="ladder-filter-label">League</div>
+      <div class="ladder-filter-chips" id="league-chips"></div>
+    </div>
+    <div class="ladder-filter-section">
+      <div class="ladder-filter-label">Set</div>
+      <div class="ladder-filter-chips" id="set-chips"></div>
+    </div>
+    <div class="ladder-filter-section">
+      <div class="ladder-filter-label">Variant</div>
+      <div class="ladder-filter-chips" id="variant-chips"></div>
+    </div>
+  </div>
+
+  <!-- Sort -->
+  <div class="ladder-sort-row">
+    <select class="ladder-sort" id="ladder-sort">
+      <option value="avg">All-Time Avg.</option>
+      <option value="avg30d">30D Avg.</option>
+      <option value="estimate">Estimated Value</option>
+      <option value="sales">Sales</option>
+      <option value="name">Name</option>
+    </select>
+    <button class="ladder-sort-dir" id="sort-dir-btn" onclick="toggleSortDir()">&#x2193;</button>
+  </div>
+
+  <!-- Card list -->
+  <div class="ladder-list" id="ladder-list"></div>
+  <div class="ladder-loading" id="ladder-loading">loading...</div>
+
+</div>
+
+<!-- Sales drawer -->
+<div class="ladder-overlay" id="ladder-overlay" onclick="closeLadderDrawer()"></div>
+<div class="ladder-drawer" id="ladder-drawer">
+  <div class="ladder-drawer-header">
+    <div>
+      <div class="ladder-drawer-player" id="ld-player"></div>
+      <div class="ladder-drawer-set" id="ld-set"></div>
+    </div>
+    <button class="ladder-drawer-close" onclick="closeLadderDrawer()">✕</button>
+  </div>
+  <div class="ladder-drawer-stats" id="ld-stats"></div>
+  <div class="ladder-drawer-sales" id="ld-sales"></div>
+</div>
+
+<script>
+// ── Supabase config ──
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+async function sbGet(table, query = '') {
+  const url = `${SB_URL}/rest/v1/${table}${query ? '?' + query : ''}`;
+  const r = await fetch(url, { headers: SB_H });
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+// ── Slug helpers ──
+function slugify(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\./g, '').replace(/[^a-z0-9\s]/g, '')
+    .trim().replace(/\s+/g, '_');
+}
+function normalizeVariant(v) {
+  if (!v) return '';
+  const l = v.toLowerCase();
+  if (l.includes('fire')) return 'fire';
+  if (l.includes('chrome')) return 'chrome';
+  if (l.includes('gold')) return 'gold';
+  if (l.includes('emerald')) return 'emerald';
+  if (l.includes('victory')) return 'victory';
+  if (l.includes('base')) return 'base';
+  if (l.includes('bet')) return 'bet-on-women';
+  if (l.includes('vides')) return 'vides';
+  if (l.includes('sapphire')) return 'sapphire';
+  if (l.includes('sp')) return 'sp';
+  return l.replace(/[^a-z0-9]/g, '_');
+}
+function slugifySet(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-');
+}
+function figureUrl(player, variant, setName) {
+  return `assets/figures/${slugifySet(setName)}/${slugify(player)}_${normalizeVariant(variant)}.png`;
+}
+
+// ── League map ──
+const SET_LEAGUE = {
+  'MLB 2025 Game Face': 'MLB',
+  'NBA 2024-25 Game Face': 'NBA',
+  'NBA 2025-26': 'NBA',
+  'WNBA 2024 Game Face': 'WNBA',
+  'WNBA 2025': 'WNBA',
+  'Eminem Home': 'OTHER',
+};
+
+// Short set names for chips
+const SET_SHORT = {
+  'MLB 2025 Game Face': "MLB '25",
+  'NBA 2024-25 Game Face': "NBA '24",
+  'NBA 2025-26': "NBA '25",
+  'WNBA 2024 Game Face': "WNBA '24",
+  'WNBA 2025': "WNBA '25",
+  'Eminem Home': 'Eminem',
+};
+
+// ── State ──
+let allItems = [];
+let filteredItems = [];
+let displayedCount = 0;
+const PAGE_SIZE = 20;
+let sortDir = 'desc'; // 'asc' or 'desc'
+let activeLeagues = new Set();
+let activeSets = new Set();
+let activeVariants = new Set();
+
+// ── Filter drawer ──
+function toggleFilterDrawer() {
+  const drawer = document.getElementById('filter-drawer');
+  const btn = document.getElementById('filter-toggle-btn');
+  drawer.classList.toggle('open');
+  btn.classList.toggle('active', drawer.classList.contains('open'));
+}
+
+function toggleFilterChip(type, value, el) {
+  const set = type === 'league' ? activeLeagues : type === 'set' ? activeSets : activeVariants;
+  if (set.has(value)) {
+    set.delete(value);
+    el.classList.remove('active');
+  } else {
+    set.add(value);
+    el.classList.add('active');
+  }
+  applyFilter();
+}
+
+function buildFilterChips() {
+  // Leagues
+  const leagues = [...new Set(allItems.map(i => SET_LEAGUE[i.set_name] || 'OTHER'))].sort();
+  document.getElementById('league-chips').innerHTML = leagues.map(l =>
+    `<button class="ladder-fchip" onclick="toggleFilterChip('league','${l}',this)">${l}</button>`
+  ).join('');
+
+  // Sets
+  const sets = [...new Set(allItems.map(i => i.set_name))].sort();
+  document.getElementById('set-chips').innerHTML = sets.map(s =>
+    `<button class="ladder-fchip" onclick="toggleFilterChip('set','${esc(s)}',this)">${SET_SHORT[s] || s}</button>`
+  ).join('');
+
+  // Variants
+  const variants = [...new Set(allItems.map(i => i.variant))].sort();
+  document.getElementById('variant-chips').innerHTML = variants.map(v => {
+    const vSlug = normalizeVariant(v);
+    return `<button class="ladder-fchip fv-${vSlug}" onclick="toggleFilterChip('variant','${esc(v)}',this)">${v}</button>`;
+  }).join('');
+}
+
+// ── Sort direction toggle ──
+function toggleSortDir() {
+  sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sort-dir-btn').innerHTML = sortDir === 'desc' ? '&#x2193;' : '&#x2191;';
+  applySort();
+  applyFilter();
+}
+
+// ── Data loading ──
+async function loadData() {
+  try {
+    const [piRows, snapRows] = await Promise.all([
+      rpc('get_price_intelligence'),
+      sbGet('estimate_snapshots', 'select=player,variant,set_name,estimated_price,confidence,is_refreshed&order=snapshot_at.desc&limit=1000')
+    ]);
+
+    // Build snapshot lookup
+    const snapMap = {};
+    (snapRows || []).forEach(s => {
+      const key = `${(s.player||'').toLowerCase()}|${(s.variant||'').toLowerCase()}|${(s.set_name||'').toLowerCase()}`;
+      if (!snapMap[key]) snapMap[key] = s;
+    });
+
+    // Merge PI + snapshots
+    allItems = (piRows || []).map(pi => {
+      const key = `${(pi.player||'').toLowerCase()}|${(pi.variant||'').toLowerCase()}|${(pi.set_name||'').toLowerCase()}`;
+      const snap = snapMap[key];
+      const estimatedPrice = snap ? +snap.estimated_price : (pi.avg_price ? +pi.avg_price : 0);
+      return {
+        player: pi.player || '',
+        variant: pi.variant || '',
+        set_name: pi.set_name || '',
+        avgPrice: pi.avg_price ? +pi.avg_price : null,
+        avg30d: pi.avg_30d ? +pi.avg_30d : null,
+        lastSalePrice: pi.last_sale_price ? +pi.last_sale_price : null,
+        lastSaleDate: pi.last_sale_date || null,
+        totalSales: pi.total_sales ? +pi.total_sales : 0,
+        sales30d: pi.sales_30d ? +pi.sales_30d : 0,
+        estimatedPrice,
+        confidence: snap ? snap.confidence : null
+      };
+    });
+
+    buildFilterChips();
+    applySort();
+    applyFilter();
+  } catch (err) {
+    console.error('Load error:', err);
+    document.getElementById('ladder-loading').textContent = 'Error loading data';
+  }
+}
+
+// ── Get display value based on current sort mode ──
+function getDisplayValue(item) {
+  const mode = document.getElementById('ladder-sort').value;
+  switch (mode) {
+    case 'avg':      return { value: item.avgPrice, label: 'Avg. Price', colorClass: 'price-gold' };
+    case 'avg30d':   return { value: item.avg30d, label: '30D Avg.', colorClass: 'price-gold' };
+    case 'estimate': return { value: item.estimatedPrice, label: 'Estimate', colorClass: 'price-purple' };
+    case 'sales':    return { value: item.totalSales, label: 'Sales', colorClass: 'price-white', isCurrency: false };
+    case 'name':     return { value: item.avgPrice, label: 'Avg. Price', colorClass: 'price-gold' };
+    default:         return { value: item.avgPrice, label: 'Avg. Price', colorClass: 'price-gold' };
+  }
+}
+
+function getSortValue(item) {
+  const mode = document.getElementById('ladder-sort').value;
+  switch (mode) {
+    case 'avg':      return item.avgPrice || 0;
+    case 'avg30d':   return item.avg30d || 0;
+    case 'estimate': return item.estimatedPrice || 0;
+    case 'sales':    return item.totalSales || 0;
+    case 'name':     return item.player.toLowerCase();
+    default:         return item.avgPrice || 0;
+  }
+}
+
+// ── Sorting ──
+function applySort() {
+  const mode = document.getElementById('ladder-sort').value;
+  if (mode === 'name') {
+    allItems.sort((a, b) => sortDir === 'asc'
+      ? a.player.localeCompare(b.player)
+      : b.player.localeCompare(a.player));
+  } else {
+    allItems.sort((a, b) => sortDir === 'desc'
+      ? getSortValue(b) - getSortValue(a)
+      : getSortValue(a) - getSortValue(b));
+  }
+}
+
+// ── Filtering ──
+function applyFilter() {
+  const q = (document.getElementById('ladder-search-input').value || '').toLowerCase().trim();
+  filteredItems = allItems.filter(item => {
+    // Text search
+    if (q && !item.player.toLowerCase().includes(q) && !item.set_name.toLowerCase().includes(q)) return false;
+    // League filter
+    if (activeLeagues.size > 0 && !activeLeagues.has(SET_LEAGUE[item.set_name] || 'OTHER')) return false;
+    // Set filter
+    if (activeSets.size > 0 && !activeSets.has(item.set_name)) return false;
+    // Variant filter
+    if (activeVariants.size > 0 && !activeVariants.has(item.variant)) return false;
+    return true;
+  });
+  displayedCount = 0;
+  document.getElementById('ladder-list').innerHTML = '';
+  renderMore();
+}
+
+// ── Rendering ──
+function renderMore() {
+  const list = document.getElementById('ladder-list');
+  const loader = document.getElementById('ladder-loading');
+  const end = Math.min(displayedCount + PAGE_SIZE, filteredItems.length);
+
+  for (let i = displayedCount; i < end; i++) {
+    list.appendChild(buildRow(filteredItems[i]));
+  }
+  displayedCount = end;
+
+  if (displayedCount >= filteredItems.length) {
+    loader.textContent = filteredItems.length === 0 ? 'No results' : '';
+    loader.className = filteredItems.length === 0 ? 'ladder-loading' : 'ladder-end';
+  } else {
+    loader.textContent = 'loading...';
+    loader.className = 'ladder-loading';
+  }
+}
+
+function buildRow(item) {
+  const row = document.createElement('div');
+  const hasSales = item.totalSales > 0;
+  row.className = 'ladder-row' + (hasSales ? ' has-sales' : '');
+
+  if (hasSales) {
+    row.addEventListener('click', () => openLadderDrawer(item));
+  }
+
+  const vSlug = normalizeVariant(item.variant);
+  const vClass = vSlug ? `v-${vSlug}` : '';
+  const imgSrc = figureUrl(item.player, item.variant, item.set_name);
+
+  const lastSold = item.lastSalePrice != null ? `$${Math.round(item.lastSalePrice).toLocaleString()}` : '--';
+  const salesCount = item.totalSales || 0;
+
+  const dv = getDisplayValue(item);
+  const isCurrency = dv.isCurrency !== false;
+  const displayVal = dv.value != null
+    ? (isCurrency ? `$${Math.round(dv.value).toLocaleString()}` : dv.value.toLocaleString())
+    : '--';
+
+  row.innerHTML = `
+    <div class="ladder-fig">
+      <img src="${imgSrc}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="ghost-placeholder" style="display:none;">&#x1F47B;</div>
+    </div>
+    <div class="ladder-info">
+      <div class="ladder-set">${esc(item.set_name)}</div>
+      <div class="ladder-player">${esc(item.player)}</div>
+      ${vSlug && vSlug !== 'base' ? `<span class="ladder-variant-badge ${vClass}">${esc(item.variant)}</span>` : ''}
+      <div class="ladder-meta">
+        <span>Last: ${lastSold}</span>
+        <span class="sep">|</span>
+        <span>Sales: ${salesCount}</span>
+      </div>
+    </div>
+    <div class="ladder-value">
+      <div class="ladder-value-label">${dv.label}</div>
+      <div class="ladder-value-price ${dv.colorClass}">${displayVal}</div>
+    </div>
+  `;
+  return row;
+}
+
+// ── Sales drawer ──
+async function openLadderDrawer(item) {
+  const drawer = document.getElementById('ladder-drawer');
+  const overlay = document.getElementById('ladder-overlay');
+  const vSlug = normalizeVariant(item.variant);
+  const vClass = vSlug ? `v-${vSlug}` : '';
+
+  document.getElementById('ld-player').innerHTML =
+    `${esc(item.player)} <span class="ladder-variant-badge ${vClass}" style="font-size:10px;vertical-align:middle;margin-left:6px">${esc(item.variant)}</span>`;
+  document.getElementById('ld-set').textContent = item.set_name;
+
+  document.getElementById('ld-stats').innerHTML = `
+    <div><div class="ld-stat-label">Avg Price</div><div class="ld-stat-value">${item.avgPrice ? '$' + Math.round(item.avgPrice).toLocaleString() : '—'}</div></div>
+    <div><div class="ld-stat-label">Last Sale</div><div class="ld-stat-value">${item.lastSalePrice ? '$' + Math.round(item.lastSalePrice).toLocaleString() : '—'}</div></div>
+    <div><div class="ld-stat-label">Total Sales</div><div class="ld-stat-value">${item.totalSales || 0}</div></div>
+  `;
+
+  document.getElementById('ld-sales').innerHTML = '<div class="ld-loading">loading sales...</div>';
+  overlay.classList.add('open');
+  drawer.classList.add('open');
+
+  try {
+    const sales = await rpc('get_sales_by_combo', {
+      p_set_name: item.set_name, p_player: item.player, p_variant: item.variant
+    });
+
+    if (!sales || !sales.length) {
+      document.getElementById('ld-sales').innerHTML = '<div class="ld-empty">No sales found</div>';
+      return;
+    }
+
+    // Sort most recent first
+    sales.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+    const figSrc = figureUrl(item.player, item.variant, item.set_name);
+    document.getElementById('ld-sales').innerHTML = sales.map(s => {
+      const price = s.price ? '$' + Math.round(+s.price).toLocaleString() : '—';
+      const date = s.date
+        ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : '—';
+      const afaBadge = s.afa_grade ? `<span class="ld-sale-afa">🏆 AFA ${esc(s.afa_grade)}</span>` : '';
+      const linkHtml = s.ebay_url
+        ? `<a class="ld-sale-link" href="${s.ebay_url}" target="_blank" rel="noopener">↗ view</a>`
+        : '';
+
+      let imgHtml;
+      if (s.image_url) {
+        imgHtml = `<img class="ld-sale-img" src="${s.image_url}" alt="" loading="lazy"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="ld-sale-img-ph" style="display:none">
+            ${figSrc ? `<img class="ld-sale-img" src="${figSrc}" alt="" style="object-fit:contain" onerror="this.parentElement.textContent='👻'">` : '👻'}
+          </div>`;
+      } else {
+        imgHtml = figSrc
+          ? `<img class="ld-sale-img" src="${figSrc}" alt="" loading="lazy" style="object-fit:contain"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="ld-sale-img-ph" style="display:none">👻</div>`
+          : `<div class="ld-sale-img-ph">👻</div>`;
+      }
+
+      return `<div class="ld-sale-card">
+        ${imgHtml}
+        <div class="ld-sale-body">
+          <div class="ld-sale-title">${esc(s.title || '')}</div>
+          <div class="ld-sale-meta">
+            <span class="ld-sale-price">${price}</span>
+            <span class="ld-sale-date">${date}</span>
+            ${afaBadge}
+            ${linkHtml}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+  } catch (e) {
+    console.error('Drawer error:', e);
+    document.getElementById('ld-sales').innerHTML = '<div class="ld-empty">Failed to load sales</div>';
+  }
+}
+
+function closeLadderDrawer() {
+  document.getElementById('ladder-drawer').classList.remove('open');
+  document.getElementById('ladder-overlay').classList.remove('open');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Search debounce ──
+let searchTimeout;
+document.getElementById('ladder-search-input').addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => applyFilter(), 200);
+});
+
+// ── Sort change ──
+document.getElementById('ladder-sort').addEventListener('change', () => {
+  applySort();
+  applyFilter();
+});
+
+// ── Infinite scroll ──
+window.addEventListener('scroll', () => {
+  if (displayedCount >= filteredItems.length) return;
+  const scrollBottom = window.innerHeight + window.scrollY;
+  const docHeight = document.documentElement.scrollHeight;
+  if (docHeight - scrollBottom < 200) {
+    renderMore();
+  }
+});
+
+// ── Init ──
+loadData();
+</script>
+
+</body>
+</html>

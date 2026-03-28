@@ -10,8 +10,8 @@
 
 .page { max-width: 1100px; margin: 0 auto; padding: 32px; }
 .page-header { margin-bottom: 28px; position: relative; }
-.page-title { font-family: var(--display); font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; }
-.page-sub { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.page-title { font-family: var(--display); font-size: 48px; letter-spacing: 2px; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.page-sub { font-family: var(--mono); font-size: 14px; color: var(--muted2); margin-bottom: 32px; }
 
 .set-selector { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
 .set-btn {
@@ -338,12 +338,68 @@
 .hit-tooltip strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 10px; letter-spacing: 1px; }
 .hit-tooltip .formula { font-family: var(--mono); color: var(--accent); font-size: 8px; margin: 6px 0; line-height: 1.6; background: var(--s2); padding: 6px 8px; }
 .hit-tooltip .divider { border-top: 1px solid var(--border); margin: 8px 0; }
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .page { padding: 16px; }
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
-  .case-grid { grid-template-columns: repeat(4, 1fr); }
-  .nav { padding: 12px 16px; }
-  .drawer { width: 100%; }
+  .page-title { font-size: 28px; letter-spacing: 0; }
+  .page-sub { font-size: 14px; margin-bottom: 20px; }
+
+  /* Set chips — wrap, smaller */
+  .set-selector { gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .set-btn { padding: 8px 14px; font-size: 10px; }
+
+  /* Stat cards → 2 cols */
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; }
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 22px; }
+
+  /* Case grid — responsive columns */
+  .case-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+
+  /* Box cards — smaller text, reduced padding */
+  .box-card-variant { font-size: 8px; }
+  .box-card-player { font-size: 8px; }
+  .box-card-price { font-size: 11px; }
+  .box-card-info { padding: 4px 5px 4px; }
+
+  /* Sim area */
+  .sim-area { padding: 16px; }
+  .sim-header { gap: 8px; flex-direction: column; align-items: flex-start; }
+  .sim-controls { flex-wrap: wrap; gap: 6px; width: 100%; }
+
+  /* Buttons — full width */
+  .pull-btn, .sim-btn-open, .sim-btn-500 { padding: 10px 16px; font-size: 10px; width: 100%; text-align: center; }
+  .reset-btn { width: 100%; text-align: center; }
+
+  /* Result bar — stack vertically */
+  .result-bar { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .result-breakdown { margin-left: 0; text-align: left; }
+  .result-big { font-size: 24px; }
+
+  /* Drawer — full width */
+  .drawer { width: 100%; padding: 20px 16px; }
+  .comp-fig-card { min-width: 100%; }
+
+  /* Probability bars */
+  .prob-variant { width: 52px; font-size: 8px; }
+  .prob-pct { width: 48px; font-size: 8px; }
+
+  /* History table */
+  .history-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Jackpot popup */
+  .jackpot-popup { min-width: 280px; max-width: 92vw; }
+
+  /* Distribution chart */
+  .chart-area { padding: 16px; min-height: 200px; }
+  .chart-legend { padding: 0 16px 16px; gap: 12px; }
+  .sim-summary { padding: 12px 16px; gap: 16px; }
+  .sim-sum-val { font-size: 17px; }
+
+  /* Estimate toggle */
+  .estimate-toggle-row { flex-wrap: wrap; }
+
+  /* Case ghost */
+  .case-ghost-name { font-size: 22px; }
 }
 
 /* ── Distribution chart (500-case mode) ─────────────────────────────────── */
@@ -449,28 +505,26 @@
 
 <header>
   <div class="logo">ghost<em>ladder</em></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <nav class="nav">
-    <a href="index.html">Sales Intel</a>
-    <a href="guide.html">Price Guide</a>
-    <a href="listings.html">Listings Intel</a>
+    <a href="index.html">Home</a>
+    <a href="market-intel.html">Sales Intel</a>
+    <a href="ladder.html">Price Guide</a>
     <a href="sets.html">Sets</a>
     <a href="heatmap.html">Set Map</a>
     <a href="case-sim.html" class="active">ROI SIM</a>
-    <div class="nav-dropdown">
-      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
-      <div class="nav-dropdown-menu">
-        <a href="player-index.html">Player Indexes</a>
-      </div>
-    </div>
+    <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
   </nav>
 </header>
 
 <div class="page">
   <div class="page-header">
-    <div class="page-title">case <em>simulator</em>
+    <div class="page-title">ROI SIMULATOR
       <button class="explainer-btn" onclick="toggleExplainer()" title="What is this?">?</button>
     </div>
-    <div class="page-sub">open one case · or run 500 monte carlo simulations · click any hit to inspect</div>
+    <div class="page-sub">Open a virtual case and see what you pull. Every card priced by our estimation engine.</div>
     <div class="explainer-panel" id="explainer-panel">
       <button class="explainer-close" onclick="toggleExplainer()">✕</button>
       <p>Simulate opening cases from any set in the roster. Each pull is weighted by the real drop-rate math — so you can test your luck or run 500 Monte Carlo trials to see the expected value distribution.</p>
@@ -666,13 +720,14 @@ let estimateMode = 'model-blend';
 // ── Load ─────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [pi, recentSales, setsData, setMathData, paramsData, gradedSalesData] = await Promise.all([
+    const [pi, recentSales, setsData, setMathData, paramsData, gradedSalesData, playersData] = await Promise.all([
       rpc('get_price_intelligence'),
       rpc('get_recent_sales', {limit_rows: 500}),
       sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
       sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+      sbGet('players', 'select=name,prior_tier'),
     ]);
     const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
       set: r.set_name, player: r.player, variant: r.variant,
@@ -721,7 +776,11 @@ async function loadData() {
     // Build setName -> image_url map for the case ghost overlay
     const setImageMap = {};
     setsData.forEach(s => { if (s.image_url) setImageMap[s.name] = s.image_url; });
-    allData = { products, allListings, sbSetConfig, setMath, signalMap: {}, activeWeights, setLeagueMap, setImageMap };
+    const playerPriors = {};
+    (playersData || []).forEach(p => {
+      if (p.name && p.prior_tier) playerPriors[p.name] = { tier: +p.prior_tier };
+    });
+    allData = { products, allListings, sbSetConfig, setMath, signalMap: {}, activeWeights, setLeagueMap, setImageMap, playerPriors };
     initPage();
   } catch(e) {
     document.getElementById('main-content').innerHTML =
@@ -1092,7 +1151,7 @@ function updateCaseGhostImage() {
   const imgEl  = document.getElementById('case-ghost-img');
   const nameEl = document.getElementById('case-ghost-name');
   if (!imgEl || !nameEl) return;
-  const url = allData.setImageMap && allData.setImageMap[activeSet];
+  const url = 'assets/sets/' + slugifySet(activeSet) + '.png';
   if (url) {
     imgEl.src = url;
     imgEl.style.display = '';

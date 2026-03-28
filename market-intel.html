@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · market intel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="ghostladder.css">
+<style>
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+.
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: blink 2s infinite;
+}
+@keyframes blink {
+  0%,100% { opacity:1; }
+  50% { opacity:0.3; }
+}
+
+.refresh-btn {
+  background: var(--s3);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+.page { max-width: 1440px; margin: 0 auto; padding: 32px; }
+
+/* ── Section titles ─────────────────────────────────────────────────────────── */
+.section-label {
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Stat cards ─────────────────────────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--s1);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s;
+}
+.stat-card:hover { background: var(--s2); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--accent);
+  transition: width 0.5s ease;
+}
+.stat-card:hover::before { width: 100%; }
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: var(--display);
+  font-size: 44px;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.stat-sub {
+  font-size: 10px;
+  color: var(--muted2);
+  margin-top: 5px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Filter bar ─────────────────────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.filter-group { display: flex; gap: 4px; align-items: center; }
+.filter-label-sm {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.chip {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--muted2); color: var(--text); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+.search-wrap { position: relative; margin-left: auto; }
+.search-input {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 14px 6px 32px;
+  width: 220px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* ── Product grid ───────────────────────────────────────────────────────────── */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.product-card {
+  background: var(--s1);
+  padding: 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+.product-card:hover { background: var(--s2); }
+.product-card-set {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.product-card-player {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.product-card-variant {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1px solid;
+  margin-bottom: 14px;
+}
+/* .v-* variant classes come from variants.css */
+.v-base    { border-color: var(--base); color: var(--base); }
+
+.product-card-price {
+  font-family: var(--display);
+  font-size: 36px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  line-height: 1;
+}
+.product-card-sub {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+}
+.product-card-meta {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+.product-card-meta span { color: var(--muted2); }
+
+.mult-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(232,255,71,0.3);
+}
+
+/* ── Two-col layout ─────────────────────────────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+/* ── Panel ───────────────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  padding: 22px;
+}
+.panel-title {
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.chart-wrap { position: relative; height: 220px; }
+
+/* ── Variant averages ───────────────────────────────────────────────────────── */
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.variant-row:last-child { border-bottom: none; }
+.variant-name {
+  width: 70px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.variant-bar-wrap { flex: 1; height: 3px; background: var(--border); }
+.variant-bar { height: 100%; transition: width 0.8s ease; }
+.variant-price {
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  width: 60px;
+  text-align: right;
+}
+.variant-count { font-size: 9px; color: var(--muted); width: 50px; text-align: right; }
+
+/* ── Recent sales ───────────────────────────────────────────────────────────── */
+.sales-table { width: 100%; border-collapse: collapse; }
+.sales-table th {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sales-table td {
+  font-size: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted2);
+}
+.sales-table tr:last-child td { border-bottom: none; }
+.sales-table tr:hover td { color: var(--text); }
+.sale-player { color: var(--text) !important; font-size: 11px !important; }
+.sale-price {
+  font-family: var(--display);
+  font-size: 18px !important;
+  color: var(--accent) !important;
+  letter-spacing: 0.5px;
+}
+
+/* ── Set+variant table ──────────────────────────────────────────────────────── */
+.sv-table { width: 100%; border-collapse: collapse; }
+.sv-table th {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sv-table td {
+  font-size: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted2);
+}
+.sv-table tr:last-child td { border-bottom: none; }
+.sv-table tr:hover td { color: var(--text); }
+.sv-price { font-family: var(--display); font-size: 18px !important; color: var(--accent) !important; }
+
+/* ── Empty / loading states ─────────────────────────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.loading::before {
+  content: '';
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 32px;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+}
+
+/* ── Sales feed ─────────────────────────────────────────────────────────────── */
+.sales-feed {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+  overflow: hidden;
+  max-height: 290px;
+}
+.sale-card {
+  background: var(--s1);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.sale-card:hover { background: var(--s2); }
+.sale-card-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--s3);
+  display: block;
+}
+.sale-card-img-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--s3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 24px;
+}
+.sale-card-body {
+  padding: 10px 12px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sale-card-player {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.sale-card-set {
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sale-card-price {
+  font-family: var(--display);
+  font-size: 24px;
+  color: var(--accent);
+  line-height: 1.1;
+  margin-top: 4px;
+}
+.sale-card-variant {
+  display: inline-block;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border: 1px solid;
+  margin-top: 2px;
+  align-self: flex-start;
+}
+.sale-card-date {
+  font-size: 8px;
+  color: var(--muted);
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+/* ── Movers + Top Players tables ──────────────────────────────────────────── */
+.movers-table, .top-players-table { width: 100%; border-collapse: collapse; }
+.movers-table th, .top-players-table th {
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); text-align: left; padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.movers-table td, .top-players-table td {
+  font-size: 10px; padding: 8px 0; border-bottom: 1px solid var(--border);
+  color: var(--muted2); vertical-align: middle;
+}
+.movers-table tr:last-child td, .top-players-table tr:last-child td { border-bottom: none; }
+.movers-table tr:hover td, .top-players-table tr:hover td { color: var(--text); }
+.mover-name { color: var(--text) !important; font-size: 11px !important; }
+.mover-up { color: #3ddc84 !important; font-weight: 500; }
+.mover-down { color: #ff4040 !important; font-weight: 500; }
+.mover-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.mover-spark {
+  display: inline-flex; align-items: flex-end; gap: 1px;
+  height: 20px; vertical-align: middle;
+}
+.mover-spark span {
+  width: 4px; border-radius: 1px; display: inline-block;
+  transition: height 0.3s;
+}
+.top-rank {
+  font-family: var(--display); font-size: 18px;
+  color: var(--muted); width: 28px;
+}
+.top-player-name { color: var(--text) !important; font-size: 11px !important; }
+.top-player-price { font-family: var(--display); font-size: 20px !important; color: var(--accent) !important; }
+.top-player-bar-wrap { width: 80px; height: 3px; background: var(--border); }
+.top-player-bar { height: 100%; background: var(--accent); }
+/* ── League tab filter bar ───────────────────────────────────────────────────── */
+.filter-bar { margin-bottom: 0; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .page { padding: 20px; }
+  header { padding: 0 20px; }
+}
+
+@media (max-width: 768px) {
+  .page { padding: 16px; }
+  .page-header-title { font-size: 28px; }
+  .page-sub { font-size: 13px; margin-bottom: 20px; }
+
+  /* Layouts → single column */
+  .two-col { grid-template-columns: 1fr; }
+  .three-col { grid-template-columns: 1fr; }
+
+  /* Stats grid → 2 cols */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); margin-bottom: 20px; gap: 8px; }
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 28px; }
+  .stat-sub { font-size: 9px; }
+
+  /* Sales table — horizontal scroll */
+  .sales-table, .sv-table, .movers-table, .top-players-table {
+    display: block; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+
+  /* Section labels */
+  .section-label { font-size: 13px; margin-bottom: 10px; }
+  .section-label::after { display: none; }
+
+  /* Filter bar */
+  .filter-bar { flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 6px 12px; font-size: 10px; }
+
+  /* Panels */
+  .panel { padding: 14px; }
+  .panel-title { font-size: 12px; margin-bottom: 12px; padding-bottom: 8px; }
+
+  /* Sales feed → 2 cols, shorter */
+  .sales-feed { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-height: 280px; }
+
+  /* Variant rows */
+  .variant-price { font-size: 16px; }
+
+  /* Blue Chip cards */
+  .bc-card-header { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 16px 10px; }
+  .bc-card-player { font-size: 13px; margin-left: 0; }
+  .range-tabs { align-self: flex-end; }
+  .range-tab { padding: 5px 10px; font-size: 8px; }
+  .bc-chart-wrap { padding: 8px 12px 4px; }
+  .bc-stat-row { padding: 8px 16px 12px; }
+  .bc-stat-val { font-size: 16px; }
+  .bc-stat-label { font-size: 9px; }
+
+  /* Graded Intel */
+  #graded-stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+  #graded-table-wrap { max-height: 280px; }
+  #graded-table-wrap table { font-size: 11px; }
+
+  /* Header right controls */
+  .header-right { gap: 8px; }
+  .refresh-btn { font-size: 10px; padding: 4px 10px; }
+  .live-badge { font-size: 9px; }
+
+  /* Footer */
+  .footer { padding: 24px 16px; font-size: 10px; }
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+.panel, .stat-card, .product-card {
+  animation: fadeUp 0.35s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════
+   SHARED NAV + PAGE HEADER SYSTEM
+   ══════════════════════════════════════════════════ */
+
+/* ── Sticky header ── */
+
+/* ── Wordmark ── */
+
+/* ── Blue Chip Base Cards (matches player-index styling) ── */
+.bc-card {
+  background: var(--s1); border: 1px solid var(--border); padding: 0;
+}
+.bc-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px 12px; border-bottom: 1px solid var(--border);
+}
+.bc-card-title {
+  font-family: var(--display); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+}
+.bc-card-player {
+  font-family: var(--display); font-size: 16px; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-left: 8px;
+}
+.bc-chart-wrap { padding: 12px 20px 8px; position: relative; }
+.bc-chart-wrap svg { width: 100%; display: block; }
+.bc-stat-row {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 10px 24px 16px; border-top: 1px solid var(--border);
+}
+.bc-stat-label {
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+}
+.bc-stat-val {
+  font-family: var(--display); font-size: 20px; letter-spacing: 0.5px;
+}
+.bc-stat-sub {
+  font-size: 9px; color: var(--muted); margin-left: 4px;
+}
+.range-tabs { display: flex; gap: 0; }
+.range-tab {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 6px 14px; cursor: pointer;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  transition: all 0.12s;
+}
+.range-tab:hover { border-color: var(--muted2); color: var(--text); }
+.range-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(232,255,71,0.05); }
+.range-tab:first-child { border-radius: 2px 0 0 2px; }
+.range-tab:last-child  { border-radius: 0 2px 2px 0; }
+.range-tab:not(:first-child) { border-left: none; }
+
+/* ── Chrome color var ── */
+:root { --chrome: #5b9cf6; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <nav class="nav">
+    <a href="index.html">Home</a>
+    <a href="market-intel.html" class="active">Sales Intel</a>
+    <a href="ladder.html">Price Guide</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+  </nav>
+  <div class="header-right">
+    <div class="live-badge"><span class="live-dot"></span> <span id="fetch-time">loading</span></div>
+    <button class="refresh-btn" onclick="loadData()">↺ refresh</button>
+  </div>
+</header>
+
+<div class="page">
+
+  
+<div class="page-header-block">
+  <div class="page-header-title">
+    MARKET INTEL
+  </div>
+  <div class="page-sub">Real-time market intelligence backed by 18 months of verified sales.</div>
+  <div class="explainer-panel" id="explainer-panel">
+    <button class="explainer-close" onclick="toggleExplainer()">✕</button>
+    <p>All-time record of completed eBay sales, AI-cleaned and matched against our set roster. This is the ground truth on what figures actually sell for — not what sellers are asking.</p><p>For <em>active listings</em> currently on eBay, see <a href="listings.html">Listings Intel →</a></p>
+  </div>
+</div>
+<!-- Stats row -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="stat-label">Avg Hit Value</div><div class="stat-value" id="stat-parallel">—</div><div class="stat-sub">population weighted · non-base</div></div>
+    <div class="stat-card"><div class="stat-label">Total Sales (30 Days)</div><div class="stat-value" id="stat-weekly">—</div><div class="stat-sub">last 30 days · all variants</div></div>
+    <div class="stat-card"><div class="stat-label">Total Sales (All-Time)</div><div class="stat-value" id="stat-alltime">—</div><div class="stat-sub">all sets · all variants</div></div>
+    <div class="stat-card"><div class="stat-label">Products Tracked</div><div class="stat-value" id="stat-products">—</div><div class="stat-sub">all-time · set · player · variant</div></div>
+    <div class="stat-card"><div class="stat-label">Total GMV (All Time)</div><div class="stat-value" id="stat-gmv">—</div><div class="stat-sub">All Sets · All Variants</div></div>
+  </div>
+
+  <!-- Row 2: Variant averages + Top 10 players (gold) -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">avg price by variant <span style="color:var(--muted);font-size:8px" id="league-variant-label">NBA</span></div>
+      <div class="filter-bar" style="margin-bottom:14px;margin-top:-4px">
+        <div class="filter-group" id="league-tabs">
+          <button class="chip active" data-league="NBA" onclick="switchLeagueTab(this)">NBA</button>
+          <button class="chip" data-league="WNBA" onclick="switchLeagueTab(this)">WNBA</button>
+          <button class="chip" data-league="MLB" onclick="switchLeagueTab(this)">MLB</button>
+          <button class="chip" data-league="ALL" onclick="switchLeagueTab(this)">ALL</button>
+        </div>
+      </div>
+      <div id="variant-avgs"><div class="loading"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">top 10 players (gold) <span style="color:var(--muted);font-size:8px">by avg gold price · across all sets</span></div>
+      <div id="top-players-table"><div class="loading"></div></div>
+    </div>
+  </div>
+
+  <!-- Row 3: Blue Chip Base Trends -->
+  <div class="section-label">blue chip base trends</div>
+  <div class="two-col" style="gap:16px;margin-bottom:48px">
+    <div class="bc-card" id="bc-card-ohtani">
+      <div class="bc-card-header">
+        <div style="display:flex;align-items:baseline">
+          <span class="bc-card-player" style="color:var(--chrome)">Shohei Ohtani</span>
+        </div>
+        <div class="range-tabs">
+          <button class="range-tab active" data-brange="all" onclick="setBcRange('ohtani','all')">All-time</button>
+          <button class="range-tab" data-brange="90" onclick="setBcRange('ohtani','90')">90D</button>
+          <button class="range-tab" data-brange="30" onclick="setBcRange('ohtani','30')">30D</button>
+        </div>
+      </div>
+      <div class="bc-chart-wrap">
+        <svg id="bc-svg-ohtani" viewBox="0 0 420 180" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="bc-stat-row">
+        <div>
+          <div class="bc-stat-label" id="bc-stat-label-ohtani">Since first 30D</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div class="bc-stat-val" id="bc-stat-val-ohtani" style="color:var(--chrome)">—</div>
+            <div class="bc-stat-sub" id="bc-stat-sub-ohtani">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bc-card" id="bc-card-clark">
+      <div class="bc-card-header">
+        <div style="display:flex;align-items:baseline">
+          <span class="bc-card-player" style="color:var(--accent)">Caitlin Clark</span>
+        </div>
+        <div class="range-tabs">
+          <button class="range-tab active" data-brange="all" onclick="setBcRange('clark','all')">All-time</button>
+          <button class="range-tab" data-brange="90" onclick="setBcRange('clark','90')">90D</button>
+          <button class="range-tab" data-brange="30" onclick="setBcRange('clark','30')">30D</button>
+        </div>
+      </div>
+      <div class="bc-chart-wrap">
+        <svg id="bc-svg-clark" viewBox="0 0 420 180" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="bc-stat-row">
+        <div>
+          <div class="bc-stat-label" id="bc-stat-label-clark">Since first 30D</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div class="bc-stat-val" id="bc-stat-val-clark" style="color:var(--accent)">—</div>
+            <div class="bc-stat-sub" id="bc-stat-sub-clark">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Graded Sales Intel -->
+  <div class="section-label">graded sales intel</div>
+  <div class="two-col" style="gap:24px;margin-bottom:48px">
+    <div class="stat-grid" id="graded-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="stat-card"><div class="stat-label">Total Graded Sales</div><div class="stat-value" id="graded-total-sales">—</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Graded Sale Price</div><div class="stat-value" id="graded-avg-price">—</div></div>
+      <div class="stat-card"><div class="stat-label">Mean Premium</div><div class="stat-value" id="graded-mean-premium">—</div></div>
+      <div class="stat-card"><div class="stat-label">Median Premium</div><div class="stat-value" id="graded-median-premium">—</div></div>
+    </div>
+    <div>
+      <div class="panel-title">graded vs ungraded comps <span style="color:var(--muted);font-size:8px">matched by player + variant + set</span></div>
+      <div id="graded-table-wrap" style="max-height:360px;overflow-y:auto">
+        <table class="sales-table" id="graded-table">
+          <thead><tr><th>Player</th><th>Variant</th><th>Set</th><th>Graded Avg</th><th>Ungraded Avg</th><th>Premium</th></tr></thead>
+          <tbody id="graded-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 5: Top Sales -->
+  <div class="section-label">top sales · last 30 days <span id="recent-count" style="margin-left:8px;color:var(--muted2);font-size:9px;letter-spacing:1px;text-transform:none"></span></div>
+  <div class="sales-feed" id="recent-sales"><div class="loading" style="grid-column:1/-1"></div></div>
+
+  <!-- Row 6: 90d sales + weekly -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">90-day sales by set <span style="color:var(--muted);font-size:8px">non-base · last 90 days</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="salesBySetChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">avg sales per week <span style="color:var(--muted);font-size:8px">full weeks only</span></div>
+      <div id="variant-avgs-week"><div class="loading"></div></div>
+    </div>
+  </div>
+
+  <!-- Row 7: Movers + avg base price by player -->
+  <div class="two-col" style="margin-bottom:32px">
+    <div class="panel">
+      <div class="panel-title">biggest movers <span style="color:var(--muted);font-size:8px">last sale vs all-time avg · min 2 sales</span></div>
+      <div id="movers-table"><div class="loading"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">avg base price by player <span style="color:var(--muted);font-size:8px">base variant only · all sets</span></div>
+      <div id="set-variant-table"><div class="loading"></div></div>
+    </div>
+  </div>
+
+
+</div>
+
+<footer class="footer" id="footer">ghostladder market intel · data sourced from verified eBay completed sales</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Supabase config
+// ─────────────────────────────────────────────────────────────────────────────
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, {headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+// Parse a date string in local time (avoids UTC midnight rollback)
+// Handles both YYYY-MM-DD and full ISO timestamps from Supabase
+function parseDate(str) {
+  if (!str) return null;
+  // Strip any time component — take only the YYYY-MM-DD part
+  const datePart = String(str).substring(0, 10);
+  // Append local midnight so JS treats it as local time, not UTC
+  const d = new Date(datePart + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Normalize PI row → product object (v1 field names)
+function normProduct(r) {
+  const setStr = (r.set_name || '').toUpperCase();
+  const league = setStr.includes('WNBA') ? 'WNBA' : setStr.includes('NBA') ? 'NBA' : setStr.includes('MLB') ? 'MLB' : '';
+  return {
+    set: r.set_name, player: r.player, variant: r.variant,
+    totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
+    avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
+    avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
+    lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
+    retail: +r.retail_price || 0,
+    multiplier: (r.retail_price && r.avg_price) ? Math.round(+r.avg_price / +r.retail_price * 10) / 10 : 0,
+    league,
+  };
+}
+
+// Normalize recent sale row
+function normSale(r) {
+  return {
+    set: r.set_name, player: r.player, variant: r.variant,
+    price: +r.price || 0, date: r.date,
+    image: r.image_url, url: r.ebay_url, afa: r.afa_grade,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let allProducts = [];
+let allProductsData = []; // full unfiltered for league tabs
+let allSetMath = {};      // { setName: { player: { variant: population } } }
+let activeSet = 'all';
+let activeVariant = 'all';
+let searchQuery = '';
+let salesBySetChart = null;
+let activeLeague = 'NBA';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch data
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('fetch-time').textContent = 'fetching...';
+  try {
+    const [pi, sales, setMathData, setsData, gradedComps, gradedSummary, blueChipSales] = await Promise.all([
+      rpc('get_price_intelligence'),
+      rpc('get_recent_sales', {limit_rows: 300}),
+      sbGet('set_math', 'select=set_id,player,variant,population'),
+      sbGet('sets', 'select=id,name,active&active=eq.true'),
+      sbGet('graded_comps', 'select=*&order=premium.desc'),
+      sbGet('graded_summary', 'select=*'),
+      sbGet('sales', 'select=player,variant,price,date,set_id&status=eq.valid&price=gt.0&or=(and(player.eq.Shohei Ohtani,variant.eq.Base),and(player.eq.Caitlin Clark,variant.eq.Base))&order=date.asc'),
+    ]);
+    const cleanProducts = pi.filter(r => r.player && r.player !== 'Unknown').map(normProduct);
+    const cleanSales = sales.filter(r => r.player && r.player !== 'Unknown').map(normSale);
+
+    // Build setId → name map
+    const setIdToName = {};
+    (setsData || []).forEach(s => { setIdToName[s.id] = s.name; });
+
+    // Build setMath: { setName → { player → { variant → population } } }
+    const setMath = {};
+    (setMathData || []).forEach(r => {
+      const sn = setIdToName[r.set_id];
+      if (!sn) return;
+      if (!setMath[sn]) setMath[sn] = {};
+      if (!setMath[sn][r.player]) setMath[sn][r.player] = {};
+      setMath[sn][r.player][r.variant] = +r.population || 0;
+    });
+    allSetMath = setMath;
+
+    renderAllSB(cleanProducts, cleanSales);
+    renderGradedIntel(gradedComps || [], gradedSummary || []);
+    renderBlueChipTrends(blueChipSales || [], setIdToName);
+  } catch(e) {
+    console.error('FETCH FAILED:', e.message, e);
+    document.getElementById('fetch-time').textContent = 'fetch error: ' + e.message;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Graded Sales Intel
+// ─────────────────────────────────────────────────────────────────────────────
+function renderGradedIntel(comps, summary) {
+  const sum = summary[0] || {};
+  const premiums = comps.map(c => +c.premium).filter(p => p > 0);
+  const meanPremium = premiums.length ? premiums.reduce((s, p) => s + p, 0) / premiums.length : 0;
+  const medianPremium = premiums.length ? (() => { const sorted = [...premiums].sort((a, b) => a - b); const mid = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; })() : 0;
+
+  document.getElementById('graded-total-sales').textContent = sum.total_graded_sales || '—';
+  document.getElementById('graded-avg-price').textContent = sum.avg_graded_price ? '$' + (+sum.avg_graded_price).toLocaleString() : '—';
+  document.getElementById('graded-mean-premium').textContent = meanPremium.toFixed(1) + 'x';
+  document.getElementById('graded-median-premium').textContent = medianPremium.toFixed(1) + 'x';
+
+  const tbody = document.getElementById('graded-tbody');
+  tbody.innerHTML = comps.map(c => `<tr>
+    <td>${c.player}</td>
+    <td><span class="v-tag v-${(c.variant || '').toLowerCase().replace(/\s+/g,'-')}">${c.variant}</span></td>
+    <td style="font-size:10px;color:var(--muted)">${c.set_name}</td>
+    <td style="color:var(--accent)">$${(+c.avg_graded).toLocaleString()}</td>
+    <td>$${(+c.avg_ungraded).toLocaleString()}</td>
+    <td style="color:${+c.premium >= 1 ? 'var(--green)' : 'var(--red)'}">${(+c.premium).toFixed(1)}x</td>
+  </tr>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Blue Chip Base Trends — scatter plots
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Blue Chip Base Trends (player-index style)
+// ─────────────────────────────────────────────────────────────────────────────
+const BC_PLAYERS = {
+  ohtani: { player: 'Shohei Ohtani', variant: 'Base', color: 'var(--chrome)' },
+  clark:  { player: 'Caitlin Clark', variant: 'Base', color: 'var(--accent)' },
+};
+let bcSalesData  = {};
+let bcRangeState = { ohtani: 'all', clark: 'all' };
+
+function renderBlueChipTrends(salesRaw, setIdToName) {
+  bcSalesData.ohtani = salesRaw
+    .filter(s => s.player === 'Shohei Ohtani' && s.variant === 'Base')
+    .map(s => ({ date: new Date(s.date + 'T12:00:00'), price: +s.price }))
+    .sort((a, b) => a.date - b.date);
+  bcSalesData.clark = salesRaw
+    .filter(s => s.player === 'Caitlin Clark' && s.variant === 'Base')
+    .map(s => ({ date: new Date(s.date + 'T12:00:00'), price: +s.price }))
+    .sort((a, b) => a.date - b.date);
+
+  renderBcScatter('ohtani');
+  renderBcScatter('clark');
+}
+
+function getBcWindow(id) {
+  const full = bcSalesData[id] || [];
+  if (!full.length) return [];
+  const range = bcRangeState[id];
+  if (range === 'all') return full;
+  const days = range === '30' ? 30 : 90;
+  const cutoff = new Date(Date.now() - days * 86400000);
+  return full.filter(s => s.date >= cutoff);
+}
+
+function computeBcChange(id) {
+  const range = bcRangeState[id];
+  const sales = getBcWindow(id);
+  if (sales.length < 2) return { pct: null, label: 'Since first 30D', sub: '—' };
+
+  if (range === 'all') {
+    const firstDate = sales[0].date.getTime();
+    const lastDate  = sales[sales.length - 1].date.getTime();
+    const d30 = 30 * 86400000;
+    const early = sales.filter(s => s.date.getTime() - firstDate <= d30);
+    const late  = sales.filter(s => lastDate - s.date.getTime() <= d30);
+    if (!early.length || !late.length) return { pct: null, label: 'Since first 30D', sub: '—' };
+    const avgE = early.reduce((s, r) => s + r.price, 0) / early.length;
+    const avgL = late.reduce((s, r) => s + r.price, 0) / late.length;
+    return { pct: ((avgL - avgE) / avgE) * 100, label: 'Since first 30D', sub: `$${Math.round(avgE)} → $${Math.round(avgL)}` };
+  } else {
+    if (sales.length < 5) return { pct: null, label: `Past ${range}D`, sub: 'not enough sales' };
+    const startAvg = sales.slice(0, 3).reduce((s, r) => s + r.price, 0) / 3;
+    const endAvg   = sales.slice(-5).reduce((s, r) => s + r.price, 0) / 5;
+    return { pct: ((endAvg - startAvg) / startAvg) * 100, label: `Past ${range}D`, sub: `$${Math.round(startAvg)} → $${Math.round(endAvg)}` };
+  }
+}
+
+function renderBcScatter(id) {
+  const cfg   = BC_PLAYERS[id];
+  const svg   = document.getElementById(`bc-svg-${id}`);
+  const sales = getBcWindow(id);
+
+  if (!svg) return;
+  if (sales.length < 2) {
+    const range = bcRangeState[id];
+    const msg = sales.length === 0
+      ? `no base sales in ${range === 'all' ? 'dataset' : 'past ' + range + ' days'}`
+      : `only 1 base sale in past ${range} days`;
+    svg.innerHTML = `<text x="210" y="95" fill="#444" font-size="10" font-family="DM Mono,monospace" text-anchor="middle">${msg}</text>`;
+    const chg = computeBcChange(id);
+    document.getElementById(`bc-stat-label-${id}`).textContent = chg.label;
+    document.getElementById(`bc-stat-sub-${id}`).textContent = chg.sub;
+    document.getElementById(`bc-stat-val-${id}`).textContent = '—';
+    return;
+  }
+
+  const W = 420, H = 180;
+  const PAD = { top: 14, right: 16, bottom: 30, left: 44 };
+  const cW = W - PAD.left - PAD.right, cH = H - PAD.top - PAD.bottom;
+
+  const prices = sales.map(s => s.price);
+  const minP = Math.min(...prices) * 0.9, maxP = Math.max(...prices) * 1.1;
+  const minD = sales[0].date.getTime(), maxD = sales[sales.length - 1].date.getTime();
+  const xS = d => PAD.left + ((d.getTime() - minD) / (maxD - minD || 1)) * cW;
+  const yS = v => PAD.top + (1 - (v - minP) / (maxP - minP || 1)) * cH;
+
+  let g = '';
+  // Grid lines
+  for (let i = 0; i <= 4; i++) {
+    const v = minP + (maxP - minP) * (i / 4);
+    const y = yS(v).toFixed(1);
+    g += `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="#181818" stroke-width="1"/>`;
+    g += `<text x="${PAD.left - 4}" y="${(+y + 3).toFixed(1)}" fill="#444" font-size="8" font-family="DM Mono,monospace" text-anchor="end">$${Math.round(v)}</text>`;
+  }
+  // X labels
+  const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const numLabels = Math.min(5, sales.length);
+  for (let i = 0; i <= numLabels; i++) {
+    const t = new Date(minD + (maxD - minD) * (i / numLabels));
+    const x = xS(t).toFixed(1);
+    g += `<text x="${x}" y="${H - PAD.bottom + 14}" fill="#444" font-size="8" font-family="DM Mono,monospace" text-anchor="middle">${mos[t.getMonth()]} '${String(t.getFullYear()).slice(2)}</text>`;
+  }
+  // Dots
+  const color = cfg.color;
+  let dots = '';
+  for (const s of sales) {
+    dots += `<circle cx="${xS(s.date).toFixed(1)}" cy="${yS(s.price).toFixed(1)}" r="3" fill="${color}" opacity="0.55"/>`;
+  }
+  // Trendline
+  const n = sales.length;
+  const xs = sales.map(s => s.date.getTime()), ys = sales.map(s => s.price);
+  const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+  const num = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+  const den = xs.reduce((s, x) => s + (x - mx) * (x - mx), 0);
+  const slope = den ? num / den : 0, intercept = my - slope * mx;
+  const y0 = slope * minD + intercept, y1 = slope * maxD + intercept;
+  const trend = `<line x1="${xS(sales[0].date).toFixed(1)}" y1="${yS(y0).toFixed(1)}" x2="${xS(sales[n-1].date).toFixed(1)}" y2="${yS(y1).toFixed(1)}" stroke="${color}" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>`;
+
+  svg.innerHTML = g + dots + trend;
+
+  // Update stat
+  const chg = computeBcChange(id);
+  const valEl   = document.getElementById(`bc-stat-val-${id}`);
+  const labelEl = document.getElementById(`bc-stat-label-${id}`);
+  const subEl   = document.getElementById(`bc-stat-sub-${id}`);
+  labelEl.textContent = chg.label;
+  subEl.textContent   = chg.sub;
+  if (chg.pct != null) {
+    valEl.textContent = (chg.pct >= 0 ? '+' : '') + chg.pct.toFixed(1) + '%';
+    valEl.style.color = chg.pct >= 0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    valEl.textContent = '—';
+    valEl.style.color = cfg.color;
+  }
+}
+
+function setBcRange(id, range) {
+  bcRangeState[id] = range;
+  const card = document.getElementById(`bc-card-${id}`);
+  card.querySelectorAll('.range-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.brange === range)
+  );
+  renderBcScatter(id);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render everything
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAllSB(products, sales) {
+  allProducts = products;
+  allProductsData = products;
+
+  renderStats({products, recentSales: sales});
+  renderSetFilters([...new Set(products.map(p => p.set).filter(Boolean))].sort());
+  renderVariantAverages([]);
+  renderMonthlySalesChart(sales, products);
+  renderSetVariantTable([]);
+  renderRecentSales(sales);
+  renderSalesBySetChart(products);
+  renderMovers(products);
+  renderTopPlayers(products);
+  renderProducts();
+
+  const allDates = sales.map(s => s.date ? parseDate(s.date) : null).filter(Boolean);
+  if (allDates.length) {
+    const latestSale = new Date(Math.max(...allDates));
+    document.getElementById('fetch-time').textContent =
+      'last sale: ' + latestSale.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  } else {
+    document.getElementById('fetch-time').textContent = 'updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stats
+// ─────────────────────────────────────────────────────────────────────────────
+function renderStats(data) {
+  const products = data.products || [];
+  const sales = data.recentSales || [];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const recentValid = sales.filter(s => s.date && parseDate(s.date) >= thirtyDaysAgo && s.price > 0);
+
+  // Population-weighted avg hit value across all non-base variants
+  let hitNum = 0, hitDen = 0;
+  products.forEach(p => {
+    if (!p.player || p.player === 'Unknown' || p.variant === 'Base' || !p.avgPrice) return;
+    const pop = (allSetMath[p.set]?.[p.player]?.[p.variant]) || 0;
+    if (pop > 0) { hitNum += pop * p.avgPrice; hitDen += pop; }
+  });
+  const hitValue = hitDen > 0 ? Math.round(hitNum / hitDen) : 0;
+  document.getElementById('stat-parallel').textContent = hitValue ? '$' + hitValue.toLocaleString() : '—';
+
+  document.getElementById('stat-weekly').textContent = recentValid.length || '—';
+  const allTimeSales = products.reduce((sum, p) => sum + (p.totalSales || 0), 0);
+  document.getElementById('stat-alltime').textContent = allTimeSales ? allTimeSales.toLocaleString() : '—';
+  document.getElementById('stat-products').textContent = products.length || '—';
+
+  const totalGmv = products.reduce((sum, p) => sum + (p.avgPrice || 0) * (p.totalSales || 0), 0);
+  const fmtGmv = totalGmv >= 1e6 ? '$' + Math.round(totalGmv / 1e6) + 'M'
+               : totalGmv >= 1e3 ? '$' + Math.round(totalGmv / 1e3) + 'K'
+               : totalGmv > 0    ? '$' + Math.round(totalGmv).toLocaleString()
+               : '—';
+  document.getElementById('stat-gmv').textContent = fmtGmv;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Set filters
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSetFilters(sets) {
+  const wrap = document.getElementById('set-filters');
+  if (!wrap) return;
+  wrap.innerHTML = '<button class="chip active" data-set="all" onclick="filterSet(this)">All</button>';
+  sets.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.dataset.set = s;
+    btn.textContent = s;
+    btn.onclick = () => filterSet(btn);
+    wrap.appendChild(btn);
+  });
+}
+
+function filterSet(btn) {
+  document.querySelectorAll('#set-filters .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeSet = btn.dataset.set;
+  renderProducts();
+}
+
+function filterVariant(btn) {
+  document.querySelectorAll('#variant-filters .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeVariant = btn.dataset.variant;
+  renderProducts();
+}
+
+function filterSearch(q) {
+  searchQuery = q.toLowerCase();
+  renderProducts();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Variant averages
+// ─────────────────────────────────────────────────────────────────────────────
+const VARIANT_COLORS = {
+  Base: 'var(--base)', Victory: 'var(--victory)', Vides: 'var(--vides)',
+  Emerald: 'var(--emerald)', Gold: 'var(--gold)', Chrome: 'var(--chrome)',
+  Fire: 'var(--fire)', 'Bet On Women': 'var(--bet-on-women)', SP: 'var(--sp)',
+};
+
+function switchLeagueTab(btn) {
+  document.querySelectorAll('#league-tabs .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeLeague = btn.dataset.league;
+  document.getElementById('league-variant-label').textContent = activeLeague === 'ALL' ? 'all leagues' : activeLeague;
+  renderVariantAveragesByLeague(allProductsData, activeLeague);
+}
+
+function renderVariantAverages(avgs) {
+  // Called on initial load — render NBA by default using products data
+  renderVariantAveragesByLeague(allProductsData, 'NBA');
+}
+
+function renderVariantAveragesByLeague(products, league) {
+  const el = document.getElementById('variant-avgs');
+
+  // Filter products by league (or all)
+  const filtered = league === 'ALL'
+    ? products
+    : products.filter(p => p.league === league);
+
+  // Aggregate by variant
+  const vMap = {};
+  filtered.forEach(p => {
+    if (!p.avgPrice || !p.totalSales) return;
+    if (!vMap[p.variant]) vMap[p.variant] = { sum: 0, salesSum: 0 };
+    vMap[p.variant].sum += p.avgPrice * p.totalSales;
+    vMap[p.variant].salesSum += p.totalSales;
+  });
+
+  // Build avgs from whatever variants exist in the data — dynamic, not hardcoded
+  // Sort by avg price descending so rarest/most valuable appear first
+  const preferredOrder = ['Fire','Chrome','Gold','Emerald','Vides','Victory','SP','Base'];
+  const avgs = Object.entries(vMap)
+    .filter(([v, d]) => d.salesSum > 0)
+    .map(([v, d]) => ({
+      variant: v,
+      avgPrice: Math.round(d.sum / d.salesSum),
+      totalSales: d.salesSum,
+    }))
+    .sort((a, b) => {
+      const ai = preferredOrder.indexOf(a.variant);
+      const bi = preferredOrder.indexOf(b.variant);
+      // Known variants sort by preferred order, unknown ones sort by price desc
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return b.avgPrice - a.avgPrice;
+    });
+
+  if (!avgs.length) { el.innerHTML = '<div class="empty">no data for this league yet</div>'; return; }
+  const max = Math.max(...avgs.map(a => a.avgPrice));
+  el.innerHTML = avgs.map(a => `
+    <div class="variant-row">
+      <div class="variant-name" style="color:${VARIANT_COLORS[a.variant]||'#666'}">${a.variant}</div>
+      <div class="variant-bar-wrap">
+        <div class="variant-bar" style="width:${(a.avgPrice/max*100).toFixed(1)}%;background:${VARIANT_COLORS[a.variant]||'#666'}"></div>
+      </div>
+      <div class="variant-price">$${a.avgPrice}</div>
+      <div class="variant-count">${a.totalSales} sales</div>
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Monthly sales volume chart
+// ─────────────────────────────────────────────────────────────────────────────
+let monthlyChart = null;
+function renderMonthlySalesChart(sales, products) {
+  const el = document.getElementById('variant-avgs-week');
+
+  // Get Monday of the current week — we exclude this partial week
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+  const daysToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+  const thisWeekMonday = new Date(now);
+  thisWeekMonday.setHours(0,0,0,0);
+  thisWeekMonday.setDate(now.getDate() - daysToMonday);
+
+  // Group sales into full ISO weeks (Mon-Sun), excluding current partial week
+  const sixMonthsAgo = new Date(now - 180 * 24 * 60 * 60 * 1000);
+  const byWeek = {};
+  sales.forEach(s => {
+    if (!s.date) return;
+    const d = parseDate(s.date);
+    if (d >= thisWeekMonday) return; // skip current partial week
+    if (d < sixMonthsAgo) return; // only last 6 months
+
+    // Get Monday of this sale's week
+    const day = d.getDay();
+    const diff = (day === 0 ? 6 : day - 1);
+    const monday = new Date(d);
+    monday.setHours(0,0,0,0);
+    monday.setDate(d.getDate() - diff);
+
+    const key = monday.toISOString().substring(0, 10);
+    const label = monday.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+    if (!byWeek[key]) byWeek[key] = { label, count: 0 };
+    byWeek[key].count++;
+  });
+
+  const sorted = Object.entries(byWeek).sort((a, b) => a[0].localeCompare(b[0]));
+
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty">not enough data yet</div>';
+    return;
+  }
+
+  el.innerHTML = '<div style="position:relative;height:200px"><canvas id="monthlyChart"></canvas></div>';
+  if (monthlyChart) { monthlyChart.destroy(); monthlyChart = null; }
+
+  const ctx = document.getElementById('monthlyChart').getContext('2d');
+  monthlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => e[1].label),
+      datasets: [{
+        label: 'Sales',
+        data: sorted.map(e => e[1].count),
+        backgroundColor: 'rgba(232,255,71,0.3)',
+        borderColor: '#e8ff47',
+        borderWidth: 1,
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111',
+          borderColor: '#282828',
+          borderWidth: 1,
+          titleColor: '#666',
+          bodyColor: '#f0f0f0',
+          titleFont: { family: 'DM Mono', size: 10 },
+          bodyFont: { family: 'DM Mono', size: 12 },
+          callbacks: { label: ctx => ctx.parsed.y + ' sales' }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 } } },
+        y: { grid: { color: '#161616' }, ticks: { color: '#444', font: { family: 'DM Mono', size: 9 }, stepSize: 1 }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Set+variant table
+// ─────────────────────────────────────────────────────────────────────────────
+let baseSortDir = 'desc'; // 'asc' or 'desc'
+
+function renderSetVariantTable(svAvgs) {
+  // Now shows base price by player — svAvgs param kept for compatibility but we use allProductsData
+  renderBasePriceByPlayer('price','desc');
+}
+
+// baseSortCol: 'price' or 'sales', baseSortDir: 'desc' or 'asc'
+let baseSortCol = 'price';
+
+function renderBasePriceByPlayer(sortCol, sortDir) {
+  const el = document.getElementById('set-variant-table');
+  if (sortCol) baseSortCol = sortCol;
+  if (sortDir) baseSortDir = sortDir;
+
+  // Aggregate base variant prices per player across all sets
+  const playerMap = {};
+  (allProductsData || []).filter(p => p.player && p.player !== 'Unknown').forEach(p => {
+    if (p.variant !== 'Base' || !p.avgPrice || !p.totalSales) return;
+    if (!playerMap[p.player]) playerMap[p.player] = { sum: 0, salesSum: 0 };
+    playerMap[p.player].sum += p.avgPrice * p.totalSales;
+    playerMap[p.player].salesSum += p.totalSales;
+  });
+
+  let rows = Object.entries(playerMap)
+    .map(([player, d]) => ({
+      player,
+      avgPrice: Math.round(d.sum / d.salesSum),
+      totalSales: d.salesSum,
+    }))
+    .filter(r => r.avgPrice > 0);
+
+  // Sort by selected column
+  rows.sort((a, b) => {
+    const aVal = baseSortCol === 'price' ? a.avgPrice : a.totalSales;
+    const bVal = baseSortCol === 'price' ? b.avgPrice : b.totalSales;
+    return baseSortDir === 'desc' ? bVal - aVal : aVal - bVal;
+  });
+  rows = rows.slice(0, 10);
+
+  if (!rows.length) { el.innerHTML = '<div class="empty">no base sales data yet</div>'; return; }
+
+  function sortHeader(col, label) {
+    const isActive = baseSortCol === col;
+    const nextDir = isActive && baseSortDir === 'desc' ? 'asc' : 'desc';
+    const arrow = isActive ? (baseSortDir === 'desc' ? ' ▼' : ' ▲') : '';
+    return `<th style="cursor:pointer;user-select:none" onclick="renderBasePriceByPlayer('${col}','${nextDir}')">${label}${arrow}</th>`;
+  }
+
+  el.innerHTML = `<table class="sv-table">
+    <thead><tr>
+      <th>Player</th>
+      ${sortHeader('price', 'Avg Base Price')}
+      ${sortHeader('sales', 'Sales')}
+    </tr></thead>
+    <tbody>${rows.map(r => {
+      const guideUrl = `guide.html?player=${encodeURIComponent(r.player)}`;
+      return `
+      <tr>
+        <td><a href="${guideUrl}" style="color:var(--accent);text-decoration:none;cursor:pointer" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${r.player}</a></td>
+        <td class="sv-price">$${r.avgPrice}</td>
+        <td>${r.totalSales}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recent sales
+// ─────────────────────────────────────────────────────────────────────────────
+function renderRecentSales(sales) {
+  const el = document.getElementById('recent-sales');
+  const countEl = document.getElementById('recent-count');
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const filtered = sales
+    .filter(s => s.player && s.player !== 'Unknown' && s.date && parseDate(s.date) >= thirtyDaysAgo && s.price > 0)
+    .sort((a, b) => b.price - a.price);
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">no sales in the last 30 days</div>';
+    countEl.textContent = '';
+    return;
+  }
+  countEl.textContent = filtered.length + ' sales · sorted highest to lowest';
+  el.innerHTML = filtered.map(s => {
+    const d = s.date ? parseDate(s.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    const vClass = 'v-' + (s.variant||'base').toLowerCase();
+    const imgEl = s.image
+      ? `<img class="sale-card-img" src="${s.image}" alt="${s.player}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        + `<div class="sale-card-img-placeholder" style="display:none">👻</div>`
+      : `<div class="sale-card-img-placeholder">👻</div>`;
+    const ebayUrl = s.url || '#';
+    return `<div class="sale-card" onclick="window.open('${ebayUrl}','_blank')">
+      ${imgEl}
+      <div class="sale-card-body">
+        <div class="sale-card-player">${s.player}</div>
+        <div class="sale-card-set">${s.set}</div>
+        <div class="sale-card-price">$${s.price?.toFixed(0)||'—'}</div>
+        <span class="sale-card-variant ${vClass}">${s.variant}</span>
+        <div class="sale-card-date">${d}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 90-day sales by set doughnut chart
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSalesBySetChart(products) {
+  if (salesBySetChart) { salesBySetChart.destroy(); salesBySetChart = null; }
+
+  // Sum 90d sales per set (non-base only)
+  const bySet = {};
+  products.forEach(p => {
+    if (!p.set || !p.sales90d || p.variant === 'Base') return;
+    bySet[p.set] = (bySet[p.set] || 0) + p.sales90d;
+  });
+
+  const entries = Object.entries(bySet).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  if (!entries.length) return;
+
+  // Shorten set names for legend
+  const labels = entries.map(([k]) =>
+    k.replace('Game Face','').replace('2024-25','24-25').replace('2025-26','25-26')
+     .replace('2026-27','26-27').trim()
+  );
+  const vals = entries.map(([,v]) => v);
+
+  const palette = ['#e8ff47','#a8c8ff','#3ddc84','#ff9f43','#ff4040','#b983ff','#00d2d3','#ff9ff3'];
+  const bgColors     = palette.slice(0, entries.length).map(c => c + '28');
+  const borderColors = palette.slice(0, entries.length);
+
+  const ctx = document.getElementById('salesBySetChart').getContext('2d');
+  salesBySetChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderWidth: 1,
+        hoverBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#666',
+            font: { family: 'DM Mono', size: 9 },
+            padding: 10,
+            boxWidth: 10,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#111',
+          borderColor: '#282828',
+          borderWidth: 1,
+          titleColor: '#666',
+          bodyColor: '#f0f0f0',
+          titleFont: { family: 'DM Mono', size: 10 },
+          bodyFont: { family: 'DM Mono', size: 12 },
+          callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' sales' }
+        }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Biggest movers
+// ─────────────────────────────────────────────────────────────────────────────
+function renderMovers(products) {
+  const el = document.getElementById('movers-table');
+
+  // Only products with 2+ sales, a last sale price, and an avg price — exclude Unknown
+  const eligible = products.filter(p =>
+    p.totalSales >= 2 && p.lastSalePrice > 0 && p.avgPrice > 0 &&
+    p.player && p.player !== 'Unknown'
+  );
+
+  if (!eligible.length) { el.innerHTML = '<div class="empty">not enough data yet</div>'; return; }
+
+  // Calculate change: last sale vs all-time avg
+  const withChange = eligible.map(p => ({
+    ...p,
+    change: p.lastSalePrice - p.avgPrice,
+    changePct: ((p.lastSalePrice - p.avgPrice) / p.avgPrice) * 100,
+  }));
+
+  // Sort by absolute % change, take top 10
+  withChange.sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct));
+  const top = withChange.slice(0, 10);
+
+  // Build sparkline from last/avg (simple 2-bar version)
+  function spark(avg, last) {
+    const max = Math.max(avg, last);
+    const h1 = Math.round((avg / max) * 18);
+    const h2 = Math.round((last / max) * 18);
+    const c2 = last >= avg ? '#3ddc84' : '#ff4040';
+    return `<span class="mover-spark">
+      <span style="height:${h1}px;background:var(--muted)"></span>
+      <span style="height:${h2}px;background:${c2}"></span>
+    </span>`;
+  }
+
+  el.innerHTML = `<table class="movers-table">
+    <thead><tr>
+      <th>Player</th><th>Variant</th><th>Avg → Last</th><th>Change</th><th></th>
+    </tr></thead>
+    <tbody>${top.map(p => {
+      const up = p.change >= 0;
+      const cls = up ? 'mover-up' : 'mover-down';
+      const arrow = up ? '▲' : '▼';
+      const vClass = 'v-' + (p.variant||'base').toLowerCase();
+      return `<tr>
+        <td>
+          <div class="mover-name">${p.player}</div>
+          <div style="font-size:8px;color:var(--muted);letter-spacing:1px">${p.set}</div>
+        </td>
+        <td><span class="product-card-variant ${vClass}" style="font-size:8px;padding:1px 5px">${p.variant}</span></td>
+        <td style="font-size:10px">$${Math.round(p.avgPrice)} → <span style="color:var(--text)">$${Math.round(p.lastSalePrice)}</span></td>
+        <td class="${cls}">${arrow} ${Math.abs(p.changePct).toFixed(0)}%</td>
+        <td>${spark(p.avgPrice, p.lastSalePrice)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Top 10 players by avg parallel price
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTopPlayers(products) {
+  const el = document.getElementById('top-players-table');
+
+  // Gold variant only, aggregate per player across all sets — exclude Unknown
+  const playerMap = {};
+  products.filter(p => p.player && p.player !== 'Unknown').forEach(p => {
+    if (p.variant !== 'Gold' || !p.avgPrice || !p.totalSales) return;
+    if (!playerMap[p.player]) playerMap[p.player] = { sum: 0, salesSum: 0 };
+    playerMap[p.player].sum += p.avgPrice * p.totalSales;
+    playerMap[p.player].salesSum += p.totalSales;
+  });
+
+  const ranked = Object.entries(playerMap)
+    .map(([player, d]) => ({
+      player,
+      avgPrice: Math.round(d.sum / d.salesSum),
+      totalSales: d.salesSum,
+    }))
+    .filter(p => p.avgPrice > 0)
+    .sort((a, b) => b.avgPrice - a.avgPrice)
+    .slice(0, 10);
+
+  if (!ranked.length) { el.innerHTML = '<div class="empty">not enough data yet</div>'; return; }
+
+  const max = ranked[0].avgPrice;
+
+  el.innerHTML = `<table class="top-players-table">
+    <thead><tr>
+      <th>#</th><th>Player</th><th>Avg Gold</th><th style="width:80px"></th><th>Sales</th>
+    </tr></thead>
+    <tbody>${ranked.map((p, i) => `<tr>
+      <td class="top-rank">${i + 1}</td>
+      <td class="top-player-name">${p.player}</td>
+      <td class="top-player-price" style="color:#ffd700">$${p.avgPrice}</td>
+      <td><div class="top-player-bar-wrap"><div class="top-player-bar" style="width:${Math.round(p.avgPrice/max*100)}%;background:#ffd700"></div></div></td>
+      <td>${p.totalSales}</td>
+    </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Product cards
+// ─────────────────────────────────────────────────────────────────────────────
+function renderProducts() {
+  const grid = document.getElementById('products-grid');
+  if (!grid) return;
+  let filtered = allProducts;
+
+  if (activeSet !== 'all') filtered = filtered.filter(p => p.set === activeSet);
+  if (activeVariant !== 'all') filtered = filtered.filter(p => p.variant === activeVariant);
+  if (searchQuery) filtered = filtered.filter(p => p.player.toLowerCase().includes(searchQuery));
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">no products match these filters</div>';
+    return;
+  }
+
+  // Sort by avg price desc
+  filtered.sort((a,b) => (b.avgPrice||0) - (a.avgPrice||0));
+
+  grid.innerHTML = filtered.map(p => {
+    const vClass = 'v-' + (p.variant||'base').toLowerCase();
+    const mult = p.multiplier > 0 ? p.multiplier.toFixed(1) + 'x' : '';
+    const lastSale = p.lastSaleDate
+      ? parseDate(p.lastSaleDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+      : '—';
+    return `
+    <div class="product-card" onclick="window.location='guide.html?player=${encodeURIComponent(p.player)}'">
+      ${mult ? `<div class="mult-badge">${mult}</div>` : ''}
+      <div class="product-card-set">${p.set}</div>
+      <div class="product-card-player">${p.player}</div>
+      <span class="product-card-variant ${vClass}">${p.variant}${p.edition ? ' ' + p.edition : ''}</span>
+      <div class="product-card-price">${p.avgPrice ? '$'+Math.round(p.avgPrice) : '—'}</div>
+      <div class="product-card-sub">
+        <div class="product-card-meta"># sales <span>${p.totalSales||0}</span></div>
+        <div class="product-card-meta">last <span>${lastSale}</span></div>
+        ${p.retail ? `<div class="product-card-meta">retail <span>$${Math.round(p.retail)}</span></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Init
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadData);
+} else {
+  loadData();
+}
+
+function toggleExplainer() {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  const isOpen = panel.classList.contains('visible');
+  panel.classList.toggle('visible', !isOpen);
+  if (btn) btn.classList.toggle('open', !isOpen);
+}
+// Close when clicking outside
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  if (panel && panel.classList.contains('visible')) {
+    if (!panel.contains(e.target) && (!btn || !btn.contains(e.target))) {
+      panel.classList.remove('visible');
+      if (btn) btn.classList.remove('open');
+    }
+  }
+});
+
+</script>
+</body>
+</html>

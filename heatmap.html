@@ -14,9 +14,9 @@
 }
 
 /* ── Page header ── */
-.page-header { padding: 32px 32px 0; }
-.page-title { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -1px; margin-bottom: 6px; }
-.page-sub { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.page-header { padding: 32px 32px 0; position: relative; }
+.page-title { font-family: var(--display); font-size: 48px; letter-spacing: 2px; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.page-sub { font-family: var(--mono); font-size: 14px; color: var(--muted2); margin-bottom: 32px; }
 
 /* ── AI Insights banner ── */
 .insights-banner {
@@ -274,6 +274,121 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
 .tt-v { font-size: 10px; }
 .tt-v.up { color: var(--hot2); }
 .tt-v.down { color: var(--cold1); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* ── Page header ── */
+  .page-header { padding: 16px 16px 0; }
+  .page-title { font-size: 24px; }
+  .page-sub { font-size: 14px; margin-bottom: 20px; }
+
+  /* ── Insights banner ── */
+  .insights-banner { margin: 12px 16px 0; padding: 10px 14px; }
+  .insights-list { gap: 12px; }
+  .insight-item { font-size: 9px; max-width: 100%; }
+
+  /* ── Controls ── */
+  .controls { padding: 12px 16px 0; flex-direction: column; align-items: stretch; gap: 12px; }
+  #set-tabs { gap: 6px; }
+  .set-tab { font-size: 9px; padding: 6px 12px; }
+  .estimate-toggle { width: 100%; }
+  .tog-btn { font-size: 9px; padding: 5px 10px; flex: 1; text-align: center; }
+  .recency-wrap { width: 100%; }
+  .recency-track { width: 100%; }
+
+  /* ── Legend ── */
+  .legend-row { padding: 12px 16px; gap: 12px; }
+  .legend-heat { gap: 6px; flex-wrap: wrap; }
+  .legend-label { font-size: 9px; }
+  .legend-proj { flex-wrap: wrap; gap: 6px; }
+  .legend-proj .legend-label { font-size: 9px; }
+
+  /* ── Grid ── */
+  .grid-wrap { padding: 12px 0 12px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .col-headers, .heatmap-row { min-width: max-content; }
+  .col-header { font-size: 9px; letter-spacing: 1px; padding: 4px 2px; }
+
+  /* Player name column — sticky left */
+  .row-info {
+    position: sticky; left: 0; z-index: 2;
+    background: var(--bg); max-width: 120px !important; min-width: 120px;
+    padding-left: 16px; padding-right: 8px;
+  }
+  .row-name { font-size: 11px; }
+  .row-sub { font-size: 7px; }
+
+  /* Sticky header cell for col-headers (the empty first cell) */
+  .col-headers > div:first-child {
+    position: sticky; left: 0; z-index: 2;
+    background: var(--bg); min-width: 120px;
+    padding-left: 16px;
+  }
+
+  /* Heat cells */
+  .heat-cell { height: 46px; min-width: 70px; }
+  .cell-price { font-size: 10px; }
+  .cell-pct { font-size: 12px; }
+  .cell-badge { font-size: 7px; padding: 1px 3px; top: 2px; right: 2px; }
+
+  /* ── Summary row ── */
+  .summary-row { padding: 16px; gap: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .summary-stat { min-width: 100px; flex: 0 0 auto; }
+  .summary-label { font-size: 9px; }
+  .summary-val { font-size: 17px; }
+  .summary-sub { font-size: 8px; }
+
+  /* ── Drawer — full-screen overlay ── */
+  .drawer { width: 100vw; padding: 20px 16px; }
+  .drawer-player { font-size: 18px; }
+  .drawer-variant { font-size: 10px; margin-bottom: 16px; }
+  .d-section { margin-bottom: 16px; }
+  .d-stat-label { font-size: 10px; }
+  .d-stat-val { font-size: 12px; }
+  .comp-fig-card { padding: 10px; min-width: 130px; min-height: auto; }
+  .comp-fig-price { font-size: 15px; }
+  .proj-final-val { font-size: 30px; }
+
+  /* Listing cards in drawer */
+  .listing-card { padding: 10px; gap: 10px; }
+  .listing-img, .listing-img-placeholder { width: 44px; height: 44px; }
+  .listing-price { font-size: 15px; }
+
+  /* ── Tooltip — hide on mobile (touch doesn't hover well) ── */
+  .tip { display: none !important; }
+
+  /* ── Loading ── */
+  .loading { padding: 40px 16px; }
+}
+
+@media (max-width: 480px) {
+  .page-title { font-size: 22px; }
+  .page-sub { font-size: 13px; }
+
+  .set-tab { font-size: 8px; padding: 5px 9px; letter-spacing: 0.5px; }
+  .tog-btn { font-size: 8px; padding: 4px 8px; }
+
+  .row-info { max-width: 100px !important; min-width: 100px; padding-left: 12px; }
+  .row-name { font-size: 10px; }
+  .col-headers > div:first-child { min-width: 100px; padding-left: 12px; }
+
+  .heat-cell { height: 42px; min-width: 65px; }
+  .cell-price { font-size: 9px; }
+  .cell-pct { font-size: 11px; }
+  .cell-badge { font-size: 6px; }
+
+  .col-header { font-size: 8px; letter-spacing: 0.5px; }
+
+  .summary-val { font-size: 15px; }
+  .summary-stat { min-width: 90px; }
+
+  .drawer { padding: 16px 12px; }
+  .drawer-player { font-size: 16px; }
+  .comp-fig-card { min-width: 110px; }
+  .proj-final-val { font-size: 26px; }
+}
 </style>
 <script src="estimate-engine.js"></script>
 </head>
@@ -281,25 +396,30 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
 
 <header>
   <div class="logo">ghost<em>ladder</em></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <nav class="nav">
-    <a href="index.html">Sales Intel</a>
-    <a href="guide.html">Price Guide</a>
-    <a href="listings.html">Listings Intel</a>
+    <a href="index.html">Home</a>
+    <a href="market-intel.html">Sales Intel</a>
+    <a href="ladder.html">Price Guide</a>
     <a href="sets.html">Sets</a>
     <a href="heatmap.html" class="active">Set Map</a>
     <a href="case-sim.html">ROI SIM</a>
-    <div class="nav-dropdown">
-      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
-      <div class="nav-dropdown-menu">
-        <a href="player-index.html">Player Indexes</a>
-      </div>
-    </div>
+    <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
   </nav>
 </header>
 
 <div class="page-header">
-  <div class="page-title">market heat map</div>
-  <div class="page-sub">yellow = real sales data · purple = model estimate · dark = no data · intensity = data richness</div>
+  <div class="page-title">SET MAP
+    <button class="explainer-btn" onclick="toggleExplainer()" title="What is this?">?</button>
+  </div>
+  <div class="page-sub">Explore estimated values across every player and variant in a set.</div>
+  <div class="explainer-panel" id="explainer-panel">
+    <button class="explainer-close" onclick="toggleExplainer()">✕</button>
+    <p>Use this page to explore the GL Estimation Engine. See how our model predicts prices for ghosts that haven't sold. Click on any estimated cell to see the math.</p>
+    <p>Toggle different Estimate Modes and Recency Settings to see how our estimates change.</p>
+  </div>
 </div>
 
 <div class="insights-banner" id="insights-banner">
@@ -517,12 +637,13 @@ function snapRecency(el) {
 // ── Fetch ──────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [pi, paramsData, setMathData, setsData, gradedSalesData] = await Promise.all([
+    const [pi, paramsData, setMathData, setsData, gradedSalesData, playersData] = await Promise.all([
       rpc('get_price_intelligence'),
       sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('sets', 'select=id,name,league,active&active=eq.true'),
       sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+      sbGet('players', 'select=name,prior_tier'),
     ]);
 
     const products = (pi || [])
@@ -566,7 +687,13 @@ async function loadData() {
     // Build set→league lookup
     const setLeagueMap = {};
     (setsData || []).forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
-    allData = { products, signalMap: {}, activeWeights, setMath, setLeagueMap };
+    // Build player priors lookup: { name: { tier } }
+    const playerPriors = {};
+    (playersData || []).forEach(p => {
+      if (p.name && p.prior_tier) playerPriors[p.name] = { tier: +p.prior_tier };
+    });
+
+    allData = { products, signalMap: {}, activeWeights, setMath, setLeagueMap, playerPriors };
 
     try {
       initPage();
@@ -1471,6 +1598,24 @@ function heatArrow(pct) {
 function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
 loadData();
+
+function toggleExplainer() {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  const isOpen = panel.classList.contains('visible');
+  panel.classList.toggle('visible', !isOpen);
+  if (btn) btn.classList.toggle('open', !isOpen);
+}
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('explainer-panel');
+  const btn   = document.querySelector('.explainer-btn');
+  if (panel && panel.classList.contains('visible')) {
+    if (!panel.contains(e.target) && (!btn || !btn.contains(e.target))) {
+      panel.classList.remove('visible');
+      if (btn) btn.classList.remove('open');
+    }
+  }
+});
 </script>
 </body>
 </html>

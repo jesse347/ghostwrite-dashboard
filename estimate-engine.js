@@ -38,6 +38,34 @@
 
 const STALENESS_TAU = 90; // days
 
+// ── Debug tracing ────────────────────────────────────────────────────────────
+// Traces a specific player+variant through the entire estimation pipeline.
+//
+// Browser usage:  window.ENGINE_DEBUG = { player: 'Zaccharie Risacher', variant: 'Gold' };
+// GAS usage:      ENGINE_DEBUG_TARGET = { player: 'Zaccharie Risacher', variant: 'Gold' };
+// Clear:          window.ENGINE_DEBUG = null;  /  ENGINE_DEBUG_TARGET = null;
+//
+var ENGINE_DEBUG_TARGET = null; // GAS global — set before calling runWalkForward
+function _getDebugTarget() {
+  if (typeof ENGINE_DEBUG_TARGET !== 'undefined' && ENGINE_DEBUG_TARGET) return ENGINE_DEBUG_TARGET;
+  if (typeof window !== 'undefined' && window.ENGINE_DEBUG) return window.ENGINE_DEBUG;
+  return null;
+}
+function _dbg(player, variant, ...args) {
+  const dt = _getDebugTarget();
+  if (!dt) return;
+  if (dt.player && dt.player !== player) return;
+  if (dt.variant && dt.variant !== variant) return;
+  console.log('[ENGINE-DEBUG]', ...args);
+}
+function _dbgActive(player, variant) {
+  const dt = _getDebugTarget();
+  if (!dt) return false;
+  if (dt.player && dt.player !== player) return false;
+  if (dt.variant && dt.variant !== variant) return false;
+  return true;
+}
+
 function computeFreshness(lastSaleDate) {
   if (!lastSaleDate) return 0; // no date = treat as maximally stale
   const days = (Date.now() - new Date(lastSaleDate).getTime()) / 86400000;
@@ -217,6 +245,18 @@ function bestSalesPrice(product) {
   return 0;
 }
 
+// Recency-weighted price — blends all available windows so recent prices
+// dominate when available, but stale data still contributes when it's all we have.
+// Used by ref-dist to track market trends (e.g. Victory price crash).
+function recencyWeightedPrice(product) {
+  if (!product) return 0;
+  let num = 0, den = 0;
+  if (product.avg30d  && product.sales30d  >= 1) { num += product.avg30d  * 3.0; den += 3.0; }
+  if (product.avg90d  && product.sales90d  >= 1) { num += product.avg90d  * 1.5; den += 1.5; }
+  if (product.avgPrice && product.totalSales >= 1) { num += product.avgPrice * 0.5; den += 0.5; }
+  return den > 0 ? num / den : 0;
+}
+
 // Recency-weighted sales count — more recent = more weight
 function salesStrength(product) {
   if (!product) return 0;
@@ -254,14 +294,78 @@ function weightedMedianRatio(pairs) {
 //   setMedianBase             = number
 //   pvsSorted                 = [{player, price, source}] sorted ascending
 
-function buildPlayerValueScale(byPlayer) {
+function buildPlayerValueScale(byPlayer, opts) {
+  opts = opts || {};
+  // Cross-set products: all products from OTHER sets (for cross-set PVS enrichment)
+  const crossSetProducts = opts.crossSetProducts || [];
+  // Player priors: { playerName: { tier: 1|2|3, league } }
+  const playerPriors = opts.playerPriors || {};
+  // Current set's league (for same-league weighting of cross-set signals)
+  const currentSetLeague = opts.currentSetLeague || '';
+  // Set league map (for looking up cross-set product leagues)
+  const setLeagueMap = opts.setLeagueMap || {};
+
   const playerImpliedBase = {};
 
-  // ── Pass 1: direct Base sales ───────────────────────────────────────────
+  // ── Pass 1: direct within-set Base sales ──────────────────────────────────
   Object.entries(byPlayer).forEach(([player, pvars]) => {
     const bp = bestSalesPrice(pvars['Base']);
     if (bp > 0) {
       playerImpliedBase[player] = { price: bp, source: 'base', inferredFrom: null };
+    }
+  });
+
+  // ── Pass 1.5: cross-set Base price enrichment ─────────────────────────────
+  // For players not yet placed, look at their Base sales in OTHER sets.
+  // Same-league sets weighted higher. This provides a strong prior for players
+  // who appeared in previous sets even when the current set has zero sales.
+  const crossSetByPlayer = {};
+  crossSetProducts.forEach(p => {
+    if (!p.player || p.player === 'Unknown' || p.variant !== 'Base') return;
+    const bp = bestSalesPrice(p);
+    if (bp <= 0) return;
+    if (!crossSetByPlayer[p.player]) crossSetByPlayer[p.player] = [];
+    const otherLeague = setLeagueMap[p.set] || '';
+    const sameLeague  = !!(currentSetLeague && otherLeague && currentSetLeague === otherLeague);
+    crossSetByPlayer[p.player].push({
+      price: bp,
+      set: p.set,
+      sameLeague,
+      weight: (sameLeague ? 1.0 : 0.5) * Math.min(1.0, salesStrength(p) / 5),
+    });
+  });
+
+  Object.entries(byPlayer).forEach(([player]) => {
+    const crossPrices = crossSetByPlayer[player];
+    if (!crossPrices || !crossPrices.length) return;
+    // Prefer same-league; fall back to cross-league
+    const sameLeaguePrices = crossPrices.filter(c => c.sameLeague);
+    const usePrices = sameLeaguePrices.length ? sameLeaguePrices : crossPrices;
+    const totalW = usePrices.reduce((s, c) => s + c.weight, 0);
+    if (totalW <= 0) return;
+    const crossAvg = usePrices.reduce((s, c) => s + c.price * c.weight, 0) / totalW;
+
+    const existing = playerImpliedBase[player];
+    if (existing && existing.source === 'base') {
+      // Blend within-set Base with cross-set Base.
+      // Weight by evidence: within-set sales count vs cross-set total weight.
+      // A player with 2 within-set sales and 50 cross-set sales should lean
+      // heavily on cross-set. One with 20 within-set should lean within-set.
+      const withinSales = bestSalesPrice(byPlayer[player]?.['Base']) > 0
+        ? (byPlayer[player]['Base'].totalSales || 1)
+        : 1;
+      const crossSales = usePrices.reduce((s, c) => s + (c.weight * 10), 0); // approximate
+      const withinWeight = Math.min(withinSales, 10); // cap at 10 so cross-set always matters
+      const crossWeight  = Math.min(crossSales, 20);  // cap at 20
+      const blended = (existing.price * withinWeight + crossAvg * crossWeight) / (withinWeight + crossWeight);
+      playerImpliedBase[player] = {
+        price: blended,
+        source: 'base+cross',
+        inferredFrom: { withinPrice: existing.price, crossPrice: crossAvg, withinW: withinWeight, crossW: crossWeight, sets: usePrices.map(c => c.set) },
+      };
+    } else if (!existing) {
+      // No within-set Base — use cross-set only
+      playerImpliedBase[player] = { price: crossAvg, source: 'cross-set-base', inferredFrom: { sets: usePrices.map(c => c.set) } };
     }
   });
 
@@ -281,7 +385,7 @@ function buildPlayerValueScale(byPlayer) {
 
       Object.entries(byPlayer).forEach(([otherPlayer, otherPvars]) => {
         const otherBase = playerImpliedBase[otherPlayer];
-        if (!otherBase || otherBase.source !== 'base') return; // only compare to confirmed base players
+        if (!otherBase || (otherBase.source !== 'base' && otherBase.source !== 'cross-set-base')) return;
         const otherVariantPrice = bestSalesPrice(otherPvars[variant]);
         if (otherVariantPrice <= 0) return;
 
@@ -293,7 +397,6 @@ function buildPlayerValueScale(byPlayer) {
     });
 
     if (inferences.length > 0) {
-      // Weighted median of all inferences
       const sorted = [...inferences].sort((a, b) => a.price - b.price);
       const totalW = sorted.reduce((s, i) => s + i.weight, 0);
       let cumW = 0, chosen = sorted[0];
@@ -309,7 +412,33 @@ function buildPlayerValueScale(byPlayer) {
   const knownPrices = Object.values(playerImpliedBase).map(b => b.price).sort((a, b) => a - b);
   const setMedianBase = knownPrices.length ? knownPrices[Math.floor(knownPrices.length / 2)] : 1;
 
+  // ── Pass 2.5: prior tier anchoring ────────────────────────────────────────
+  // For players still unplaced who have a prior_tier, use the tier to assign
+  // a price relative to the known distribution. This ensures superstars get
+  // placed at the top even with zero sales data.
+  //
+  // Tier mapping uses percentiles of the KNOWN prices (from passes 1-2):
+  //   Tier 1 (Superstar) → 95th percentile of known prices
+  //   Tier 2 (Star)      → 75th percentile of known prices
+  // If no known prices exist, use cross-set same-league median Base prices
+  // to build the tier targets.
+  if (knownPrices.length > 0) {
+    const p95 = knownPrices[Math.min(knownPrices.length - 1, Math.floor(knownPrices.length * 0.95))];
+    const p75 = knownPrices[Math.min(knownPrices.length - 1, Math.floor(knownPrices.length * 0.75))];
+    const tierPrices = { 1: Math.max(p95, setMedianBase * 2), 2: Math.max(p75, setMedianBase * 1.3) };
+
+    Object.keys(byPlayer).forEach(player => {
+      if (playerImpliedBase[player]) return;
+      const prior = playerPriors[player];
+      if (!prior || !prior.tier || prior.tier > 2) return;
+      playerImpliedBase[player] = { price: tierPrices[prior.tier], source: 'prior-tier-' + prior.tier, inferredFrom: null };
+    });
+  }
+
   // ── Pass 3: assign set median to players with no data ───────────────────
+  // When all players are at set median (no differentiation), assign everyone
+  // the same percentile (0.5) to prevent alphabetical ordering from
+  // determining price estimates.
   Object.keys(byPlayer).forEach(player => {
     if (!playerImpliedBase[player]) {
       playerImpliedBase[player] = { price: setMedianBase, source: 'median', inferredFrom: null };
@@ -321,10 +450,75 @@ function buildPlayerValueScale(byPlayer) {
     .map(([player, data]) => ({ player, price: data.price, source: data.source }))
     .sort((a, b) => a.price - b.price);
 
+  // Assign percentiles with tie-handling: players at the same price get the
+  // same percentile (midpoint of their tied range). This prevents alphabetical
+  // ordering from creating false differentiation when all players are at the
+  // set median.
   const playerPercentile = {};
-  pvsSorted.forEach((entry, i) => {
-    playerPercentile[entry.player] = pvsSorted.length > 1 ? i / (pvsSorted.length - 1) : 0.5;
+  if (pvsSorted.length <= 1) {
+    pvsSorted.forEach(e => { playerPercentile[e.player] = 0.5; });
+  } else {
+    // Group by price, assign each group the midpoint percentile of its range
+    let i = 0;
+    while (i < pvsSorted.length) {
+      let j = i;
+      while (j < pvsSorted.length && pvsSorted[j].price === pvsSorted[i].price) j++;
+      // Indices i..j-1 share the same price → assign midpoint percentile
+      const midPct = ((i + j - 1) / 2) / (pvsSorted.length - 1);
+      for (let k = i; k < j; k++) playerPercentile[pvsSorted[k].player] = midPct;
+      i = j;
+    }
+  }
+
+  // ── Prior-blended percentile ─────────────────────────────────────────────
+  // Blend each player's PVS percentile toward a prior based on how much
+  // within-set Base evidence exists. With few sales, lean toward prior;
+  // with many sales, trust the PVS.
+  //
+  // Prior percentiles:
+  //   Tier 1 (Superstar) → 95th     Tier 2 (Star) → 80th
+  //   Tier 3 / NULL      → 50th (median — conservative default)
+  //
+  // Fade rate: priorWeight = 1 / (1 + baseSales / 5)
+  //   0 sales → 100%, 2 → 71%, 5 → 50%, 10 → 33%, 20 → 20%
+  const PRIOR_FADE_RATE = 3;
+  const TIER_PRIOR_PCT = { 1: 0.95, 2: 0.80 };
+  const DEFAULT_PRIOR_PCT = 0.50;
+
+  Object.keys(playerPercentile).forEach(player => {
+    const pib = playerImpliedBase[player];
+    if (!pib) return;
+    // Count within-set Base sales only
+    const baseProd = byPlayer[player] && byPlayer[player]['Base'];
+    const baseSales = (baseProd && baseProd.totalSales) ? baseProd.totalSales : 0;
+
+    const priorTier = (playerPriors[player] && playerPriors[player].tier) || null;
+    const priorPct = (priorTier && TIER_PRIOR_PCT[priorTier]) || DEFAULT_PRIOR_PCT;
+
+    const priorWeight = 1 / (1 + baseSales / PRIOR_FADE_RATE);
+    const rawPct = playerPercentile[player];
+    const blended = priorPct * priorWeight + rawPct * (1 - priorWeight);
+    playerPercentile[player] = blended;
+
+    if (_dbgActive(player)) {
+      _dbg(player, null, `Prior blend: raw=${(rawPct*100).toFixed(1)}% prior=${(priorPct*100).toFixed(0)}% (tier=${priorTier||'none'}) weight=${(priorWeight*100).toFixed(0)}% → blended=${(blended*100).toFixed(1)}% (baseSales=${baseSales})`);
+    }
   });
+
+  // Debug: log PVS for target player
+  const dt = _getDebugTarget();
+  if (dt && dt.player) {
+    const d = playerImpliedBase[dt.player];
+    if (d) {
+      console.log(`[ENGINE-DEBUG] PVS for "${dt.player}": impliedBase=$${d.price.toFixed(0)}, source=${d.source}, percentile=${(playerPercentile[dt.player]*100).toFixed(1)}%`);
+      console.log(`[ENGINE-DEBUG] PVS full ranking (${pvsSorted.length} players):`);
+      pvsSorted.forEach((e, i) => {
+        const pct = pvsSorted.length > 1 ? (i / (pvsSorted.length - 1) * 100).toFixed(1) : '50.0';
+        const marker = e.player === dt.player ? ' ◀◀◀' : '';
+        console.log(`[ENGINE-DEBUG]   ${pct}%  $${e.price.toFixed(0)}  ${e.player} (${e.source})${marker}`);
+      });
+    }
+  }
 
   return { playerImpliedBase, playerPercentile, setMedianBase, pvsSorted };
 }
@@ -432,18 +626,24 @@ function buildReferenceDistribution(variant, targetPop, currentSetName, refSetDa
     // ── Collect (price, metadata) pairs — percentile assigned after all points collected ──
     let hasVariantData = false;
     Object.entries(refByPlayer).forEach(([player, pvars]) => {
-      const rawPrice = bestSalesPrice(pvars[matchV]);
+      // Use recency-weighted price so ref-dist tracks market trends
+      // (recent sales dominate over stale all-time averages).
+      const rawPrice = recencyWeightedPrice(pvars[matchV]);
       if (rawPrice <= 0) return;
 
       hasVariantData = true;
       const str = Math.min(3.0, salesStrength(pvars[matchV]) / 5);
+      // Freshness decay: stale ref-dist points carry less weight so the
+      // distribution tracks market trends (e.g. Victory price crash).
+      // Floor of 0.15 ensures very stale points still provide shape context.
+      const freshness = Math.max(0.15, computeFreshness(pvars[matchV]?.lastSaleDate));
       allPoints.push({
         // percentile assigned below via price-ranking (not PVS-based)
         price:      rawPrice * scaleFactor, // price adjusted for population difference
         player,
         set:        refSet,
         sameLeague: isLeagueMatch,
-        weight:     (isLeagueMatch ? 1.0 : 0.7) * Math.max(0.2, str) * popProximity,
+        weight:     (isLeagueMatch ? 1.0 : 0.7) * Math.max(0.2, str) * popProximity * freshness,
         scaleFactor,
         isExact,
         matchPop,
@@ -486,6 +686,67 @@ function buildReferenceDistribution(variant, targetPop, currentSetName, refSetDa
     exactPopMatch: !anyApprox,    // true only if every reference set had an exact pop match
     scaleFactor:   avgScaleFactor,
   };
+}
+
+// ── Variant-level trend adjustment ───────────────────────────────────────────
+//
+// Detects market-wide price trends for a variant by comparing recent sales
+// (90d) to all-time sales across all reference sets. If Victory prices have
+// crashed 60% across ALL players, this returns ~0.40 so ref-dist points are
+// deflated accordingly. Returns 1.0 if no trend or insufficient data.
+//
+// Uses the reference set products (same data that feeds the ref-dist) so it
+// captures the same-league, same-population context.
+function computeVariantTrendFactor(matchVariant, refSetData, sameLeagueSets) {
+  const refSetsToUse = sameLeagueSets && sameLeagueSets.size > 0
+    ? [...sameLeagueSets]
+    : Object.keys(refSetData);
+
+  const d30  = [];
+  const d90  = [];
+  const last = [];
+
+  refSetsToUse.forEach(refSet => {
+    const refData = refSetData[refSet];
+    if (!refData || !refData.byPlayer) return;
+
+    Object.entries(refData.byPlayer).forEach(([player, pvars]) => {
+      const prod = pvars[matchVariant];
+      if (!prod || !prod.avgPrice || prod.totalSales < 1) return;
+
+      if (prod.avg30d && prod.sales30d >= 1) {
+        d30.push({ recent: prod.avg30d, allTime: prod.avgPrice });
+      }
+      if (prod.avg90d && prod.sales90d >= 1) {
+        d90.push({ recent: prod.avg90d, allTime: prod.avgPrice });
+      }
+      if (prod.lastSalePrice > 0 && prod.totalSales >= 2) {
+        last.push({ recent: prod.lastSalePrice, allTime: prod.avgPrice });
+      }
+    });
+  });
+
+  const median = arr => {
+    const s = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  };
+
+  const computeRatio = pairs => {
+    const ratios = pairs.map(p => p.allTime > 0 ? p.recent / p.allTime : 1);
+    return median(ratios);
+  };
+
+  let factor = 1.0;
+  if (d30.length >= 2) {
+    factor = computeRatio(d30);
+  } else if (d90.length >= 2) {
+    factor = computeRatio(d90);
+  } else if (last.length >= 3) {
+    factor = computeRatio(last);
+  }
+
+  return Math.max(0.3, Math.min(1.0, factor));
 }
 
 // ── Log-linear interpolation / extrapolation ──────────────────────────────────
@@ -674,7 +935,18 @@ function buildEstimates(setName, setProducts, weights) {
   });
 
   // ── 1. Build Player Value Scale for current set ──────────────────────────
-  const pvs = buildPlayerValueScale(byPlayer);
+  // Cross-set products for PVS enrichment (all products NOT in this set)
+  const crossSetProducts = (allData.products || []).filter(p => p.set !== setName);
+  // Player priors: { name: { tier } } from players table
+  const playerPriors = allData.playerPriors || {};
+  const currentSetLeague = (allData.setLeagueMap || {})[setName] || '';
+
+  const pvs = buildPlayerValueScale(byPlayer, {
+    crossSetProducts,
+    playerPriors,
+    currentSetLeague,
+    setLeagueMap: allData.setLeagueMap || {},
+  });
   const { playerImpliedBase, playerPercentile, setMedianBase, pvsSorted } = pvs;
 
   // ── 2. Pre-compute reference set data ───────────────────────────────────
@@ -1023,17 +1295,53 @@ function buildEstimates(setName, setProducts, weights) {
 
       let rangeEstimate = null, extrapolated = false, extrapolatedUp = false;
       if (refDistRaw) {
+        // ── Variant-level trend adjustment ──────────────────────────────────
+        // Detect market-wide price trends (e.g. Victory crash) and scale
+        // ref-dist points down if recent variant prices are below all-time.
+        // Applied once to the cached ref-dist (guarded by __trended__ flag).
+        if (!refDistCache[`__trended__${tv}`]) {
+          refDistCache[`__trended__${tv}`] = true;
+          const sameLeagueSets = new Set(refDistRaw.refSets);
+          const trendFactor = computeVariantTrendFactor(tv, refSetData, sameLeagueSets);
+          refDistCache[`__trendVal__${tv}`] = trendFactor;
+          if (trendFactor < 1.0) {
+            refDistRaw.points.forEach(p => { p.price = p.price * trendFactor; });
+          }
+        }
+        const trendFactor = refDistCache[`__trendVal__${tv}`] || 1.0;
+        if (trendFactor < 1.0) {
+          _dbg(player, tv, `Variant trend factor: ${trendFactor.toFixed(2)} (recent prices ${((1-trendFactor)*100).toFixed(0)}% below all-time)`);
+        }
+
+        if (_dbgActive(player, tv)) {
+          _dbg(player, tv, `Ref-dist for variant="${tv}": ${refDistRaw.nPoints} points from [${refDistRaw.refSets.join(', ')}]`);
+          _dbg(player, tv, `Player PVS percentile: ${(pct*100).toFixed(1)}%`);
+          _dbg(player, tv, `Ref-dist points (price-ranked):`);
+          refDistRaw.points.forEach((p, i) => {
+            _dbg(player, tv, `  ${(p.percentile*100).toFixed(1)}%  $${p.price.toFixed(0)}  ${p.player} (${p.set}) w=${p.weight.toFixed(2)}`);
+          });
+        }
         const interp = interpolateFromDistribution(pct, refDistRaw.points);
         if (interp) {
           rangeEstimate  = interp.price;
           extrapolated   = interp.extrapolated;
           extrapolatedUp = interp.extrapolatedUp;
+          _dbg(player, tv, `Interpolation result: $${interp.price.toFixed(0)} (extrapolated=${interp.extrapolated}, up=${interp.extrapolatedUp})`);
         }
       }
 
       // ── 8d. Ratio estimate (secondary, blended at high evidence) ──────────
+      // Only compute ratio blending for rare variants (pop ≤ 10: Gold, Chrome, Fire).
+      // For common variants (Victory /50, Emerald /25, etc.), ratio blending inflates
+      // estimates because global pop ratios overestimate the value of common variants.
+      // Backtest: ref-dist+ratio MAE = 170% for Victory, 63% for Emerald;
+      //           ref-dist alone MAE = 69% for Victory, 36% for Emerald.
+      const RATIO_BLEND_MAX_POP = 10;
+      const targetPopForRatio = variantPop[tv] || null;
+      const allowRatioBlend = targetPopForRatio != null && targetPopForRatio <= RATIO_BLEND_MAX_POP;
+
       let ratioEstimate = null;
-      if (anchors.length > 0) {
+      if (allowRatioBlend && anchors.length > 0) {
         const totalW = anchors.reduce((s, a) => s + a.weight, 0);
         if (totalW > 0) ratioEstimate = anchors.reduce((s, a) => s + a.impliedPrice * a.weight, 0) / totalW;
       }
@@ -1042,33 +1350,37 @@ function buildEstimates(setName, setProducts, weights) {
       let finalEstimate = null;
       if (rangeEstimate !== null) {
         if (ratioEstimate !== null && evidenceWeight > 0.15) {
-          // Range is primary; ratios blend in as evidence accumulates.
-          // At 30 weighted non-base sales (evidenceWeight ≈ 0.5), it's 50/50.
           finalEstimate = (1 - evidenceWeight) * rangeEstimate + evidenceWeight * ratioEstimate;
+          _dbg(player, tv, `Combine: range=$${Math.round(rangeEstimate)} × ${((1-evidenceWeight)*100).toFixed(0)}% + ratio=$${Math.round(ratioEstimate)} × ${(evidenceWeight*100).toFixed(0)}% = $${Math.round(finalEstimate)}`);
         } else {
           finalEstimate = rangeEstimate;
+          const skipReason = !allowRatioBlend ? `pop=${targetPopForRatio}>=${RATIO_BLEND_MAX_POP+1}` : `evidenceWeight=${(evidenceWeight*100).toFixed(0)}%`;
+          _dbg(player, tv, `Combine: range-only=$${Math.round(rangeEstimate)} (${skipReason}, ratioEstimate=${ratioEstimate !== null ? '$'+Math.round(ratioEstimate) : 'null'})`);
         }
       } else if (ratioEstimate !== null) {
-        // No reference distribution yet — use ratio-only as fallback
         finalEstimate = ratioEstimate;
+        _dbg(player, tv, `Combine: ratio-only=$${Math.round(finalEstimate)}`);
       } else {
-        return; // no estimate possible
+        _dbg(player, tv, `Combine: no estimate possible — skipping`);
+        return;
       }
 
       finalEstimate = Math.round(finalEstimate);
+      _dbg(player, tv, `FINAL: $${finalEstimate} (confidence will be assigned next)`);
 
       // ── Confidence ─────────────────────────────────────────────────────────
       const hasSalesRatio = anchors.some(a => a.ratioSource === 'sales');
-      // ratioEstimate is required for any confidence above Very Low.
-      // ref-dist without a ratio produced 96.7% MAE in backfill — it provides
-      // shape context but no reliable scale, so it can't be trusted on its own.
+      // For rare variants (pop ≤ 10), ratioEstimate is required for Medium+.
+      // For common variants (pop > 10), ratio blending is disabled — confidence
+      // is based on ref-dist quality alone (same-league, non-extrapolated, n≥3).
+      const hasRatioOrCommon = ratioEstimate || !allowRatioBlend; // common variants don't need ratio
       const confidence =
-        refDistRaw && refDistRaw.sameLeague && !extrapolated && refDistRaw.nPoints >= 3 && ratioEstimate && evidenceWeight > 0.3 ? 'Medium'
-      : refDistRaw && refDistRaw.sameLeague && !extrapolated && refDistRaw.nPoints >= 3 && ratioEstimate ? 'Medium-Low'
-      : refDistRaw && !extrapolated && ratioEstimate                                                      ? 'Low'
-      : refDistRaw                                                                                        ? 'Very Low' // no ratio OR extrapolated
-      : hasSalesRatio && anchors.length >= 2                                                              ? 'Low'
-      : 'No Data'; // zero usable distribution — no estimate should be trusted
+        refDistRaw && refDistRaw.sameLeague && !extrapolated && refDistRaw.nPoints >= 3 && hasRatioOrCommon && evidenceWeight > 0.3 ? 'Medium'
+      : refDistRaw && refDistRaw.sameLeague && !extrapolated && refDistRaw.nPoints >= 3 && hasRatioOrCommon ? 'Medium-Low'
+      : refDistRaw && !extrapolated && hasRatioOrCommon                                                     ? 'Low'
+      : refDistRaw                                                                                          ? 'Very Low'
+      : hasSalesRatio && anchors.length >= 2                                                                ? 'Low'
+      : 'No Data';
 
       const sig       = (allData.signalMap || {})[`${setName}|||${player}|||${tv}`];
       const pvsInfo   = buildPvsInfo(player, playerImpliedBase, playerPercentile, pvsSorted);

@@ -14,8 +14,8 @@
 
 /* ── Page header ── */
 .page-sub {
-  font-size: 13px; letter-spacing: 1px; color: var(--muted);
-  margin-bottom: 32px;
+  font-family: var(--mono); font-size: 14px;
+  color: var(--muted2); margin-bottom: 32px;
 }
 
 /* ── Global controls bar ── */
@@ -339,11 +339,50 @@ input[type=range].recency-slider::-moz-range-thumb {
   color: var(--muted); margin-bottom: 12px;
 }
 
-@media (max-width: 700px) {
-  .page { padding: 20px 16px 60px; }
-  .set-row { grid-template-columns: 80px 1fr; }
+@media (max-width: 768px) {
+  .page { padding: 16px 16px 60px; }
+  .page-title { font-size: 28px; letter-spacing: 0; }
+  .page-sub { font-size: 14px; margin-bottom: 20px; }
+
+  /* Controls bar — wrap toggles, full width */
+  .controls-bar { flex-direction: column; align-items: stretch; gap: 14px; padding: 12px 14px; }
+  .control-group { flex-wrap: wrap; width: 100%; }
+  .recency-wrap { min-width: 0; width: 100%; }
+  .estimate-toggle { flex-wrap: wrap; }
+  .tog-btn { padding: 5px 10px; font-size: 9px; }
+
+  /* Set cards — stack image above stats */
+  .set-row { grid-template-columns: 1fr; }
+  .set-image-wrap {
+    height: auto; width: 100%;
+    max-width: 200px;
+    margin: 16px auto 0;
+    grid-row: auto;
+  }
+  .set-image { max-height: 160px; object-fit: contain; }
+  .set-content { padding: 14px 16px; }
+  .set-header { flex-direction: column; gap: 8px; }
+  .set-name { font-size: 20px; }
+
+  /* Stats grid → 2 cols with smaller values */
   .set-stats { grid-template-columns: repeat(2, 1fr); }
-  .controls-bar { flex-direction: column; align-items: flex-start; }
+  .set-stat { padding: 10px 12px; }
+  .stat-val { font-size: 22px; }
+  .stat-lbl { font-size: 9px; }
+
+  /* Hit cards — 2 columns, smaller text */
+  .hits-strip { gap: 6px; flex-wrap: wrap; }
+  .hit-card { width: calc(50% - 3px); min-width: 0; flex-shrink: 1; }
+  .hit-img-wrap { height: 100px; }
+  .hit-price { font-size: 17px; }
+  .hit-player { font-size: 8px; }
+  .hit-variant { font-size: 7px; }
+  .hit-info { padding: 6px; }
+
+  /* Mini grid — horizontal scroll */
+  .mini-grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .set-grid-panel { padding: 14px 12px; }
+  .set-hits-panel { padding: 14px 12px; }
 }
 </style>
 <script src="estimate-engine.js"></script>
@@ -352,27 +391,24 @@ input[type=range].recency-slider::-moz-range-thumb {
 
 <header>
   <div class="logo">ghost<em>ladder</em></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <nav class="nav">
-    <a href="index.html">Sales Intel</a>
-    <a href="guide.html">Price Guide</a>
-    <a href="listings.html">Listings Intel</a>
+    <a href="index.html">Home</a>
+    <a href="market-intel.html">Sales Intel</a>
+    <a href="ladder.html">Price Guide</a>
     <a href="sets.html" class="active">Sets</a>
     <a href="heatmap.html">Set Map</a>
     <a href="case-sim.html">ROI SIM</a>
-    <div class="nav-dropdown">
-      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
-      <div class="nav-dropdown-menu">
-        <a href="player-index.html">Player Indexes</a>
-      </div>
-    </div>
+    <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
   </nav>
 </header>
 
 <div class="page">
 
-  <div class="page-eyebrow">ghostladder · market intelligence</div>
-  <div class="page-title">ACTIVE <em>SETS</em></div>
-  <div class="page-sub">case roi · base value · hit value · per set</div>
+  <div class="page-title">ACTIVE SETS</div>
+  <div class="page-sub">Case ROI, base value, hit value, and market trends for every active set.</div>
 
   <!-- Controls -->
   <div class="controls-bar">
@@ -439,10 +475,16 @@ const VARIANT_PROXIMITY = {
   'SP':      {'Base':0.8,'Victory':0.85,'Emerald':0.8,'Vides':0.8,'Gold':0.7,'Chrome':0.6,'Fire':0.4},
 };
 
-// Default set image — replace per set once you have real images
-const DEFAULT_SET_IMAGE = 'https://www.ghostwrite.com/cdn-cgi/image/width=1200,height=1200,format=auto/https://s3.us-east-1.amazonaws.com/media.ghostwrite.com/content/nba-2026-season-blind-box/page/primary-image-v2.png?v=1759806d-8d16-4de0-89a1-7be5cbdbee51';
-
-// Set images are stored in Supabase sets.image_url — update them there.
+// Local set images: assets/sets/{slug}.png
+function slugifySet(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-');
+}
+function getSetImage(setName) {
+  return 'assets/sets/' + slugifySet(setName) + '.png';
+}
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let allData      = null;
@@ -483,12 +525,13 @@ function bestPrice(p) {
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [pi, setsData, setMathData, paramsData, gradedSalesData] = await Promise.all([
+    const [pi, setsData, setMathData, paramsData, gradedSalesData, playersData] = await Promise.all([
       rpc('get_price_intelligence'),
       sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true&order=name.asc'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
       sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+      sbGet('players', 'select=name,prior_tier'),
     ]);
 
     // set_id → name
@@ -553,7 +596,11 @@ async function loadData() {
     const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
     applyGradingNorm(products, gradedNormMap);
 
-    allData = { setsData, piMap, setMath, signalMap: {}, set30dSales, activeWeights, setLeagueMap, products };
+    const playerPriors = {};
+    (playersData || []).forEach(p => {
+      if (p.name && p.prior_tier) playerPriors[p.name] = { tier: +p.prior_tier };
+    });
+    allData = { setsData, piMap, setMath, signalMap: {}, set30dSales, activeWeights, setLeagueMap, products, playerPriors };
     render();
 
   } catch(e) {
@@ -679,7 +726,7 @@ function render() {
   const html = setsData.map((cfg, idx) => {
     const setName = cfg.name;
     const stats   = computeSetStats(setName, cfg);
-    const img     = cfg.image_url || DEFAULT_SET_IMAGE;
+    const img     = getSetImage(setName);
     const isActive = cfg.active !== false;
 
     const fmtRoi = stats.roi !== null

@@ -25,9 +25,9 @@
   letter-spacing: 2px; color: var(--text);
 }
 .index-name em { color: var(--accent); font-style: normal; }
-.index-tagline {
-  font-family: var(--serif); font-size: 15px; color: var(--muted);
-  margin-top: 12px; font-style: italic; line-height: 1.5;
+.page-sub {
+  font-family: var(--mono); font-size: 14px; color: var(--muted2);
+  margin-top: 12px; margin-bottom: 32px; line-height: 1.5;
 }
 
 .hero-right { text-align: right; }
@@ -225,12 +225,40 @@
 }
 .methodology strong { color: var(--text); }
 
-@media (max-width: 700px) {
-  .page { padding: 20px 16px 60px; }
-  .index-name { font-size: 48px; }
+@media (max-width: 768px) {
+  .page { padding: 16px 16px 60px; }
+  .index-name { font-size: 28px; }
+  .index-value { font-size: 36px; }
+  .page-sub { font-size: 13px; }
   .stats-strip { grid-template-columns: repeat(2, 1fr); }
   .hero { flex-direction: column; align-items: flex-start; }
   .hero-right { text-align: left; }
+  .chart-panel { overflow: hidden; }
+  .chart-wrap { padding: 16px 12px; }
+  .chart-svg { height: auto; }
+  .chart-header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
+  .chart-legend { flex-wrap: wrap; gap: 12px; }
+  .range-tabs { flex-wrap: wrap; }
+  .table-panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .components-table { min-width: 700px; }
+  .strip-stat { padding: 12px 16px; }
+  .strip-val { font-size: 18px; }
+  .methodology { padding: 16px; }
+}
+
+@media (max-width: 480px) {
+  .page { padding: 12px 12px 60px; }
+  .index-name { font-size: 24px; }
+  .index-value { font-size: 28px; }
+  .stats-strip { grid-template-columns: 1fr 1fr; }
+  .strip-stat { padding: 10px 12px; }
+  .strip-val { font-size: 16px; }
+  .chart-header { padding: 12px; }
+  .range-tab { font-size: 7px; padding: 3px 8px; }
+  .chart-wrap { padding: 12px 8px; }
+  .components-table th { padding: 8px 10px; font-size: 8px; }
+  .components-table td { padding: 8px 10px; font-size: 10px; }
+  .methodology { font-size: 9px; padding: 12px; }
 }
 </style>
 </head>
@@ -238,19 +266,17 @@
 
 <header>
   <div class="logo">ghost<em>ladder</em></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <nav class="nav">
-    <a href="index.html">Sales Intel</a>
-    <a href="guide.html">Price Guide</a>
-    <a href="listings.html">Listings Intel</a>
+    <a href="index.html">Home</a>
+    <a href="market-intel.html">Sales Intel</a>
+    <a href="ladder.html">Price Guide</a>
     <a href="sets.html">Sets</a>
     <a href="heatmap.html">Set Map</a>
     <a href="case-sim.html">ROI SIM</a>
-    <div class="nav-dropdown">
-      <a href="gl50.html" class="active">GL50 <span class="beta-badge">beta</span></a>
-      <div class="nav-dropdown-menu">
-        <a href="player-index.html">Player Indexes</a>
-      </div>
-    </div>
+    <a href="gl50.html" class="active">GL50 <span class="beta-badge">beta</span></a>
   </nav>
 </header>
 
@@ -261,7 +287,7 @@
     <div class="hero-left">
       <div class="index-eyebrow">ghostladder market index</div>
       <div class="index-name">GL<em>50</em></div>
-      <div class="index-tagline">
+      <div class="page-sub">
         50 representative ghostwrite figures tracking<br>the health of the secondary market
       </div>
     </div>
