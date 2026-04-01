@@ -93,6 +93,9 @@ function takeEstimateSnapshots() {
     // and corrupt any population-weighted calculation downstream.
     const mathRows    = allData.setMath[set.name] || [];
     const validCombos = new Set(mathRows.map(r => `${r.player}|||${r.variant}`));
+    // Build set_math_id lookup: "player|||variant" → uuid
+    const smIdMap     = {};
+    mathRows.forEach(r => { smIdMap[`${r.player}|||${r.variant}`] = r.id; });
     let phantomCount  = 0;
 
     // ── Gap-fill estimates (cells with no real sales data) ───────────────
@@ -105,6 +108,7 @@ function takeEstimateSnapshots() {
         engineVersion:  engineParams.version,
         evidenceWeight: evidenceWeightFraction,
         isRefreshed:    false,
+        setMathId:      smIdMap[key] || null,
       }));
     });
 
@@ -118,6 +122,7 @@ function takeEstimateSnapshots() {
         engineVersion:  engineParams.version,
         evidenceWeight: evidenceWeightFraction,
         isRefreshed:    true,
+        setMathId:      smIdMap[key] || null,
       }));
     });
 
@@ -136,7 +141,7 @@ function takeEstimateSnapshots() {
 // ── Build one estimate_snapshots row ──────────────────────────────────────────
 
 function buildSnapshotRow_({ runId, snapshotAt, setName, player, variant, est,
-                              engineVersion, evidenceWeight, isRefreshed }) {
+                              engineVersion, evidenceWeight, isRefreshed, setMathId }) {
   const refDist = est.refDist || null;
 
   return {
@@ -145,6 +150,7 @@ function buildSnapshotRow_({ runId, snapshotAt, setName, player, variant, est,
     set_name:           setName,
     player:             player,
     variant:            variant,
+    set_math_id:        setMathId || null,
 
     // ── Prediction ──────────────────────────────────────────────────────
     estimated_price:    est.price,
@@ -500,7 +506,7 @@ function loadAllData_() {
 
   // ── set_math — variant populations ────────────────────────────────────
   const mathRaw = sbGet_('set_math',
-    'select=set_id,player,variant,population,real_population' +
+    'select=id,set_id,player,variant,population,real_population' +
     '&order=set_id.asc'
   );
 
@@ -510,6 +516,7 @@ function loadAllData_() {
     if (!setName) return;
     if (!setMath[setName]) setMath[setName] = [];
     setMath[setName].push({
+      id:              row.id,
       player:          row.player,
       variant:         row.variant,
       population:      row.population,

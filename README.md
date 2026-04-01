@@ -1,2 +1,2 @@
-# ghostwrite-dashboard
-dashboard for ghostwrite data feed
+# ghostwrite-dashboard_v2
+dashboard using supbase database

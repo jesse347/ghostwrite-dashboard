@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · AI analyst</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ghostladder.css">
+<style>
+/* ── Login screen ────────────────────────────────────────────────────────── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+  width: 340px; padding: 48px 40px;
+  border: 1px solid var(--border); background: var(--s1);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.login-logo { font-family: var(--display); font-size: 22px; letter-spacing: 3px; color: var(--text); }
+.login-logo em { color: var(--accent); font-style: normal; }
+.login-eyebrow { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.login-error { font-size: 10px; color: var(--red); min-height: 16px; letter-spacing: 0.3px; }
+.login-input {
+  background: var(--s2); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 12px; padding: 10px 12px; width: 100%;
+  outline: none; transition: border-color 0.15s;
+}
+.login-input:focus { border-color: var(--accent); }
+.login-input::placeholder { color: var(--muted); }
+.login-btn {
+  background: var(--accent); color: #080808; border: none;
+  font-family: var(--display); font-size: 13px; letter-spacing: 2px;
+  text-transform: uppercase; padding: 11px; cursor: pointer; transition: opacity 0.15s; margin-top: 2px;
+}
+.login-btn:hover { opacity: 0.85; }
+.login-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
+
+/* ── Main shell ─────────────────────────────────────────────────────────── */
+#main-shell { display: none; }
+
+/* ── Page layout ────────────────────────────────────────────────────────── */
+.page-wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px 80px; }
+
+/* ── Data status bar ────────────────────────────────────────────────────── */
+.data-status-bar {
+  display: flex; align-items: center; gap: 16px; padding: 10px 32px;
+  background: var(--s1); border-bottom: 1px solid var(--border);
+  font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+}
+.data-status-bar .ds-item { display: flex; align-items: center; gap: 6px; }
+.ds-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+.ds-dot.ready   { background: var(--green); }
+.ds-dot.loading { background: var(--accent); animation: blink 1.2s infinite; }
+.ds-dot.error   { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Page header ────────────────────────────────────────────────────────── */
+.rpt-header {
+  padding: 32px 0 20px; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 16px;
+}
+.rpt-header-left {}
+.rpt-title {
+  font-family: var(--display); font-size: 32px; letter-spacing: 2px;
+  color: var(--text); display: flex; align-items: center; gap: 14px;
+}
+.rpt-title-badge {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  border: 1px solid var(--chrome); color: var(--chrome); padding: 3px 8px;
+  font-family: var(--mono); align-self: center;
+}
+.rpt-sub { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.new-conv-btn {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 7px 16px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  align-self: flex-start; margin-top: 6px; display: none;
+}
+.new-conv-btn:hover { border-color: var(--accent); color: var(--accent); }
+.new-conv-btn.visible { display: block; }
+
+/* ── Suggestion chips ───────────────────────────────────────────────────── */
+.chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip {
+  font-size: 9px; letter-spacing: 0.5px; padding: 6px 12px;
+  border: 1px solid var(--border2); color: var(--muted2);
+  cursor: pointer; background: var(--s1); transition: all 0.15s; white-space: nowrap;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); background: var(--s2); }
+
+/* ── Error banner ────────────────────────────────────────────────────────── */
+.error-banner {
+  display: none; padding: 14px 20px; background: rgba(255,68,85,0.08);
+  border: 1px solid var(--red); color: var(--red); font-size: 11px; margin-bottom: 20px;
+}
+.error-banner.visible { display: flex; align-items: flex-start; gap: 10px; }
+.error-banner-close {
+  background: none; border: none; color: var(--red); cursor: pointer;
+  font-size: 14px; flex-shrink: 0; line-height: 1; margin-top: 1px; padding: 0 2px;
+}
+
+/* ── Conversation thread ─────────────────────────────────────────────────── */
+.conv-thread { margin-bottom: 4px; }
+
+/* Empty state */
+.conv-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 56px 0; text-align: center; gap: 10px;
+}
+.conv-empty-icon { font-size: 26px; color: var(--border2); margin-bottom: 4px; }
+.conv-empty-title { font-family: var(--display); font-size: 20px; letter-spacing: 1px; color: var(--muted); }
+.conv-empty-sub { font-size: 10px; letter-spacing: 1px; color: var(--muted); }
+
+/* Individual turn wrapper */
+.conv-turn { animation: fadeUp 0.25s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+/* ── User turn ───────────────────────────────────────────────────────────── */
+.conv-turn-user {
+  display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 18px;
+}
+.conv-user-bubble {
+  max-width: 65%; background: var(--s2); border: 1px solid var(--border2);
+  padding: 11px 16px; font-size: 13px; color: var(--text); line-height: 1.6;
+}
+.conv-turn-meta { font-size: 9px; letter-spacing: 0.5px; color: var(--muted); margin-top: 5px; }
+
+/* ── Claude turn ─────────────────────────────────────────────────────────── */
+.conv-turn-claude { margin-bottom: 28px; }
+.conv-claude-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.conv-claude-label {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--chrome);
+}
+.conv-claude-ts { font-size: 9px; color: var(--muted); }
+.conv-question-badge {
+  font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+  border: 1px solid var(--accent); color: var(--accent); padding: 2px 7px;
+}
+
+/* Claude body — always full-bleed, no grid */
+.conv-body { border: 1px solid var(--border); }
+
+/* Text-only response */
+.conv-narrative {
+  padding: 22px; line-height: 1.7; font-size: 12px;
+}
+
+/* Markdown styles inside conv-narrative */
+.conv-narrative h2 {
+  font-family: var(--display); font-size: 18px; letter-spacing: 1px;
+  color: var(--text); margin-bottom: 12px; margin-top: 20px;
+}
+.conv-narrative h2:first-child { margin-top: 0; }
+.conv-narrative h3 {
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted2); margin-bottom: 8px; margin-top: 16px;
+}
+.conv-narrative p { margin-bottom: 12px; color: var(--muted2); }
+.conv-narrative p:last-child { margin-bottom: 0; }
+.conv-narrative strong { color: var(--text); font-weight: 500; }
+.conv-narrative em { color: var(--accent); font-style: normal; }
+.conv-narrative ul, .conv-narrative ol { margin: 8px 0 12px 0; padding-left: 20px; color: var(--muted2); }
+.conv-narrative li { margin-bottom: 5px; }
+.conv-narrative code { background: var(--s2); border: 1px solid var(--border); padding: 1px 5px; font-size: 11px; color: var(--chrome); }
+.conv-narrative hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* Chart-response: full-bleed chart, short caption below */
+.conv-chart-panel {
+  padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;
+}
+.conv-chart-title {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); padding-bottom: 10px; border-bottom: 1px solid var(--border2);
+}
+.conv-chart-canvas-wrap { position: relative; height: 320px; }
+.conv-chart-caption {
+  padding: 14px 24px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--muted2); line-height: 1.7;
+}
+
+/* ── Loading turn (inline in thread) ────────────────────────────────────── */
+.conv-turn-loading { margin-bottom: 20px; }
+.conv-loading-dots {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted);
+  padding: 10px 0;
+}
+.conv-loading-dots::after { content: '...'; animation: dots 1.4s infinite; }
+@keyframes dots { 0%,100%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+/* ── Query input ─────────────────────────────────────────────────────────── */
+.query-wrap {
+  border: 1px solid var(--border); background: var(--s1);
+  margin-bottom: 28px;
+  transition: border-color 0.2s;
+}
+.query-wrap.in-conv { border-color: var(--border2); }
+.query-context-bar {
+  display: none; align-items: center; gap: 8px;
+  padding: 7px 16px; border-bottom: 1px solid var(--border);
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+}
+.query-context-bar.visible { display: flex; }
+.qc-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--chrome); }
+.query-input-row { display: flex; align-items: flex-end; }
+.query-textarea {
+  flex: 1; min-height: 72px; max-height: 200px;
+  background: transparent; border: none; outline: none; resize: vertical;
+  color: var(--text); font-family: var(--mono); font-size: 13px;
+  padding: 16px 20px; line-height: 1.6;
+}
+.query-textarea::placeholder { color: var(--muted); }
+.query-submit {
+  align-self: flex-end;
+  background: var(--accent); color: #080808; border: none;
+  font-family: var(--display); font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 14px 28px; cursor: pointer; transition: opacity 0.15s;
+  white-space: nowrap; flex-shrink: 0; margin: 0; height: 52px;
+}
+.query-submit:hover { opacity: 0.85; }
+.query-submit:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
+.query-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 20px; border-top: 1px solid var(--border);
+  font-size: 9px; letter-spacing: 1px; color: var(--muted);
+}
+.query-model { display: flex; align-items: center; gap: 6px; }
+.q-model-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--chrome); }
+.query-footer-right { display: flex; align-items: center; gap: 14px; }
+
+/* ── Past conversations (history) ────────────────────────────────────────── */
+.history-section { margin-top: 36px; }
+.history-header {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 12px;
+}
+.history-clear {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 10px; cursor: pointer; transition: all 0.15s;
+}
+.history-clear:hover { border-color: var(--red); color: var(--red); }
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-item {
+  border: 1px solid var(--border); background: var(--s1); padding: 12px 16px;
+  cursor: pointer; transition: border-color 0.15s; display: flex; align-items: center;
+  justify-content: space-between; gap: 16px;
+}
+.history-item:hover { border-color: var(--border2); }
+.history-item-q { font-size: 11px; color: var(--muted2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-item-meta { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- ── Login screen ──────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">ghost<em>ladder</em></div>
+    <div class="login-eyebrow">AI Analyst · Admin access required</div>
+    <input id="login-email" class="login-input" type="email" placeholder="Email address" autocomplete="email">
+    <input id="login-pw" class="login-input" type="password" placeholder="Password" autocomplete="current-password">
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- ── Main shell ────────────────────────────────────────────────────────── -->
+<div id="main-shell">
+  <header>
+    <a href="index.html" class="logo">ghost<em>ladder</em></a>
+    <button class="nav-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="market-intel.html">Sales Intel</a>
+      <a href="ladder.html">Price Guide</a>
+      <a href="sets.html">Sets</a>
+      <a href="heatmap.html">Set Map</a>
+      <a href="case-sim.html">ROI SIM</a>
+      <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+      <a href="admin.html" class="nav-admin" id="nav-admin-link">Admin</a>
+      <a href="report.html" class="nav-admin active" id="nav-report-link">Reports</a>
+    </nav>
+    <div class="header-right">
+      <span id="user-email-label" style="font-size:9px;letter-spacing:1px;color:var(--muted)"></span>
+      <button class="refresh-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Data status -->
+  <div class="data-status-bar">
+    <div class="ds-item">
+      <div class="ds-dot loading" id="ds-dot-data"></div>
+      <span id="ds-label">Loading data</span>
+    </div>
+    <div class="ds-item" id="ds-engine-item" style="display:none">
+      <div class="ds-dot ready"></div>
+      <span id="ds-engine-label">engine v—</span>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+
+    <!-- Page header + New conversation button -->
+    <div class="rpt-header">
+      <div class="rpt-header-left">
+        <div class="rpt-title">
+          AI Analyst
+          <span class="rpt-title-badge">BETA</span>
+        </div>
+        <div class="rpt-sub">Ask questions about your data · Powered by Claude</div>
+      </div>
+      <button class="new-conv-btn" id="new-conv-btn" onclick="newConversation()">+ New conversation</button>
+    </div>
+
+    <!-- Suggestion chips -->
+    <div class="chips-row" id="chips-row">
+      <span class="chip" onclick="useChip(this)">What is the expected ROI across all active sets?</span>
+      <span class="chip" onclick="useChip(this)">Which hit variants have the highest population-weighted price?</span>
+      <span class="chip" onclick="useChip(this)">How would case ROI change if the hit ratio dropped to 0.5?</span>
+      <span class="chip" onclick="useChip(this)">Which players have the biggest price spread between Base and Chrome?</span>
+      <span class="chip" id="chip-dynamic-1" onclick="useChip(this)" style="display:none"></span>
+      <span class="chip" id="chip-dynamic-2" onclick="useChip(this)" style="display:none"></span>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner" id="error-banner">
+      <span id="error-text"></span>
+      <button class="error-banner-close" onclick="closeError()">✕</button>
+    </div>
+
+    <!-- Conversation thread -->
+    <div class="conv-thread" id="conv-thread">
+      <div class="conv-empty" id="conv-empty">
+        <div class="conv-empty-icon">◈</div>
+        <div class="conv-empty-title">Ready to analyze</div>
+        <div class="conv-empty-sub">Start with a question below, or pick a suggestion above</div>
+      </div>
+    </div>
+
+    <!-- Query input -->
+    <div class="query-wrap" id="query-wrap">
+      <div class="query-context-bar" id="query-context-bar">
+        <div class="qc-dot"></div>
+        <span id="query-context-text">Continuing conversation — Claude has full context</span>
+      </div>
+      <div class="query-input-row">
+        <textarea
+          class="query-textarea" id="query-textarea"
+          placeholder="Ask a question about your data — e.g., 'What is the break-even hit ratio for NBA 2024-2025 Game Face?'"
+          oninput="onQueryInput()" onkeydown="onQueryKey(event)"
+        ></textarea>
+        <button class="query-submit" id="query-submit" onclick="runQuery()" disabled>Send</button>
+      </div>
+      <div class="query-footer">
+        <div class="query-model">
+          <div class="q-model-dot"></div>
+          <span>Claude · claude-sonnet-4-5</span>
+        </div>
+        <div class="query-footer-right">
+          <span id="char-count" style="color:var(--muted)">0 chars</span>
+          <span style="color:var(--muted)">Ctrl+Enter to send</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Past conversations -->
+    <div class="history-section" id="history-section" style="display:none">
+      <div class="history-header">
+        Past conversations
+        <button class="history-clear" onclick="clearHistory()">Clear all</button>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+  </div><!-- /page-wrap -->
+</div><!-- /main-shell -->
+
+<!-- ── Scripts ────────────────────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="estimate-engine.js"></script>
+<script>
+'use strict';
+
+// ── Supabase ──────────────────────────────────────────────────────────────
+const SB_URL  = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_ANON = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const sb      = window.supabase.createClient(SB_URL, SB_ANON);
+const R_H     = { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON };
+
+// ── State ─────────────────────────────────────────────────────────────────
+let cachedData        = null;   // data payload sent to Claude
+let conversation      = [];     // [{role, content}] — full message history for the API
+let turnCounter       = 0;      // unique ID per Claude turn (for chart canvases)
+const chartInstances  = {};     // { turnId: Chart.js instance }
+const pastConvs       = [];     // archived conversations
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    showShell(session.user.email);
+    await loadData();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-error');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  err.textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    err.textContent = error.message;
+    btn.disabled = false; btn.textContent = 'Sign In';
+    return;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  showShell(email);
+  await loadData();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+function showShell(email) {
+  document.getElementById('main-shell').style.display = 'block';
+  document.getElementById('user-email-label').textContent = email;
+  document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'flex');
+}
+
+['login-email','login-pw'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+});
+
+// ── Pre-compute set-level metrics (matches website display exactly) ───────
+// Claude uses these values as the source of truth for current metrics so it
+// doesn't have to aggregate raw card/population data itself (which causes errors).
+function computeSetStats(sets, cards, setMath) {
+  return sets.map(set => {
+    const setCards = cards.filter(c => c.set === set.name);
+    const sm       = setMath.filter(m => m.setName === set.name);
+
+    const hitCards  = setCards.filter(c => c.variant?.toLowerCase() !== 'base' && c.price != null);
+    const baseCards = setCards.filter(c => c.variant?.toLowerCase() === 'base'  && c.price != null);
+
+    // Population-weighted average hit price (PWAHP)
+    let totalHitPop = 0, weightedSum = 0;
+    hitCards.forEach(card => {
+      const pop = sm.find(m =>
+        m.player === card.player &&
+        m.variant.toLowerCase() === card.variant.toLowerCase()
+      )?.population || 0;
+      if (pop > 0) { weightedSum += card.price * pop; totalHitPop += pop; }
+    });
+    const pwahp = totalHitPop > 0 ? weightedSum / totalHitPop : null;
+
+    // Average base price (simple mean across all players)
+    const avgBasePrice = baseCards.length > 0
+      ? baseCards.reduce((s, c) => s + c.price, 0) / baseCards.length
+      : null;
+
+    // ECV, ROI, break-even
+    const basesPerCase = set.figuresPerCase - set.hitRatio;
+    const ecv = (pwahp != null && avgBasePrice != null)
+      ? (set.hitRatio * pwahp) + (basesPerCase * avgBasePrice)
+      : null;
+    const roi = (ecv != null && set.casePrice > 0)
+      ? ((ecv - set.casePrice) / set.casePrice) * 100
+      : null;
+    const breakEven = (pwahp != null && avgBasePrice != null && pwahp > 0)
+      ? (set.casePrice - basesPerCase * avgBasePrice) / pwahp
+      : null;
+
+    return {
+      set:                 set.name,
+      // Structural params included here so Claude never needs to cross-reference sets[]
+      casePrice:           set.casePrice,
+      hitRatio:            set.hitRatio,
+      figuresPerCase:      set.figuresPerCase,
+      // Pre-computed economics
+      pwahp:               pwahp        != null ? +pwahp.toFixed(2)        : null,
+      avgBasePrice:        avgBasePrice  != null ? +avgBasePrice.toFixed(2)  : null,
+      ecv:                 ecv           != null ? +ecv.toFixed(2)           : null,
+      roi:                 roi           != null ? +roi.toFixed(1)           : null,  // percent
+      breakEvenHitRatio:   breakEven     != null ? +breakEven.toFixed(3)     : null,
+      hitCardsWithPrice:   hitCards.length,
+      baseCardsWithPrice:  baseCards.length,
+    };
+  });
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────
+async function loadData() {
+  setDataStatus('loading', 'Loading data…');
+  try {
+    // Fetch all engine_params columns so the estimate engine has every param it needs
+    const [setsData, piRows, smRows, paramsData] = await Promise.all([
+      fetch(`${SB_URL}/rest/v1/sets?select=id,name,league,case_price,figures_per_case,hit_ratio,retail_price&active=eq.true&order=name.asc`, { headers: R_H }).then(r => r.json()),
+      fetch(`${SB_URL}/rest/v1/rpc/get_price_intelligence`, { method: 'POST', headers: { ...R_H, 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()),
+      fetch(`${SB_URL}/rest/v1/set_math?select=set_id,player,variant,population`, { headers: R_H }).then(r => r.json()),
+      fetch(`${SB_URL}/rest/v1/engine_params?select=*&is_active=eq.true&limit=1`, { headers: R_H }).then(r => r.json()),
+    ]);
+
+    const engineParams = (paramsData || [])[0] || null;
+    const setIdToName  = {};
+    (setsData || []).forEach(s => { setIdToName[s.id] = s.name; });
+
+    const sets = (setsData || []).map(s => ({
+      name: s.name, league: s.league, casePrice: s.case_price,
+      figuresPerCase: s.figures_per_case, hitRatio: s.hit_ratio, retailPrice: s.retail_price,
+    }));
+
+    // Price hierarchy matches sets.html default (recencyLevel=1 = 90d):
+    //   use avg_90d if at least 1 sale in 90 days, otherwise fall back to all-time avg.
+    // Include all fields the estimate engine needs (camelCase, matching allData.products shape).
+    const cards = (piRows || []).map(r => ({
+      set:           r.set_name,
+      player:        r.player,
+      variant:       r.variant,
+      price:         (r.avg_90d != null && r.sales_90d >= 1) ? +r.avg_90d : (+r.avg_price || null),
+      sales:         r.total_sales   ?? 0,
+      avg30d:        r.avg_30d       ?? null,
+      sales30d:      r.sales_30d     ?? 0,
+      avg90d:        r.avg_90d       ?? null,
+      sales90d:      r.sales_90d     ?? 0,
+      avgPrice:      r.avg_price     ?? null,
+      lastSaleDate:  r.last_sale_date  ?? null,
+      lastSalePrice: r.last_sale_price ?? null,
+    }));
+
+    const setMath = (smRows || []).map(r => ({
+      setName:    setIdToName[r.set_id] || r.set_id,
+      player:     r.player,
+      variant:    r.variant,
+      population: r.population,
+    }));
+
+    // ── Build allData global required by estimate-engine.js ─────────────
+    // Keyed setMath and league map structures the engine expects.
+    const setLeagueMap  = {};
+    const setMathByName = {};
+    sets.forEach(s => { setLeagueMap[s.name] = s.league; setMathByName[s.name] = []; });
+    setMath.forEach(m => {
+      if (!setMathByName[m.setName]) setMathByName[m.setName] = [];
+      setMathByName[m.setName].push({ player: m.player, variant: m.variant, population: m.population });
+    });
+
+    window.allData = {
+      products:      cards,          // engine reads from this for cross-set ratio lookups
+      setMath:       setMathByName,
+      setLeagueMap:  setLeagueMap,
+      signalMap:     {},             // no price_signals needed here
+      activeWeights: engineParams,
+    };
+
+    // ── Run estimate engine for every set (model-blend mode) ─────────────
+    // This fills in estimated prices for player/variant combos that have no
+    // real sales data — matching sets.html's "Model Blend" default behaviour.
+    const estimatedCards = [];
+    if (typeof buildEstimates === 'function' && engineParams) {
+      for (const set of sets) {
+        try {
+          const setProducts = cards.filter(p => p.set === set.name);
+          const { estimates } = buildEstimates(set.name, setProducts, engineParams);
+          Object.entries(estimates).forEach(([key, est]) => {
+            if (!est || !(est.price > 0)) return;
+            const [player, variant] = key.split('|||');
+            // Only add if this combo genuinely has no real sales data
+            const hasReal = cards.some(
+              c => c.set === set.name && c.player === player && c.variant === variant
+            );
+            if (!hasReal) {
+              estimatedCards.push({
+                set: set.name, player, variant,
+                price:     Math.round(est.price),
+                sales:     0,
+                avg30d:    null,
+                sales30d:  0,
+                avg90d:    null,
+                sales90d:  0,
+                avgPrice:  null,
+                estimated: true,
+              });
+            }
+          });
+        } catch (_) { /* silently skip errors for individual sets */ }
+      }
+    }
+
+    // allCards = real sales data + estimated gap-fill cards
+    const allCards = [...cards, ...estimatedCards];
+
+    const setStats = computeSetStats(sets, allCards, setMath);
+
+    // Trim cards to the fields Claude actually needs for analysis.
+    // The extra fields (avg30d, avg90d, sales30d, sales90d, avgPrice, lastSaleDate,
+    // lastSalePrice) were needed by the estimate engine at boot but add ~20K tokens
+    // to the payload sent to Claude on every request. Strip them here.
+    const slimCards = allCards.map(c => {
+      const s: Record<string, unknown> = {
+        set: c.set, player: c.player, variant: c.variant,
+        price: c.price, sales: c.sales,
+      };
+      if (c.estimated) s.estimated = true;
+      return s;
+    });
+
+    cachedData = { sets, cards: slimCards, setMath, setStats, engineParams };
+
+    const estNote = estimatedCards.length > 0 ? ` + ${estimatedCards.length.toLocaleString()} est.` : '';
+    setDataStatus('ready', `${sets.length} sets · ${cards.length.toLocaleString()} cards${estNote}`);
+
+    if (engineParams) {
+      document.getElementById('ds-engine-item').style.display = 'flex';
+      document.getElementById('ds-engine-label').textContent =
+        `engine v${engineParams.version}${engineParams.tag ? ' · ' + engineParams.tag : ''}`;
+    }
+
+    populateDynamicChips(sets);
+    updateSubmitState();
+  } catch (err) {
+    setDataStatus('error', 'Failed to load data: ' + err.message);
+    showError('Could not load dashboard data. Refresh to try again.');
+  }
+}
+
+function setDataStatus(state, label) {
+  document.getElementById('ds-dot-data').className = 'ds-dot ' + state;
+  document.getElementById('ds-label').textContent = label;
+}
+
+function populateDynamicChips(sets) {
+  const mlb = sets.find(s => s.league === 'MLB' || s.name.toLowerCase().includes('mlb'));
+  const nba = sets.find(s => s.league === 'NBA' || s.name.toLowerCase().includes('nba'));
+  [mlb, nba].filter(Boolean).slice(0, 2).forEach((set, i) => {
+    const el = document.getElementById(`chip-dynamic-${i + 1}`);
+    if (el && set) {
+      const short = set.name.length > 30 ? set.name.slice(0, 30) + '…' : set.name;
+      el.textContent = `Break-even hit ratio for ${short}?`;
+      el.style.display = '';
+      el.setAttribute('data-full', `What is the break-even hit ratio for ${set.name}? Show me ECV and ROI at current prices.`);
+    }
+  });
+}
+
+// ── Input handling ────────────────────────────────────────────────────────
+function onQueryInput() {
+  const val = document.getElementById('query-textarea').value;
+  document.getElementById('char-count').textContent = val.length + ' chars';
+  updateSubmitState();
+}
+
+function onQueryKey(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runQuery();
+  }
+}
+
+function updateSubmitState() {
+  const q = (document.getElementById('query-textarea').value || '').trim();
+  document.getElementById('query-submit').disabled = !q || !cachedData;
+}
+
+function useChip(el) {
+  const text = el.getAttribute('data-full') || el.textContent;
+  document.getElementById('query-textarea').value = text;
+  onQueryInput();
+  document.getElementById('query-textarea').focus();
+}
+
+// ── Conversation management ───────────────────────────────────────────────
+function newConversation() {
+  if (conversation.length === 0) return;
+
+  // Archive current conversation
+  const firstUserMsg = conversation.find(m => m.role === 'user');
+  const turnEls = document.querySelectorAll('#conv-thread .conv-turn');
+  if (firstUserMsg && turnEls.length > 0) {
+    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const turns = conversation.length / 2; // approx turn pairs
+    pastConvs.unshift({
+      firstQ: firstUserMsg.content,
+      turns:  Math.ceil(turns),
+      ts,
+      html:   document.getElementById('conv-thread').innerHTML,  // snapshot DOM
+    });
+  }
+
+  // Destroy all chart instances for this conversation
+  Object.keys(chartInstances).forEach(k => {
+    try { chartInstances[k].destroy(); } catch(_) {}
+    delete chartInstances[k];
+  });
+
+  // Reset state
+  conversation = [];
+  turnCounter  = 0;
+
+  // Reset thread UI
+  const thread = document.getElementById('conv-thread');
+  thread.innerHTML = `
+    <div class="conv-empty" id="conv-empty">
+      <div class="conv-empty-icon">◈</div>
+      <div class="conv-empty-title">Ready to analyze</div>
+      <div class="conv-empty-sub">Start with a question below, or pick a suggestion above</div>
+    </div>`;
+
+  // Reset input
+  document.getElementById('query-textarea').placeholder =
+    'Ask a question about your data — e.g., \'What is the break-even hit ratio for NBA 2024-2025 Game Face?\'';
+  document.getElementById('query-context-bar').classList.remove('visible');
+  document.getElementById('query-wrap').classList.remove('in-conv');
+  document.getElementById('new-conv-btn').classList.remove('visible');
+  closeError();
+  renderHistory();
+}
+
+// ── Run query ─────────────────────────────────────────────────────────────
+async function runQuery() {
+  const text = document.getElementById('query-textarea').value.trim();
+  if (!text || !cachedData) return;
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { showError('Session expired — please sign in again.'); return; }
+
+  // Clear input right away
+  document.getElementById('query-textarea').value = '';
+  onQueryInput();
+  closeError();
+
+  const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Hide empty state, show user bubble
+  hideEmpty();
+  const userEl = appendUserTurn(text, ts);
+
+  // Add to API conversation history
+  conversation.push({ role: 'user', content: text });
+
+  // Show inline loading
+  const loadingEl = appendLoadingTurn();
+  setSubmitLoading(true);
+  scrollToBottom();
+
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/generate-report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+        'apikey':        SB_ANON,
+      },
+      // Always send data — Edge Function only injects it into message[0]
+      body: JSON.stringify({ messages: conversation, data: cachedData }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(errBody.error || `HTTP ${res.status}`);
+    }
+
+    const result = await res.json();
+    if (result.error) throw new Error(result.error);
+
+    // Add Claude's response to the conversation history so follow-ups have context
+    conversation.push({ role: 'assistant', content: result.narrative || '' });
+
+    // Render Claude turn
+    loadingEl.remove();
+    const turnId = `t${turnCounter++}`;
+    appendClaudeTurn({ ...result, ts }, turnId);
+
+    // Update input context indicator
+    updateConvContext();
+    scrollToBottom();
+
+  } catch (err) {
+    loadingEl.remove();
+    // Roll back: remove user message from conversation and DOM
+    conversation.pop();
+    userEl.remove();
+    // Restore typed text
+    document.getElementById('query-textarea').value = text;
+    onQueryInput();
+    showError('Failed to get a response: ' + err.message);
+    if (conversation.length === 0) showEmpty();
+  } finally {
+    setSubmitLoading(false);
+  }
+}
+
+// ── Thread rendering ──────────────────────────────────────────────────────
+function hideEmpty() {
+  const el = document.getElementById('conv-empty');
+  if (el) el.remove();
+}
+
+function showEmpty() {
+  if (document.getElementById('conv-empty')) return;
+  const thread = document.getElementById('conv-thread');
+  thread.insertAdjacentHTML('afterbegin', `
+    <div class="conv-empty" id="conv-empty">
+      <div class="conv-empty-icon">◈</div>
+      <div class="conv-empty-title">Ready to analyze</div>
+      <div class="conv-empty-sub">Start with a question below, or pick a suggestion above</div>
+    </div>`);
+}
+
+function appendUserTurn(text, ts) {
+  const el = document.createElement('div');
+  el.className = 'conv-turn conv-turn-user';
+  el.innerHTML = `
+    <div class="conv-user-bubble">${escHtml(text)}</div>
+    <div class="conv-turn-meta">You · ${ts}</div>`;
+  document.getElementById('conv-thread').appendChild(el);
+  return el;
+}
+
+function appendLoadingTurn() {
+  const el = document.createElement('div');
+  el.className = 'conv-turn conv-turn-loading';
+  el.innerHTML = `
+    <div class="conv-claude-header">
+      <span class="conv-claude-label">Claude</span>
+    </div>
+    <div class="conv-loading-dots">Thinking</div>`;
+  document.getElementById('conv-thread').appendChild(el);
+  return el;
+}
+
+function appendClaudeTurn({ type, narrative, chart, ts }, turnId) {
+  const isQuestion = type === 'question';
+  const hasChart   = chart && chart.labels && chart.datasets;
+
+  // When a chart is present: chart on top (full bleed), short caption below.
+  // When no chart: full-bleed narrative text only.
+  const bodyHtml = hasChart
+    ? `<div class="conv-chart-panel">
+         <div class="conv-chart-title">${escHtml(chart.title || '')}</div>
+         <div class="conv-chart-canvas-wrap">
+           <canvas id="chart-canvas-${turnId}"></canvas>
+         </div>
+       </div>
+       ${narrative ? `<div class="conv-chart-caption">${renderMarkdown(narrative)}</div>` : ''}`
+    : `<div class="conv-narrative">${renderMarkdown(narrative || '—')}</div>`;
+
+  const el = document.createElement('div');
+  el.className = 'conv-turn conv-turn-claude';
+  el.innerHTML = `
+    <div class="conv-claude-header">
+      <span class="conv-claude-label">Claude</span>
+      <span class="conv-claude-ts">${ts}</span>
+      ${isQuestion ? '<span class="conv-question-badge">Needs clarification</span>' : ''}
+    </div>
+    <div class="conv-body" id="conv-body-${turnId}">
+      ${bodyHtml}
+    </div>`;
+
+  document.getElementById('conv-thread').appendChild(el);
+
+  if (hasChart) {
+    requestAnimationFrame(() => renderChart(chart, turnId));
+  }
+
+  return el;
+}
+
+function updateConvContext() {
+  const hasTurns = conversation.length > 0;
+  const bar      = document.getElementById('query-context-bar');
+  const wrap     = document.getElementById('query-wrap');
+  const newBtn   = document.getElementById('new-conv-btn');
+  const textarea = document.getElementById('query-textarea');
+
+  bar.classList.toggle('visible', hasTurns);
+  wrap.classList.toggle('in-conv', hasTurns);
+  newBtn.classList.toggle('visible', hasTurns);
+
+  if (hasTurns) {
+    const pairs = Math.ceil(conversation.length / 2);
+    document.getElementById('query-context-text').textContent =
+      `Continuing conversation (${pairs} turn${pairs !== 1 ? 's' : ''}) — Claude has full context`;
+    textarea.placeholder = 'Follow up on Claude\'s response, or ask something new…';
+  }
+}
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+// ── Markdown renderer ─────────────────────────────────────────────────────
+function renderMarkdown(md) {
+  const lines = md.split('\n');
+  const out = [];
+  let inList = false;
+
+  for (const raw of lines) {
+    let line = raw
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>');
+
+    if      (/^## /.test(raw))  { if (inList) { out.push('</ul>'); inList=false; } out.push('<h2>'+line.replace(/^## /,'')+'</h2>'); }
+    else if (/^### /.test(raw)) { if (inList) { out.push('</ul>'); inList=false; } out.push('<h3>'+line.replace(/^### /,'')+'</h3>'); }
+    else if (/^---/.test(raw))  { if (inList) { out.push('</ul>'); inList=false; } out.push('<hr>'); }
+    else if (/^[-•] /.test(raw)){ if (!inList){ out.push('<ul>'); inList=true; } out.push('<li>'+line.replace(/^[-•] /,'')+'</li>'); }
+    else if (/^\d+\. /.test(raw)){ if (inList){ out.push('</ul>'); inList=false; } out.push('<li>'+line.replace(/^\d+\. /,'')+'</li>'); }
+    else if (raw.trim() === '')  { if (inList){ out.push('</ul>'); inList=false; } }
+    else                         { if (inList){ out.push('</ul>'); inList=false; } out.push('<p>'+line+'</p>'); }
+  }
+  if (inList) out.push('</ul>');
+  return out.join('\n');
+}
+
+// ── Chart.js renderer ─────────────────────────────────────────────────────
+function renderChart(cfg, turnId) {
+  if (chartInstances[turnId]) {
+    try { chartInstances[turnId].destroy(); } catch(_) {}
+  }
+  const canvas = document.getElementById(`chart-canvas-${turnId}`);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const datasets = (cfg.datasets || []).map(ds => ({
+    ...ds,
+    backgroundColor: ds.backgroundColor?.length ? ds.backgroundColor : '#e8ff47',
+    borderColor: 'transparent',
+  }));
+
+  chartInstances[turnId] = new Chart(ctx, {
+    type: cfg.type || 'bar',
+    data: { labels: cfg.labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: datasets.length > 1,
+          labels: { color: '#888', font: { family: 'DM Mono', size: 10 } },
+        },
+        tooltip: {
+          backgroundColor: '#0f0f0f', borderColor: '#222', borderWidth: 1,
+          titleColor: '#efefef', bodyColor: '#888',
+          titleFont: { family: 'DM Mono', size: 11 },
+          bodyFont:  { family: 'DM Mono', size: 11 },
+        },
+      },
+      scales: cfg.type === 'doughnut' ? {} : {
+        x: { ticks: { color: '#555', font: { family: 'DM Mono', size: 9 }, maxRotation: 35 }, grid: { color: '#1a1a1a' } },
+        y: { ticks: { color: '#555', font: { family: 'DM Mono', size: 9 } }, grid: { color: '#1a1a1a' } },
+      },
+    },
+  });
+}
+
+// ── Past conversations history ────────────────────────────────────────────
+function renderHistory() {
+  const sec  = document.getElementById('history-section');
+  const list = document.getElementById('history-list');
+
+  if (pastConvs.length === 0) {
+    sec.style.display = 'none';
+    return;
+  }
+
+  sec.style.display = 'block';
+  list.innerHTML = pastConvs.map((c, i) => `
+    <div class="history-item" onclick="restoreConversation(${i})">
+      <div class="history-item-q">${escHtml(c.firstQ)}</div>
+      <div class="history-item-meta">${c.turns} turn${c.turns !== 1 ? 's' : ''} · ${c.ts}</div>
+    </div>`).join('');
+}
+
+function restoreConversation(idx) {
+  const c = pastConvs[idx];
+  if (!c) return;
+
+  // Archive current if it has content
+  if (conversation.length > 0) newConversation();
+
+  // Restore the snapshotted DOM
+  document.getElementById('conv-thread').innerHTML = c.html;
+
+  // Re-render any charts from the snapshot (canvas state is lost on innerHTML set)
+  // We can't restore Chart.js instances from a DOM snapshot, so we'll show a note
+  // In practice the charts need the cfg — for now they'll show as blank canvases.
+  // A future improvement would save cfg objects alongside the snapshot.
+  hideEmpty();
+  document.getElementById('new-conv-btn').classList.add('visible');
+}
+
+function clearHistory() {
+  pastConvs.length = 0;
+  renderHistory();
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────
+function setSubmitLoading(on) {
+  document.getElementById('query-submit').disabled = on;
+}
+
+function showError(msg) {
+  document.getElementById('error-text').textContent = msg;
+  document.getElementById('error-banner').classList.add('visible');
+}
+
+function closeError() {
+  document.getElementById('error-banner').classList.remove('visible');
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+checkSession();
+</script>
+</body>
+</html>

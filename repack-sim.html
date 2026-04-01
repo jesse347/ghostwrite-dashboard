@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghostladder · repack simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ghostladder.css">
+<style>
+.page { max-width: 1200px; margin: 0 auto; padding: 32px; }
+.page-title { font-family: var(--display); font-size: 48px; letter-spacing: 2px; color: var(--text); margin-bottom: 6px; }
+.page-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+
+/* ── Tabs ── */
+.tab-bar { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+.tab-btn {
+  font-family: var(--display); font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 12px 28px; background: none; border: none; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ── Panels ── */
+.panel { background: var(--s1); border: 1px solid var(--border); }
+.panel-head {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.panel-title { font-family: var(--display); font-size: 13px; letter-spacing: 2px; }
+
+/* ── Seller tab ── */
+.seller-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+
+.filter-row { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.search-input {
+  width: 100%; background: var(--s2); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--mono); font-size: 11px; padding: 7px 12px; outline: none;
+}
+.search-input:focus { border-color: var(--muted); }
+.search-input::placeholder { color: var(--muted); }
+.chips-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.set-chip {
+  font-family: var(--display); font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 12px; background: var(--s2); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.12s; white-space: nowrap;
+}
+.set-chip:hover { color: var(--text); }
+.set-chip.active { background: var(--s3); color: var(--accent); border-color: var(--accent); }
+
+.picker-wrap { max-height: 500px; overflow-y: auto; }
+.picker-table { width: 100%; border-collapse: collapse; }
+.picker-table th {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  padding: 10px 14px; text-align: left; position: sticky; top: 0;
+  background: var(--s1); border-bottom: 1px solid var(--border);
+}
+.picker-table td { font-size: 12px; padding: 9px 14px; border-bottom: 1px solid rgba(44,44,44,0.5); }
+.picker-table tr:hover td { background: var(--s2); }
+/* Picker mode toggle */
+.picker-mode-toggle { display: flex; gap: 0; }
+.mode-btn {
+  font-family: var(--display); font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 14px; background: var(--s2); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.12s;
+}
+.mode-btn:first-child { border-right: none; }
+.mode-btn:hover { color: var(--text); }
+.mode-btn.active { background: var(--s3); color: var(--accent); border-color: var(--accent); }
+
+/* Inventory / graded badges */
+.inv-badge {
+  display: inline-block; font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 2px 6px; background: rgba(232,255,71,0.08); border: 1px solid rgba(232,255,71,0.25);
+  color: var(--accent);
+}
+.grade-badge {
+  display: inline-block; font-size: 9px; font-family: var(--display); letter-spacing: 0.5px;
+  padding: 2px 7px; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3);
+  color: var(--gold);
+}
+
+.picker-qty {
+  width: 46px; background: var(--s2); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--mono); font-size: 11px;
+  padding: 4px 6px; text-align: center; outline: none;
+}
+.picker-qty:focus { border-color: var(--muted); }
+.add-btn {
+  font-family: var(--display); font-size: 11px; letter-spacing: 1px;
+  padding: 4px 14px; background: var(--s3); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; transition: all 0.12s;
+}
+.add-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Checklist */
+.checklist-wrap { max-height: 320px; overflow-y: auto; }
+.checklist-empty { padding: 28px; text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+.checklist-table { width: 100%; border-collapse: collapse; }
+.checklist-table th { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.checklist-table td { font-size: 12px; padding: 9px 10px; border-bottom: 1px solid rgba(44,44,44,0.4); }
+.qty-ctrl { display: flex; align-items: center; gap: 4px; }
+.qty-btn {
+  width: 20px; height: 20px; background: var(--s3); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; font-size: 13px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+}
+.qty-btn:hover { border-color: var(--muted); }
+.qty-num { font-family: var(--display); font-size: 15px; min-width: 22px; text-align: center; }
+.rm-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 6px; transition: color 0.12s; }
+.rm-btn:hover { color: var(--red); }
+.market-tag {
+  display: inline-block; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 2px 6px; background: rgba(61,220,132,0.08); border: 1px solid rgba(61,220,132,0.25);
+  color: var(--green); margin-left: 4px; vertical-align: middle;
+}
+
+/* Summary */
+.summary-box { border-top: 1px solid var(--border); padding: 16px 18px; }
+.sum-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.sum-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.sum-val { font-family: var(--display); font-size: 18px; }
+.sum-val.accent { color: var(--accent); }
+.launch-btn {
+  width: 100%; font-family: var(--display); font-size: 13px; letter-spacing: 3px;
+  padding: 13px; background: var(--accent); color: #000; border: none; cursor: pointer; transition: all 0.15s; margin-top: 6px;
+}
+.launch-btn:hover { background: #fff; }
+.launch-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
+.export-btn {
+  width: 100%; font-family: var(--display); font-size: 11px; letter-spacing: 2px;
+  padding: 10px; background: var(--s3); border: 1px solid var(--border);
+  color: var(--muted2); cursor: pointer; transition: all 0.15s; margin-top: 6px;
+}
+.export-btn:hover { color: var(--text); border-color: var(--muted); }
+.export-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Buyer tab ── */
+.buyer-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--s1); border: 1px solid var(--border); padding: 16px 18px; }
+.stat-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stat-value { font-family: var(--display); font-size: 26px; }
+.stat-value.green { color: var(--green); }
+.stat-value.red { color: var(--red); }
+.stat-value.accent { color: var(--accent); }
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.buyer-grid { display: grid; grid-template-columns: 250px 1fr; gap: 20px; align-items: start; }
+
+/* Pool odds */
+.pool-tier { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid rgba(44,44,44,0.5); }
+.pool-tier:last-child { border-bottom: none; }
+.pool-tier-label { font-size: 12px; flex: 1; }
+.pool-tier-bar-wrap { width: 50px; background: var(--s3); height: 3px; flex-shrink: 0; }
+.pool-tier-bar { height: 100%; transition: width 0.4s ease; }
+.pool-tier-count { font-family: var(--display); font-size: 15px; min-width: 24px; text-align: right; flex-shrink: 0; }
+.pool-tier-pct { font-size: 11px; color: var(--muted); min-width: 36px; text-align: right; flex-shrink: 0; }
+
+.wallet-box { margin-top: 12px; padding: 16px 18px; background: rgba(61,220,132,0.06); border: 1px solid rgba(61,220,132,0.2); }
+.wallet-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); margin-bottom: 4px; }
+.wallet-val { font-family: var(--display); font-size: 34px; color: var(--green); }
+.wallet-sub { font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+/* Reveal area */
+.reveal-area { background: var(--s1); border: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.reveal-head { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.reveal-head-title { font-family: var(--display); font-size: 12px; letter-spacing: 2px; color: var(--muted); }
+.ev-display { text-align: right; }
+.ev-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.ev-val { font-family: var(--display); font-size: 22px; color: var(--accent); }
+
+/* Card flip */
+.reveal-card-wrap { width: 210px; height: 290px; perspective: 800px; flex-shrink: 0; border: 1px solid var(--border); }
+.reveal-card-inner {
+  width: 100%; height: 100%; position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+.reveal-card-wrap.flipped .reveal-card-inner { transform: rotateY(180deg); }
+.reveal-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.reveal-front { background: var(--s2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.reveal-front-icon { font-size: 44px; opacity: 0.08; }
+.reveal-front-text { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+.reveal-back { transform: rotateY(180deg); overflow: hidden; background: #07090e; }
+
+/* is-variant border colors */
+.is-fire         .reveal-card-wrap, .reveal-card-wrap.is-fire         { border-color: var(--fire); }
+.is-chrome       .reveal-card-wrap, .reveal-card-wrap.is-chrome       { border-color: var(--chrome); }
+.is-gold         .reveal-card-wrap, .reveal-card-wrap.is-gold         { border-color: var(--gold); }
+.is-emerald      .reveal-card-wrap, .reveal-card-wrap.is-emerald      { border-color: var(--emerald); }
+.is-victory      .reveal-card-wrap, .reveal-card-wrap.is-victory      { border-color: var(--victory); }
+.is-sp           .reveal-card-wrap, .reveal-card-wrap.is-sp           { border-color: var(--sp); }
+.is-vides        .reveal-card-wrap, .reveal-card-wrap.is-vides        { border-color: var(--vides); }
+.is-bet-on-women .reveal-card-wrap, .reveal-card-wrap.is-bet-on-women { border-color: var(--bet-on-women); }
+
+.reveal-meta { text-align: center; }
+.reveal-player-name { font-family: var(--display); font-size: 22px; margin-bottom: 2px; }
+.reveal-variant-name { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.reveal-price-val { font-family: var(--display); font-size: 34px; color: var(--accent); margin-bottom: 2px; }
+.reveal-est-note { font-size: 9px; color: var(--muted); }
+
+/* Action buttons */
+.action-row { display: flex; gap: 10px; width: 100%; max-width: 340px; }
+.keep-btn {
+  flex: 1; font-family: var(--display); font-size: 11px; letter-spacing: 2px;
+  padding: 12px; background: var(--s3); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+}
+.keep-btn:hover { border-color: var(--red); color: var(--red); }
+.sellback-btn {
+  flex: 1; font-family: var(--display); font-size: 11px; letter-spacing: 1px;
+  padding: 12px; background: rgba(61,220,132,0.1); border: 1px solid rgba(61,220,132,0.3);
+  color: var(--green); cursor: pointer; transition: all 0.15s;
+}
+.sellback-btn:hover { background: rgba(61,220,132,0.2); }
+.buy-pack-btn {
+  font-family: var(--display); font-size: 13px; letter-spacing: 3px;
+  padding: 13px 40px; background: var(--accent); color: #000; border: none; cursor: pointer; transition: all 0.15s;
+}
+.buy-pack-btn:hover { background: #fff; }
+.buy-pack-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; }
+
+/* Ledger */
+.ledger-section { margin-top: 20px; }
+.ledger-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.ledger-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.ledger-table { width: 100%; border-collapse: collapse; }
+.ledger-table th { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.ledger-table td { font-size: 12px; padding: 9px 10px; border-bottom: 1px solid rgba(44,44,44,0.5); color: var(--muted); }
+.ledger-table tfoot td { border-top: 1px solid var(--border); border-bottom: none; padding: 10px; }
+
+/* Loading */
+.loading-state { padding: 60px; text-align: center; color: var(--muted); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+.loading-dot { display: inline-block; animation: blink 1.2s infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
+
+/* ── Presets ── */
+.preset-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 14px 18px; background: var(--s1); border: 1px solid var(--border); }
+.preset-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.preset-btn {
+  font-family: var(--display); font-size: 11px; letter-spacing: 1px;
+  padding: 8px 18px; background: var(--s2); border: 1px solid var(--border);
+  color: var(--muted2); cursor: pointer; transition: all 0.15s;
+}
+.preset-btn:hover { color: var(--text); border-color: var(--muted); }
+.preset-btn .preset-ev { color: var(--accent); margin-left: 6px; }
+.preset-btn .preset-count { font-size: 9px; color: var(--muted); margin-left: 4px; }
+.preset-btn .preset-tag { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 6px; margin-left: 8px; background: rgba(232,255,71,0.08); border: 1px solid rgba(232,255,71,0.2); color: var(--accent); vertical-align: middle; }
+
+/* ── P&L view toggle tabs ── */
+.pnl-tab {
+  font-family: var(--display); font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 9px; background: var(--s3); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.12s;
+}
+.pnl-tab:first-child { border-right: none; }
+.pnl-tab.active { background: var(--s3); color: var(--accent); border-color: var(--accent); }
+
+/* ── In-pool count display ── */
+.in-pool-count { font-family: var(--display); font-size: 14px; }
+.in-pool-denom { font-size: 9px; color: var(--muted); }
+
+/* ── Pool action buttons (inline −/+ in picker) ── */
+.pool-btn {
+  font-family: var(--display); font-size: 13px; width: 26px; height: 26px;
+  background: var(--s3); border: 1px solid var(--border);
+  color: var(--muted2); cursor: pointer; transition: all 0.12s;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pool-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.pool-btn.remove:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+.pool-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ghost<em>ladder</em></div>
+  <button class="nav-toggle" onclick="this.classList.toggle('open');document.querySelector('.nav').classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <nav class="nav">
+    <a href="index.html">Home</a>
+    <a href="market-intel.html">Sales Intel</a>
+    <a href="ladder.html">Price Guide</a>
+    <a href="sets.html">Sets</a>
+    <a href="heatmap.html">Set Map</a>
+    <a href="case-sim.html">ROI SIM</a>
+    <a href="gl50.html">GL50 <span class="beta-badge">beta</span></a>
+  </nav>
+</header>
+
+<div class="page">
+  <div class="page-title">REPACK SIMULATOR</div>
+  <div class="page-sub">Build a card pool, then simulate pack openings. Pack price = pool EV, updated live.</div>
+
+  <div id="loading-screen" class="loading-state">
+    loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+  </div>
+
+  <div id="main" style="display:none">
+    <div class="preset-bar">
+      <span class="preset-label">Presets</span>
+      <button class="preset-btn" onclick="loadPreset('100ev')">$100 EV Pack<span class="preset-ev">$102</span><span class="preset-count">225 cards</span><span class="preset-tag">inv + mkt</span></button>
+      <button class="preset-btn" onclick="loadPreset('250ev')">$250 Premium<span class="preset-ev">$255</span><span class="preset-count">155 cards</span><span class="preset-tag">inv only</span></button>
+      <button class="preset-btn" onclick="clearPreset()" style="margin-left:auto;color:var(--muted);font-size:10px">CLEAR</button>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-btn-seller" onclick="switchTab('seller')">① Seller Setup</button>
+      <button class="tab-btn" id="tab-btn-buyer" onclick="switchTab('buyer')">② Buy Packs</button>
+    </div>
+
+    <!-- ══ TAB 1: SELLER ══════════════════════════════════════════════════════ -->
+    <div id="tab-seller" class="tab-content active">
+      <div class="seller-grid">
+
+        <!-- Left: card picker -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">CARD POOL</div>
+            <div class="picker-mode-toggle">
+              <button class="mode-btn active" id="mode-btn-inventory" onclick="setPickerMode('inventory')">Inventory</button>
+              <button class="mode-btn"        id="mode-btn-new"       onclick="setPickerMode('new')">New</button>
+            </div>
+          </div>
+          <div class="filter-row">
+            <input class="search-input" id="picker-search" placeholder="Search player or variant…" oninput="renderPicker()">
+            <div class="chips-row" id="set-chips"></div>
+          </div>
+          <div class="picker-wrap">
+            <table class="picker-table">
+              <thead id="picker-head"></thead>
+              <tbody id="picker-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: checklist + summary + pool odds -->
+        <div>
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">YOUR CHECKLIST</div>
+              <div id="checklist-count" style="font-size:9px;color:var(--muted)">0 cards</div>
+            </div>
+            <div class="checklist-wrap">
+              <div class="checklist-empty" id="checklist-empty">No cards added yet</div>
+              <table class="checklist-table" id="checklist-table" style="display:none">
+                <thead>
+                  <tr>
+                    <th>Card</th>
+                    <th>Value ↑</th>
+                    <th>Qty</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="checklist-rows"></tbody>
+              </table>
+            </div>
+            <div class="summary-box">
+              <div class="sum-row">
+                <span class="sum-label">Total Cards</span>
+                <span class="sum-val" id="s-total">0</span>
+              </div>
+              <div class="sum-row">
+                <span class="sum-label">Pool Value</span>
+                <span class="sum-val" id="s-value">$0</span>
+              </div>
+              <div class="sum-row">
+                <span class="sum-label">Pack Price (EV)</span>
+                <span class="sum-val accent" id="s-ev">$0</span>
+              </div>
+              <div class="sum-row" style="margin-bottom:14px">
+                <span class="sum-label">Winning Packs</span>
+                <span class="sum-val" id="s-winpct">—</span>
+              </div>
+              <button class="launch-btn" id="launch-btn" onclick="launchBuyer()" disabled>LAUNCH SIMULATOR →</button>
+              <button class="export-btn" id="export-btn" onclick="exportCSV()" disabled>EXPORT CSV</button>
+            </div>
+          </div>
+
+          <div style="padding:10px 14px;font-size:11px;color:var(--muted)"><span class="market-tag">MKT</span> = card must be purchased from the market (not currently in inventory)</div>
+
+          <!-- Pool odds preview — mirrors buyer view, updates as checklist changes -->
+          <div class="panel" style="margin-top:12px" id="seller-odds-panel">
+            <div class="panel-head"><div class="panel-title">POOL ODDS</div></div>
+            <div id="seller-pool-tiers"></div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tab-seller -->
+
+    <!-- ══ TAB 2: BUYER ═══════════════════════════════════════════════════════ -->
+    <div id="tab-buyer" class="tab-content">
+
+      <!-- Stats row -->
+      <div class="buyer-stats">
+        <div class="stat-card">
+          <div class="stat-label">Pool Remaining</div>
+          <div class="stat-value" id="bs-pool">—</div>
+          <div class="stat-sub" id="bs-pool-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pack Price (EV)</div>
+          <div class="stat-value accent" id="bs-ev">—</div>
+          <div class="stat-sub">updates each pull</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Packs Sold</div>
+          <div class="stat-value" id="bs-packs">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div class="stat-label" style="margin-bottom:0">Seller Net P&amp;L</div>
+            <div>
+              <button class="pnl-tab active" id="pnl-tab-mv"   onclick="togglePnlView('mv')">MV</button>
+              <button class="pnl-tab"        id="pnl-tab-cost" onclick="togglePnlView('cost')">Cost Basis</button>
+            </div>
+          </div>
+          <div class="stat-value" id="bs-pnl">$0.00</div>
+          <div class="stat-sub" id="bs-pnl-sub"></div>
+        </div>
+      </div>
+
+      <div class="buyer-grid">
+
+        <!-- Left: pool odds + wallet -->
+        <div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">POOL ODDS</div></div>
+            <div id="pool-tiers"></div>
+          </div>
+          <div class="wallet-box">
+            <div class="wallet-label">Buyer Wallet</div>
+            <div class="wallet-val" id="buyer-wallet">$0.00</div>
+            <div class="wallet-sub">Cash earned from sell-backs</div>
+          </div>
+        </div>
+
+        <!-- Right: reveal + ledger -->
+        <div>
+          <div class="reveal-area">
+            <div class="reveal-head" style="width:100%">
+              <div class="reveal-head-title">PACK REVEAL</div>
+              <div class="ev-display">
+                <div class="ev-label">Pack Price</div>
+                <div class="ev-val" id="reveal-ev">—</div>
+              </div>
+            </div>
+
+            <div class="reveal-card-wrap" id="reveal-card">
+              <div class="reveal-card-inner">
+                <div class="reveal-face reveal-front">
+                  <div class="reveal-front-icon">📦</div>
+                  <div class="reveal-front-text">Buy a pack to reveal</div>
+                </div>
+                <div class="reveal-face reveal-back" id="reveal-back"></div>
+              </div>
+            </div>
+
+            <div id="reveal-meta" style="display:none;text-align:center">
+              <div class="reveal-player-name" id="reveal-player"></div>
+              <div class="reveal-variant-name" id="reveal-variant"></div>
+              <div class="reveal-price-val" id="reveal-price"></div>
+              <div class="reveal-est-note" id="reveal-note"></div>
+            </div>
+
+            <div class="action-row" id="action-row" style="display:none">
+              <button class="keep-btn" onclick="handleKeep()">KEEP IT</button>
+              <button class="sellback-btn" id="sellback-btn" onclick="handleSellBack()">SELL BACK</button>
+            </div>
+
+            <button class="buy-pack-btn" id="buy-pack-btn" onclick="buyPack()">BUY A PACK</button>
+            <div id="pool-done-note" style="display:none;font-size:9px;color:var(--muted);letter-spacing:1px;text-align:center"></div>
+          </div>
+
+          <!-- Ledger -->
+          <div class="ledger-section">
+            <div class="ledger-label">Pull History</div>
+            <div id="ledger-empty" style="padding:20px;text-align:center;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase">No pulls yet</div>
+            <table class="ledger-table" id="ledger-table" style="display:none">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Card</th>
+                  <th>Market Value</th>
+                  <th>Action</th>
+                  <th>Revenue</th>
+                  <th>Cost</th>
+                  <th>Net</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-body"></tbody>
+              <tfoot>
+                <tr id="ledger-totals" style="display:none">
+                  <td colspan="4" style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Totals</td>
+                  <td style="font-family:var(--display);font-size:14px;color:var(--green)" id="lt-rev"></td>
+                  <td style="font-family:var(--display);font-size:14px;color:var(--red)"  id="lt-cost"></td>
+                  <td style="font-family:var(--display);font-size:14px"                   id="lt-net"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /tab-buyer -->
+  </div><!-- /main -->
+</div><!-- /page -->
+
+<script>
+const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
+const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
+const SB_H   = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function rpc(fn, p={}) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:SB_H,body:JSON.stringify(p)});
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  return r.json();
+}
+async function sbGet(table, qs) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`,{headers:SB_H});
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+// ── Format helper ────────────────────────────────────────────────────────────
+function fmt(n) { return Math.round(n).toLocaleString(); }
+
+// ── Slug helpers (mirrors case-sim) ──────────────────────────────────────────
+function slugify(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\./g,'').replace(/[^a-z0-9\s]/g,'').trim().replace(/\s+/g,'_');
+}
+function slugifySet(n) {
+  return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+}
+function vSlug(v) {
+  if (!v) return 'base';
+  const l = v.toLowerCase();
+  if (l.includes('fire'))    return 'fire';
+  if (l.includes('chrome'))  return 'chrome';
+  if (l.includes('gold'))    return 'gold';
+  if (l.includes('emerald')) return 'emerald';
+  if (l.includes('victory')) return 'victory';
+  if (l.includes('vides'))   return 'vides';
+  if (l.includes('bet'))     return 'bet-on-women';
+  if (l.includes('sp'))      return 'sp';
+  return 'base';
+}
+function figureUrl(player, variant, setName) {
+  return `assets/figures/${slugifySet(setName)}/${slugify(player)}_${vSlug(variant)}.png`;
+}
+
+const CARD_GLOWS = {
+  base:    'radial-gradient(circle at 25% 68%,rgba(28,65,200,.55) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(0,155,155,.45) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(95,25,158,.45) 0%,transparent 48%)',
+  victory: 'radial-gradient(circle at 25% 68%,rgba(70,20,195,.55) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(115,0,195,.42) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(158,25,110,.42) 0%,transparent 48%)',
+  emerald: 'radial-gradient(circle at 25% 68%,rgba(0,118,55,.60) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(0,175,115,.48) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(25,95,25,.48) 0%,transparent 48%)',
+  gold:    'radial-gradient(circle at 25% 68%,rgba(175,108,0,.62) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(208,158,0,.48) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(148,68,0,.48) 0%,transparent 48%)',
+  chrome:  'radial-gradient(circle at 25% 68%,rgba(55,108,178,.55) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(128,168,198,.42) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(65,88,138,.42) 0%,transparent 48%)',
+  fire:    'radial-gradient(circle at 25% 68%,rgba(198,28,0,.65) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(208,108,0,.52) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(158,0,0,.52) 0%,transparent 48%)',
+  vides:   'radial-gradient(circle at 25% 68%,rgba(255,159,67,.55) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(255,200,100,.42) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(200,120,0,.42) 0%,transparent 48%)',
+  sp:      'radial-gradient(circle at 25% 68%,rgba(192,132,252,.55) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(220,170,255,.42) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(140,80,220,.42) 0%,transparent 48%)',
+  'bet-on-women':'radial-gradient(circle at 25% 68%,rgba(255,110,180,.55) 0%,transparent 52%),radial-gradient(circle at 78% 22%,rgba(255,160,210,.42) 0%,transparent 44%),radial-gradient(circle at 62% 88%,rgba(200,60,140,.42) 0%,transparent 48%)',
+};
+const GEO_SVG = `<svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.06" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice"><g fill="none" stroke="white" stroke-width=".75"><circle cx="200" cy="215" r="88"/><circle cx="200" cy="127" r="88"/><circle cx="276" cy="171" r="88"/><circle cx="276" cy="259" r="88"/><circle cx="200" cy="303" r="88"/><circle cx="124" cy="259" r="88"/><circle cx="124" cy="171" r="88"/></g></svg>`;
+
+// ── Grading multiplier table ──────────────────────────────────────────────────
+// Formula: gradedValue = rawEstimate × multiplier + $15 (grading fee)
+const GRADE_MULTIPLIERS = {
+  10.00: 3.00,
+   9.75: 2.25,
+   9.50: 1.85,
+   9.25: 1.65,
+   9.00: 1.50,
+   8.50: 1.25,
+   8.00: 1.05,
+};
+function gradeMultiplier_(grade) {
+  const g = Math.round(+grade * 4) / 4; // snap to nearest 0.25
+  return GRADE_MULTIPLIERS[g] ?? 1.50;  // default to 9.0 rate if unknown grade
+}
+
+// ── App state ─────────────────────────────────────────────────────────────────
+let allCards       = [];   // "new" picker rows (from estimate_snapshots — all set_math combos)
+let inventoryCards = [];   // "inventory" picker rows — aggregated by set+player+variant+grade
+let estimateMap    = {};   // "set_name|||player|||variant" → estimated_price (primary value source)
+let checklist      = [];   // { id, set, player, variant, marketValue, gradeLabel, qty, remaining, maxQty, perCardCost }
+let pickerMode     = 'inventory';
+let activeFilter   = 'all';
+let nextId         = 1;
+let pickerRows     = [];   // currently displayed rows (index-safe onclick refs)
+let setsList       = [];   // set names for index-safe chip onclicks
+let pickerSort     = { col: null, dir: 1 }; // column sort state for picker table
+
+// ── Preset data ──────────────────────────────────────────────────────────────
+const PRESETS = {
+  '100ev': {
+    name: '$100 EV Pack (Inventory + Market Bases)',
+    cards: [
+      {set:'MLB 2025 Game Face',player:'Max Clark',variant:'Base',gradeLabel:null,qty:9},
+      {set:'WNBA 2025',player:'Satou Sabally',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'NBA 2025-26',player:'Yang Hansen',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dijonai Carrington',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Julio Rodriguez',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2025',player:'Hailey Van Lith',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Devin Booker',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Justin Verlander',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Trae Young',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Corbin Carroll',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Paul Skenes',variant:'Base',gradeLabel:null,qty:1},
+      {set:'MLB 2025 Game Face',player:'Max Clark',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Vladimir Guerrero Jr.',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Jimmy Butler',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Dylan Harper',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Lisa Leslie',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Donovan Mitchell',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Breanna Stewart',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Diana Taurasi',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Anthony Davis',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Becky Hammon',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Ja Morant',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Mark Wahlberg',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Gerrit Cole',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Adley Rutschman',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Jared Mccain',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Bryce Harper',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Giannis Antetokounmpo',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Juan Soto',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Aubrey Plaza',variant:'Base',gradeLabel:'AFA 8.5',qty:5},
+      {set:'NBA 2025-26',player:'Evan Mobley',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Ronald Acuna Jr.',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'WNBA 2025',player:'Sabrina Ionescu',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Aubrey Plaza',variant:'Base',gradeLabel:'AFA 9.0',qty:4},
+      {set:'MLB 2025 Game Face',player:'Roman Anthony',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Kevin Durant',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Mike Trout',variant:'Base',gradeLabel:'AFA 9.75',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Aubrey Plaza',variant:'Base',gradeLabel:'AFA 9.25',qty:3},
+      {set:'WNBA 2025',player:'Napheesa Collier',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Base',gradeLabel:'AFA 8.5',qty:3},
+      {set:'NBA 2024-25 Game Face',player:'Joel Embiid',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'NBA 2025-26',player:'V. J. Edgecombe',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2025-26',player:'Giannis Antetokounmpo',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'NBA 2025-26',player:'Pete Davidson',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'NBA 2025-26',player:'Karl-Anthony Towns',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Bobby Witt Jr.',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Aubrey Plaza',variant:'Base',gradeLabel:'AFA 9.5',qty:2},
+      {set:'WNBA 2025',player:'A\'Ja Wilson',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Lamelo Ball',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Base',gradeLabel:'AFA 9.0',qty:2},
+      {set:'MLB 2025 Game Face',player:'Freddie Freeman',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2025-26',player:'Kevin Durant',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Jayson Tatum',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Base',gradeLabel:'AFA 9.25',qty:2},
+      {set:'WNBA 2025',player:'Lena Waithe',variant:'Base',gradeLabel:'AFA 9.75',qty:1},
+      {set:'NBA 2025-26',player:'Cade Cunningham',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Elly De La Cruz',variant:'Base',gradeLabel:'AFA 10.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Shai Gilgeous-Alexander',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2025-26',player:'Anthony Edwards',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'NBA 2025-26',player:'Tyrese Haliburton',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Breanna Stewart',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Roki Sasaki',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2025-26',player:'Luka Doncic',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Stephen Curry',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Paul Skenes',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Jalen Brunson',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Aaron Judge',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Victor Wembanyama',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Stephen Curry',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Luka Doncic',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2025',player:'Sonia Citron',variant:'Base',gradeLabel:'AFA 9.75',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Eminem',variant:'Base',gradeLabel:'AFA 8.0',qty:1},
+      {set:'NBA 2025-26',player:'Nikola Jokic',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Jaylen Brown',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Anthony Edwards',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'Eminem Home',player:'Eminem',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Shai Gilgeous-Alexander',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Victor Wembanyama',variant:'Base',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dawn Staley',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Sabrina Ionescu',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dawn Staley',variant:'Bet On Women',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Devin Booker',variant:'Victory',gradeLabel:'AFA 9.0',qty:2},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Gerrit Cole',variant:'Victory',gradeLabel:'AFA 9.75',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Aubrey Plaza',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:null,qty:40},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:null,qty:10},
+      {set:'MLB 2025 Game Face',player:'Bryce Harper',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Roman Anthony',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Mike Trout',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2025',player:'Paige Bueckers',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Julio Rodriguez',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Becky Hammon',variant:'Bet On Women',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dijonai Carrington',variant:'Gold',gradeLabel:null,qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:'AFA 8.5',qty:3},
+      {set:'WNBA 2024 Game Face',player:'Cameron Brink',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Becky Hammon',variant:'Bet On Women',gradeLabel:'AFA 9.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Bet On Women',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.0',qty:7},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:'AFA 9.0',qty:8},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.25',qty:6},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:'AFA 9.25',qty:5},
+      {set:'WNBA 2024 Game Face',player:'Diana Taurasi',variant:'Gold',gradeLabel:null,qty:2},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.5',qty:3},
+      {set:'MLB 2025 Game Face',player:'Julio Rodriguez',variant:'Victory',gradeLabel:'AFA 10.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dawn Staley',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Aaron Judge',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2025-26',player:'Cooper Flagg',variant:'Base',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Vladimir Guerrero Jr.',variant:'Emerald',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Brittney Griner',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.75',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Luka Doncic',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Diana Taurasi',variant:'Gold',gradeLabel:'AFA 9.0',qty:2},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Gold',gradeLabel:'AFA 8.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Victory',gradeLabel:null,qty:2},
+      {set:'MLB 2025 Game Face',player:'Juan Soto',variant:'Gold',gradeLabel:'AFA 9.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Bobby Witt Jr.',variant:'Gold',gradeLabel:'AFA 9.25',qty:1},
+    ]
+  },
+  '250ev': {
+    name: '$250 EV Premium (Inventory, $50 Floor)',
+    cards: [
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Base',gradeLabel:'AFA 9.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Breanna Stewart',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dawn Staley',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Sabrina Ionescu',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dawn Staley',variant:'Bet On Women',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Devin Booker',variant:'Victory',gradeLabel:'AFA 9.0',qty:2},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Gerrit Cole',variant:'Victory',gradeLabel:'AFA 9.75',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Aubrey Plaza',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:null,qty:40},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:null,qty:10},
+      {set:'MLB 2025 Game Face',player:'Bryce Harper',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Roman Anthony',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Mike Trout',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Julio Rodriguez',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Becky Hammon',variant:'Bet On Women',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Victory',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dijonai Carrington',variant:'Gold',gradeLabel:null,qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:'AFA 8.5',qty:3},
+      {set:'WNBA 2024 Game Face',player:'Cameron Brink',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Becky Hammon',variant:'Bet On Women',gradeLabel:'AFA 9.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Bet On Women',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.0',qty:6},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:'AFA 9.0',qty:8},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.25',qty:6},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Base',gradeLabel:'AFA 9.25',qty:5},
+      {set:'WNBA 2024 Game Face',player:'Diana Taurasi',variant:'Gold',gradeLabel:null,qty:2},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.5',qty:3},
+      {set:'MLB 2025 Game Face',player:'Julio Rodriguez',variant:'Victory',gradeLabel:'AFA 10.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Dawn Staley',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Aaron Judge',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Vladimir Guerrero Jr.',variant:'Emerald',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Brittney Griner',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Base',gradeLabel:'AFA 9.75',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Luka Doncic',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Diana Taurasi',variant:'Gold',gradeLabel:'AFA 9.0',qty:2},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Gold',gradeLabel:'AFA 8.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Victory',gradeLabel:null,qty:2},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Victory',gradeLabel:null,qty:1},
+      {set:'WNBA 2024 Game Face',player:'Cameron Brink',variant:'Gold',gradeLabel:null,qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Jayson Tatum',variant:'Emerald',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Max Clark',variant:'Gold',gradeLabel:null,qty:1},
+      {set:'WNBA 2024 Game Face',player:'Brittney Griner',variant:'Chrome',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Devin Booker',variant:'Gold',gradeLabel:null,qty:1},
+      {set:'WNBA 2024 Game Face',player:'Cameron Brink',variant:'Gold',gradeLabel:'AFA 8.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Gold',gradeLabel:null,qty:1},
+      {set:'WNBA 2024 Game Face',player:'Alyssa Thomas',variant:'Chrome',gradeLabel:null,qty:1},
+      {set:'WNBA 2024 Game Face',player:'Lisa Leslie',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Jayson Tatum',variant:'Emerald',gradeLabel:'AFA 9.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Becky Hammon',variant:'Chrome',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Victory',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Luka Doncic',variant:'Emerald',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Angel Reese',variant:'Gold',gradeLabel:'AFA 8.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Caitlin Clark',variant:'Bet On Women',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Shohei Ohtani',variant:'Victory',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Jayson Tatum',variant:'Emerald',gradeLabel:'AFA 9.75',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Cameron Brink',variant:'Gold',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Nikola Jokic',variant:'SP',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Cooper Flagg',variant:'SP',gradeLabel:'AFA 9.0',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Joel Embiid',variant:'Gold',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Aubrey Plaza',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Sabrina Ionescu',variant:'Gold',gradeLabel:'AFA 9.0',qty:1},
+      {set:'MLB 2025 Game Face',player:'Mark Wahlberg',variant:'Gold',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Cooper Flagg',variant:'SP',gradeLabel:'AFA 9.25',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Kelsey Plum',variant:'Chrome',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Lebron James',variant:'SP',gradeLabel:'AFA 9.0',qty:1},
+      {set:'WNBA 2024 Game Face',player:'Alyssa Thomas',variant:'Chrome',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Cooper Flagg',variant:'SP',gradeLabel:'AFA 9.5',qty:1},
+      {set:'WNBA 2024 Game Face',player:'A\'Ja Wilson',variant:'Chrome',gradeLabel:'AFA 9.25',qty:1},
+      {set:'MLB 2025 Game Face',player:'Juan Soto',variant:'Gold',gradeLabel:'AFA 9.5',qty:1},
+      {set:'MLB 2025 Game Face',player:'Bobby Witt Jr.',variant:'Gold',gradeLabel:'AFA 9.25',qty:1},
+      {set:'NBA 2024-25 Game Face',player:'Stephen Curry',variant:'Gold',gradeLabel:'AFA 9.25',qty:1},
+    ]
+  }
+};
+
+// Resolve a preset card's market value from live estimateMap + grade multiplier
+function resolvePresetPrice(c) {
+  const baseKey = `${c.set}|||${c.player}|||${c.variant}`;
+  const baseEst = estimateMap[baseKey];
+  if (!baseEst) return null;
+  if (!c.gradeLabel) return baseEst;
+  // Extract numeric grade from label like "AFA 9.25"
+  const gMatch = c.gradeLabel.match(/([\d.]+)$/);
+  if (!gMatch) return baseEst;
+  const grade = parseFloat(gMatch[1]);
+  return baseEst * gradeMultiplier_(grade) + 15;
+}
+
+// Normalize grade labels — JS may drop trailing .0 (e.g. "AFA 9" vs "AFA 9.0")
+function normGrade(gl) { if (!gl) return ''; return gl.replace(/[\d.]+$/, m => { const n=parseFloat(m); return n%1===0?n.toFixed(1):String(n); }); }
+
+function loadPreset(key) {
+  const preset = PRESETS[key];
+  if (!preset) return;
+  checklist = [];
+  nextId = 1;
+  // Build inventory lookup from loaded data to identify market cards
+  const invKeys = new Set();
+  for (const c of inventoryCards) {
+    invKeys.add(`${c.set_name}|||${c.player}|||${c.variant}|||${normGrade(c.gradeLabel)}`);
+  }
+  for (const c of preset.cards) {
+    const mv = resolvePresetPrice(c);
+    if (!mv) continue; // skip cards with no current estimate
+    const k = `${c.set}|||${c.player}|||${c.variant}|||${normGrade(c.gradeLabel)}`;
+    checklist.push({
+      id: nextId++, set: c.set, player: c.player, variant: c.variant,
+      marketValue: mv, gradeLabel: c.gradeLabel,
+      isGraded: !!c.gradeLabel, qty: c.qty, remaining: c.qty,
+      maxQty: c.qty, perCardCost: null, source: invKeys.has(k) ? 'inventory' : 'market',
+    });
+  }
+  renderChecklist();
+  renderPicker();
+}
+
+// Update preset button labels with live EV and card count
+function updatePresetButtons() {
+  for (const [key, preset] of Object.entries(PRESETS)) {
+    let totalCards = 0, totalValue = 0;
+    for (const c of preset.cards) {
+      const mv = resolvePresetPrice(c);
+      if (!mv) continue;
+      totalCards += c.qty;
+      totalValue += mv * c.qty;
+    }
+    const ev = totalCards > 0 ? totalValue / totalCards : 0;
+    const btn = document.querySelector(`[onclick="loadPreset('${key}')"]`);
+    if (btn) {
+      const evEl = btn.querySelector('.preset-ev');
+      const countEl = btn.querySelector('.preset-count');
+      if (evEl) evEl.textContent = '$' + fmt(ev);
+      if (countEl) countEl.textContent = totalCards + ' cards';
+    }
+  }
+}
+
+function clearPreset() {
+  checklist = [];
+  nextId = 1;
+  renderChecklist();
+  renderPicker();
+}
+
+// ── Sort helpers ──────────────────────────────────────────────────────────────
+function setPickerSort(col) {
+  if (pickerSort.col === col) pickerSort.dir *= -1;
+  else { pickerSort.col = col; pickerSort.dir = 1; }
+  renderPicker();
+}
+
+function sortArr(arr, col, dir) {
+  if (!col) return arr;
+  return [...arr].sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (col === 'marketValue') { va = va ?? -Infinity; vb = vb ?? -Infinity; }
+    else { va = (va ?? '').toString().toLowerCase(); vb = (vb ?? '').toString().toLowerCase(); }
+    return (va < vb ? -1 : va > vb ? 1 : 0) * dir;
+  });
+}
+
+function sArrow(col) {
+  if (pickerSort.col !== col) return ' <span style="opacity:0.25;font-size:7px">⇅</span>';
+  return pickerSort.dir === 1
+    ? ' <span style="color:var(--accent);font-size:7px">▲</span>'
+    : ' <span style="color:var(--accent);font-size:7px">▼</span>';
+}
+
+// Buyer state
+let pulls               = [];
+let buyerWallet         = 0;
+let sellerRevenue       = 0;
+let sellerCardCost      = 0;   // market value of kept cards
+let sellerCostBasisKept = 0;   // actual acquisition cost of kept cards
+let sellerSellbacks     = 0;
+let pnlView             = 'mv'; // 'mv' = market value P&L, 'cost' = cost basis P&L
+let currentCard         = null;
+let deciding            = false;
+
+// ── Data load ─────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    // Load snapshot meta, inventory, set_math, sets, and PI (for base-card fallback) in parallel
+    const [snapMeta, invRows, setMathRows, setsRows, piRows] = await Promise.all([
+      sbGet('estimate_snapshots', 'select=snapshot_run_id&order=snapshot_at.desc&limit=1'),
+      sbGet('ghostwrite_inventory', 'select=id,set_math_id,player,variant,brand,year,set_label,grade,graded,inventory_name,total_cost&sell_date=is.null&order=player.asc'),
+      sbGet('set_math', 'select=id,set_id,player,variant'),
+      sbGet('sets', 'select=id,name'),
+      rpc('get_price_intelligence'),
+    ]);
+
+    // Build estimate map from latest snapshot (PRIMARY value source for this page)
+    // Also capture snaps array directly — used to build allCards (covers ALL set_math
+    // combos, including base cards).
+    let snaps = [];
+    if (snapMeta.length) {
+      const runId = encodeURIComponent(snapMeta[0].snapshot_run_id);
+      snaps = await sbGet('estimate_snapshots',
+        `select=set_name,player,variant,estimated_price&snapshot_run_id=eq.${runId}`);
+      for (const s of snaps) {
+        estimateMap[`${s.set_name}|||${s.player}|||${s.variant}`] = +s.estimated_price;
+      }
+    }
+
+    // Supplement estimateMap with price_intelligence for any card not covered by
+    // estimate_snapshots (e.g. Base cards excluded from past snapshot runs).
+    // Uses avg_30d if available, falls back to avg_price.
+    for (const r of piRows) {
+      const k = `${r.set_name}|||${r.player}|||${r.variant}`;
+      if (!estimateMap[k] && (r.avg_30d || r.avg_price)) {
+        estimateMap[k] = +(r.avg_30d || r.avg_price);
+      }
+    }
+
+    // set_id → set_name  (e.g. uuid → "MLB 2025 Game Face")
+    const setIdToName = {};
+    for (const s of setsRows) setIdToName[s.id] = s.name;
+
+    // set_math_id → { set_name, player, variant }  for clean estimate lookups
+    const smById = {};
+    for (const sm of setMathRows) {
+      smById[sm.id] = { set_name: setIdToName[sm.set_id] || null, player: sm.player, variant: sm.variant };
+    }
+
+    // "New" cards: start from estimate_snapshots (full model, all combos), then
+    // fill any gaps with price_intelligence avg_30d/avg_price — covers base cards
+    // that were historically excluded from snapshot runs.
+    const snapCardMap = {};
+    for (const s of snaps) {
+      const k = `${s.set_name}|||${s.player}|||${s.variant}`;
+      snapCardMap[k] = { set_name: s.set_name, player: s.player, variant: s.variant, marketValue: +s.estimated_price };
+    }
+    for (const r of piRows) {
+      const k = `${r.set_name}|||${r.player}|||${r.variant}`;
+      if (!snapCardMap[k] && (r.avg_30d || r.avg_price)) {
+        snapCardMap[k] = { set_name: r.set_name, player: r.player, variant: r.variant, marketValue: +(r.avg_30d || r.avg_price) };
+      }
+    }
+    allCards = Object.values(snapCardMap);
+    allCards.sort((a,b) => (a.set_name+a.player+a.variant).localeCompare(b.set_name+b.player+b.variant));
+
+    // Inventory cards: resolve canonical names via set_math_id, then aggregate by
+    // set + player + variant + grade so duplicate physical cards become one row with qty > 1.
+    const invIndividual = invRows.map(row => {
+      const sm         = smById[row.set_math_id] || null;
+      const setName    = sm ? sm.set_name : [row.brand, row.year, row.set_label].filter(Boolean).join(' ');
+      const player     = sm ? sm.player   : row.player;
+      const variant    = sm ? sm.variant  : row.variant;
+      const baseEst    = estimateMap[`${setName}|||${player}|||${variant}`] || null;
+      const isGraded   = row.grade != null && row.grade > 0;
+      const price      = baseEst ? (isGraded ? baseEst * gradeMultiplier_(row.grade) + 15 : baseEst) : null;
+      const gradeLabel = (row.graded && row.grade != null) ? `${row.graded} ${row.grade}` : null;
+      const totalCost  = row.total_cost != null ? +row.total_cost : null;
+      return { set_name: setName, player, variant, marketValue: price, isGraded, gradeLabel, totalCost };
+    });
+
+    // Aggregate: set + player + variant + gradeLabel → one row, sum qty + totalCost
+    const aggMap = {};
+    for (const c of invIndividual) {
+      const k = `${c.set_name}|||${c.player}|||${c.variant}|||${c.gradeLabel || ''}`;
+      if (!aggMap[k]) aggMap[k] = { ...c, qty: 0, totalCost: 0 };
+      aggMap[k].qty++;
+      if (c.totalCost != null) aggMap[k].totalCost += c.totalCost;
+    }
+    inventoryCards = Object.values(aggMap).map(c => ({
+      ...c,
+      perCardCost: c.qty > 0 && c.totalCost > 0 ? c.totalCost / c.qty : null,
+    }));
+    inventoryCards.sort((a,b) => (a.set_name+a.player+a.variant).localeCompare(b.set_name+b.player+b.variant));
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    renderSetChips();
+    renderPicker();
+    updatePresetButtons();
+  } catch(e) {
+    document.getElementById('loading-screen').textContent = 'Error: ' + e.message;
+  }
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('tab-btn-'+t).classList.add('active');
+}
+
+// ── Picker mode toggle ────────────────────────────────────────────────────────
+function setPickerMode(mode) {
+  pickerMode    = mode;
+  activeFilter  = 'all';
+  pickerSort    = { col: null, dir: 1 };
+  document.getElementById('mode-btn-new').classList.toggle('active', mode === 'new');
+  document.getElementById('mode-btn-inventory').classList.toggle('active', mode === 'inventory');
+  renderSetChips();
+  renderPicker();
+}
+
+// ── Set chips ─────────────────────────────────────────────────────────────────
+function renderSetChips() {
+  const source = pickerMode === 'inventory' ? inventoryCards : allCards;
+  setsList = ['all', ...new Set(source.map(c => c.set_name))].sort((a,b) => a==='all'?-1:a.localeCompare(b));
+  document.getElementById('set-chips').innerHTML = setsList.map((s, i) =>
+    `<button class="set-chip${s===activeFilter?' active':''}" onclick="setFilter(${i})">${s==='all'?'All':s}</button>`
+  ).join('');
+}
+
+function setFilter(i) { activeFilter = setsList[i]; renderSetChips(); renderPicker(); }
+
+// ── Picker ────────────────────────────────────────────────────────────────────
+function renderPicker() {
+  const q      = (document.getElementById('picker-search').value||'').toLowerCase();
+  const source = pickerMode === 'inventory' ? inventoryCards : allCards;
+  let rows = activeFilter === 'all' ? source : source.filter(c => c.set_name === activeFilter);
+  if (q) rows = rows.filter(c =>
+    (c.player||'').toLowerCase().includes(q) || (c.variant||'').toLowerCase().includes(q));
+
+  const thead = document.getElementById('picker-head');
+  const tbody = document.getElementById('picker-body');
+  const cols  = pickerMode === 'inventory' ? 6 : 5;
+
+  if (!rows.length) {
+    thead.innerHTML = '';
+    tbody.innerHTML = `<tr><td colspan="${cols}" style="padding:24px;text-align:center;color:var(--muted);font-size:10px">No cards found</td></tr>`;
+    pickerRows = [];
+    return;
+  }
+
+  pickerRows = sortArr(rows, pickerSort.col, pickerSort.dir).slice(0, 300);
+
+  if (pickerMode === 'inventory') {
+    thead.innerHTML = `<tr>
+      <th style="cursor:pointer" onclick="setPickerSort('player')">Player${sArrow('player')}</th>
+      <th style="cursor:pointer" onclick="setPickerSort('variant')">Variant${sArrow('variant')}</th>
+      <th style="cursor:pointer" onclick="setPickerSort('gradeLabel')">Graded${sArrow('gradeLabel')}</th>
+      <th style="cursor:pointer" onclick="setPickerSort('marketValue')">Value${sArrow('marketValue')}</th>
+      <th style="text-align:center">In Pool</th>
+      <th style="text-align:center"></th>
+    </tr>`;
+    tbody.innerHTML = pickerRows.map((c, i) => {
+      const vs        = vSlug(c.variant);
+      const hasPrice  = c.marketValue != null && c.marketValue > 0;
+      const inPool    = checklist.find(cl => cl.set === c.set_name && cl.player === c.player &&
+                          cl.variant === c.variant && (cl.gradeLabel||'') === (c.gradeLabel||''));
+      const inPoolQty = inPool ? inPool.qty : 0;
+      const canAdd    = hasPrice && inPoolQty < c.qty;
+      const canRemove = inPoolQty > 0;
+      const priceCell = hasPrice
+        ? `<span style="color:var(--accent);font-family:var(--display);font-size:13px">$${fmt(c.marketValue)}</span>${c.isGraded ? `<span style="font-size:8px;color:var(--muted);margin-left:4px">×${gradeMultiplier_(c.grade)}+$15</span>` : ''}`
+        : `<span style="color:var(--muted);font-size:9px">No estimate</span>`;
+      const poolCell = hasPrice
+        ? `<span class="in-pool-count">${inPoolQty}</span><span class="in-pool-denom">/${c.qty}</span>`
+        : '—';
+      return `<tr style="${hasPrice ? '' : 'opacity:0.5'}">
+        <td>
+          <div style="color:var(--text)">${c.player}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">${c.set_name}</div>
+        </td>
+        <td><span style="color:var(--${vs});font-size:9px;letter-spacing:1px;text-transform:uppercase">${c.variant}</span></td>
+        <td>${c.gradeLabel ? `<span class="grade-badge">${c.gradeLabel}</span>` : '<span style="color:var(--muted);font-size:9px">—</span>'}</td>
+        <td>${priceCell}</td>
+        <td style="text-align:center">${poolCell}</td>
+        <td style="text-align:center;white-space:nowrap">
+          <button class="pool-btn remove" onclick="removeCardFromPool(${i})" ${canRemove?'':'disabled'}>−</button>
+          <button class="pool-btn" onclick="addCard(${i})" ${canAdd?'':'disabled'}>+</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } else {
+    thead.innerHTML = `<tr>
+      <th style="cursor:pointer" onclick="setPickerSort('player')">Player${sArrow('player')}</th>
+      <th style="cursor:pointer" onclick="setPickerSort('variant')">Variant${sArrow('variant')}</th>
+      <th style="cursor:pointer" onclick="setPickerSort('marketValue')">Value${sArrow('marketValue')}</th>
+      <th style="text-align:center">Qty</th><th></th>
+    </tr>`;
+    tbody.innerHTML = pickerRows.map((c, i) => {
+      const vs = vSlug(c.variant);
+      return `<tr>
+        <td>
+          <div style="color:var(--text)">${c.player}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">${c.set_name}</div>
+        </td>
+        <td><span style="color:var(--${vs});font-size:9px;letter-spacing:1px;text-transform:uppercase">${c.variant}</span></td>
+        <td><span style="color:var(--accent);font-family:var(--display);font-size:13px">$${fmt(c.marketValue)}</span></td>
+        <td style="text-align:center"><input class="picker-qty" type="number" id="pqty-${i}" min="1" max="99" value="1"></td>
+        <td><button class="add-btn" onclick="addCard(${i})">+</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  if (rows.length > 300) {
+    tbody.innerHTML += `<tr><td colspan="${cols}" style="padding:8px 12px;text-align:center;color:var(--muted);font-size:9px">+${rows.length-300} more — refine search</td></tr>`;
+  }
+}
+
+// ── Checklist ─────────────────────────────────────────────────────────────────
+function addCard(i) {
+  const src = pickerRows[i];
+  if (!src) return;
+  const qtyInput = document.getElementById('pqty-'+i);
+  const maxQty   = pickerMode === 'inventory' ? 1 : 99;
+  const qty = Math.max(1, Math.min(maxQty, parseInt(qtyInput ? qtyInput.value : 1, 10) || 1));
+
+  // For inventory cards, stack by aggregate key (up to maxQty available)
+  if (pickerMode === 'inventory') {
+    const ex = checklist.find(c => c.set === src.set_name && c.player === src.player &&
+      c.variant === src.variant && (c.gradeLabel||'') === (src.gradeLabel||''));
+    const maxAdd = src.qty - (ex ? ex.qty : 0);
+    const toAdd  = Math.min(qty, maxAdd);
+    if (toAdd <= 0) return; // already at max
+    if (ex) { ex.qty += toAdd; ex.remaining = ex.qty; }
+    else {
+      checklist.push({ id: nextId++, set: src.set_name, player: src.player, variant: src.variant,
+        marketValue: src.marketValue, gradeLabel: src.gradeLabel || null,
+        isGraded: src.isGraded || false, qty: toAdd, remaining: toAdd,
+        maxQty: src.qty, perCardCost: src.perCardCost || null, source: 'inventory' });
+    }
+  } else {
+    const ex = checklist.find(c => c.set===src.set_name && c.player===src.player && c.variant===src.variant && !c.gradeLabel);
+    if (ex) { ex.qty += qty; ex.remaining += qty; }
+    else {
+      checklist.push({ id: nextId++, set: src.set_name, player: src.player, variant: src.variant,
+        marketValue: src.marketValue, gradeLabel: null, isGraded: false, qty, remaining: qty, source: 'market' });
+    }
+  }
+  if (qtyInput) qtyInput.value = 1;
+  renderChecklist();
+}
+
+function removeCard(id) { checklist = checklist.filter(c => c.id!==id); renderChecklist(); renderPicker(); }
+
+// Decrement qty for an inventory picker row (subtract one from the pool)
+function removeCardFromPool(i) {
+  const src = pickerRows[i];
+  if (!src) return;
+  const ex = checklist.find(c => c.set === src.set_name && c.player === src.player &&
+    c.variant === src.variant && (c.gradeLabel||'') === (src.gradeLabel||''));
+  if (!ex || ex.qty <= 0) return;
+  ex.qty--;
+  ex.remaining = ex.qty;
+  if (ex.qty === 0) checklist = checklist.filter(c => c.id !== ex.id);
+  renderChecklist();
+  renderPicker();
+}
+
+// Toggle between market-value and cost-basis P&L view
+function togglePnlView(view) {
+  pnlView = view;
+  document.getElementById('pnl-tab-mv').classList.toggle('active', view === 'mv');
+  document.getElementById('pnl-tab-cost').classList.toggle('active', view === 'cost');
+  updateBuyerStats();
+}
+
+function changeQty(id, d) {
+  const c = checklist.find(c => c.id===id);
+  if (!c) return;
+  const max = c.maxQty || 99;
+  c.qty = Math.max(1, Math.min(max, c.qty + d));
+  c.remaining = c.qty;
+  renderChecklist();
+  renderPicker(); // refresh in-pool counts
+}
+
+function renderChecklist() {
+  const total = checklist.reduce((s,c) => s+c.qty, 0);
+  document.getElementById('checklist-count').textContent = `${total} card${total!==1?'s':''}`;
+
+  const empty = document.getElementById('checklist-empty');
+  const table = document.getElementById('checklist-table');
+  if (!checklist.length) { empty.style.display='block'; table.style.display='none'; }
+  else {
+    empty.style.display = 'none';
+    table.style.display = 'table';
+    document.getElementById('checklist-rows').innerHTML = [...checklist]
+      .sort((a,b) => a.marketValue - b.marketValue)
+      .map(c => {
+      const vs = vSlug(c.variant);
+      return `<tr>
+        <td>
+          <div style="color:var(--text);font-size:10px">${c.player}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:1px">
+            <span style="font-size:9px;color:var(--${vs});letter-spacing:1px;text-transform:uppercase">${c.variant}</span>
+            ${c.gradeLabel ? `<span class="grade-badge" style="font-size:8px;padding:1px 5px">${c.gradeLabel}</span>` : ''}
+          </div>
+          <div style="font-size:9px;color:var(--muted)">${c.set}${c.source==='market'?'<span class="market-tag">MKT</span>':''}</div>
+        </td>
+        <td style="font-family:var(--display);font-size:13px;color:var(--accent)">$${fmt(c.marketValue)}</td>
+        <td>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="changeQty(${c.id},-1)">−</button>
+            <span class="qty-num">${c.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${c.id},1)">+</button>
+          </div>
+        </td>
+        <td><button class="rm-btn" onclick="removeCard(${c.id})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+  updateSummary();
+}
+
+function updateSummary() {
+  const total   = checklist.reduce((s,c) => s+c.qty, 0);
+  const poolVal = checklist.reduce((s,c) => s+c.qty*c.marketValue, 0);
+  const ev      = total > 0 ? poolVal / total : 0;
+  document.getElementById('s-total').textContent     = total;
+  document.getElementById('s-value').textContent     = '$' + fmt(poolVal);
+  document.getElementById('s-ev').textContent        = '$' + fmt(ev);
+  const winCards = ev > 0 ? checklist.reduce((s,c) => s + (c.marketValue > ev ? c.qty : 0), 0) : 0;
+  document.getElementById('s-winpct').textContent    = total > 0 ? Math.round(winCards / total * 100) + '%' : '—';
+  const btn = document.getElementById('launch-btn');
+  btn.disabled    = total < 1;
+  btn.textContent = total > 0 ? `LAUNCH SIMULATOR — ${total} CARDS →` : 'LAUNCH SIMULATOR →';
+  document.getElementById('export-btn').disabled = total < 1;
+  updatePoolTiers(); // keep seller pool odds live
+}
+
+// ── Launch buyer tab ──────────────────────────────────────────────────────────
+function launchBuyer() {
+  // Reset remaining counts
+  checklist.forEach(c => { c.remaining = c.qty; });
+  // Reset buyer state
+  pulls=[]; buyerWallet=0; sellerRevenue=0; sellerCardCost=0;
+  sellerCostBasisKept=0; sellerSellbacks=0; pnlView='mv';
+  currentCard=null; deciding=false;
+  document.getElementById('pnl-tab-mv').classList.add('active');
+  document.getElementById('pnl-tab-cost').classList.remove('active');
+  // Reset UI
+  const cardWrap = document.getElementById('reveal-card');
+  cardWrap.className = 'reveal-card-wrap';
+  document.getElementById('reveal-back').innerHTML = '';
+  document.getElementById('reveal-meta').style.display = 'none';
+  document.getElementById('action-row').style.display = 'none';
+  document.getElementById('pool-done-note').style.display = 'none';
+  const buyBtn = document.getElementById('buy-pack-btn');
+  buyBtn.style.display = 'block';
+  buyBtn.disabled = false;
+  buyBtn.textContent = 'BUY A PACK';
+  document.getElementById('ledger-table').style.display = 'none';
+  document.getElementById('ledger-empty').style.display = 'block';
+  document.getElementById('ledger-body').innerHTML = '';
+  document.getElementById('ledger-totals').style.display = 'none';
+  updateBuyerStats();
+  updatePoolTiers();
+  updateWallet();
+  switchTab('buyer');
+}
+
+// ── Buyer helpers ─────────────────────────────────────────────────────────────
+function expandedPool() {
+  const p = [];
+  for (const c of checklist) for (let i=0; i<c.remaining; i++) p.push(c);
+  return p;
+}
+function currentEV() {
+  const pool = expandedPool();
+  if (!pool.length) return 0;
+  return pool.reduce((s,c) => s+c.marketValue, 0) / pool.length;
+}
+// EV from checklist qty (for seller setup view, before simulation starts)
+function poolEV() {
+  const total = checklist.reduce((s,c) => s+c.qty, 0);
+  const val   = checklist.reduce((s,c) => s+c.qty*c.marketValue, 0);
+  return total > 0 ? val / total : 0;
+}
+function totalRemaining() { return checklist.reduce((s,c) => s+c.remaining, 0); }
+
+function updateBuyerStats() {
+  const rem  = totalRemaining();
+  const init = checklist.reduce((s,c) => s+c.qty, 0);
+  const ev   = currentEV();
+
+  let net, subLabel;
+  if (pnlView === 'cost') {
+    net      = sellerRevenue - sellerCostBasisKept - sellerSellbacks;
+    subLabel = pulls.length
+      ? `Rev $${fmt(sellerRevenue)} · Cost Basis $${fmt(sellerCostBasisKept+sellerSellbacks)}`
+      : '';
+  } else {
+    net      = sellerRevenue - sellerCardCost - sellerSellbacks;
+    subLabel = pulls.length
+      ? `Rev $${fmt(sellerRevenue)} · MV Cost $${fmt(sellerCardCost+sellerSellbacks)}`
+      : '';
+  }
+
+  document.getElementById('bs-pool').textContent     = rem;
+  document.getElementById('bs-pool-sub').textContent  = `of ${init} initial`;
+  document.getElementById('bs-ev').textContent        = '$'+fmt(ev);
+  document.getElementById('bs-packs').textContent     = pulls.length;
+  const pnlEl = document.getElementById('bs-pnl');
+  pnlEl.textContent = (net>=0?'+':'')+'$'+fmt(Math.abs(net));
+  pnlEl.className   = 'stat-value '+(net>=0?'green':'red');
+  document.getElementById('bs-pnl-sub').textContent  = subLabel;
+  document.getElementById('reveal-ev').textContent    = '$'+fmt(ev);
+}
+
+function updatePoolTiers() {
+  // Buyer view uses remaining cards; seller view uses full checklist qty
+  const buyerPool   = expandedPool();
+  const sellerPool  = checklist.flatMap(c => Array(c.qty).fill(c));
+  const buyerEV     = currentEV();
+  const sellerEV    = poolEV();
+
+  const tiers = [
+    { label:'$500+',      min:500,  max:Infinity, color:'var(--fire)'    },
+    { label:'$250–$499',  min:250,  max:500,      color:'var(--gold)'    },
+    { label:'$100–$249',  min:100,  max:250,      color:'var(--chrome)'  },
+    { label:'$25–$99',    min:25,   max:100,      color:'var(--emerald)' },
+    { label:'Under $25',  min:0,    max:25,       color:'var(--muted)'   },
+  ];
+
+  function buildHtml(pool, ev) {
+    const tot = pool.length;
+    if (!tot) return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:10px;letter-spacing:1px">Pool empty</div>';
+    const grailThreshold = ev * 10;
+
+    const tiersHtml = tiers.map(t => {
+      const cnt = pool.filter(c => c.marketValue >= t.min && c.marketValue < t.max).length;
+      const pct = cnt / tot * 100;
+      return `<div class="pool-tier">
+        <span class="pool-tier-label" style="color:${t.color}">${t.label}</span>
+        <div class="pool-tier-bar-wrap"><div class="pool-tier-bar" style="width:${pct.toFixed(0)}%;background:${t.color}"></div></div>
+        <span class="pool-tier-count">${cnt}</span>
+        <span class="pool-tier-pct">${Math.round(pct)}%</span>
+      </div>`;
+    }).join('');
+
+    // Grails: unique checklist items worth 10× EV+
+    const grailItems = grailThreshold > 0
+      ? checklist.filter(c => c.marketValue >= grailThreshold)
+      : [];
+
+    const grailsHtml = grailItems.length ? `
+      <div style="border-top:1px solid var(--border);padding:10px 14px 6px">
+        <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px">⭐ Grails (10× EV+)</div>
+        ${grailItems.map(g => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(44,44,44,0.4)">
+            <div>
+              <span style="font-size:10px;color:var(--text)">${g.player}</span>
+              <span style="font-size:9px;color:var(--muted);margin-left:6px">${g.variant}${g.gradeLabel?' · '+g.gradeLabel:''}</span>
+              ${g.qty > 1 ? `<span style="font-size:9px;color:var(--muted)"> ×${g.qty}</span>` : ''}
+            </div>
+            <span style="font-family:var(--display);font-size:14px;color:var(--accent)">$${fmt(g.marketValue)}</span>
+          </div>`).join('')}
+      </div>` : '';
+
+    return tiersHtml + grailsHtml;
+  }
+
+  const buyerEl  = document.getElementById('pool-tiers');
+  const sellerEl = document.getElementById('seller-pool-tiers');
+  if (buyerEl)  buyerEl.innerHTML  = buildHtml(buyerPool,  buyerEV);
+  if (sellerEl) sellerEl.innerHTML = buildHtml(sellerPool, sellerEV);
+}
+
+function updateWallet() {
+  document.getElementById('buyer-wallet').textContent = '$'+fmt(buyerWallet);
+}
+
+// ── Buy pack ──────────────────────────────────────────────────────────────────
+function buyPack() {
+  if (deciding) return;
+  const pool = expandedPool();
+  if (!pool.length) { showPoolDone(); return; }
+
+  // Random draw — no weighting, each card equally likely
+  currentCard = pool[Math.floor(Math.random() * pool.length)];
+  const ev = currentEV();
+  const sellAmt = Math.round(currentCard.marketValue * 0.8);
+  const vs = vSlug(currentCard.variant);
+  const glow = CARD_GLOWS[vs] || CARD_GLOWS.base;
+
+  // Build back face
+  document.getElementById('reveal-back').innerHTML = `
+    <div style="position:absolute;inset:0;background:#07090e"></div>
+    <div style="position:absolute;inset:0;background:${glow}"></div>
+    ${GEO_SVG}
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%,transparent 22%,rgba(0,0,0,.65) 100%)"></div>
+    <div style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
+      <img src="${figureUrl(currentCard.player,currentCard.variant,currentCard.set)}"
+        style="height:95%;width:auto;max-width:100%;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 6px 20px rgba(0,0,0,.85))"
+        onerror="this.style.display='none'">
+    </div>
+    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(4,6,12,.97) 40%,rgba(4,6,12,.6) 70%,transparent);padding:8px 8px 6px">
+      <div style="font-family:var(--display);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--${vs});margin-bottom:1px">${currentCard.variant}</div>
+      <div style="font-family:var(--display);font-size:12px;color:rgba(255,255,255,.92);margin-bottom:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${currentCard.player}</div>
+      <div style="font-family:var(--display);font-size:16px;background:linear-gradient(145deg,#f7e98e,#d4a017 35%,#f7e98e 65%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">$${fmt(currentCard.marketValue)}</div>
+    </div>
+    ${currentCard.gradeLabel ? `<div style="position:absolute;top:6px;left:6px;font-family:var(--display);font-size:13px;letter-spacing:1px;padding:4px 10px;color:#ffd700;background:rgba(255,215,0,.18);border:1px solid rgba(255,215,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.4)">${currentCard.gradeLabel}</div>` : ''}
+    ${currentCard.isEstimated?'<div style="position:absolute;top:4px;right:4px;font-size:8px;font-family:var(--display);padding:1px 4px;color:#b0f0ff;background:rgba(176,240,255,.12);border:1px solid rgba(176,240,255,.3)">MODEL</div>':''}
+  `;
+
+  // Update card wrap variant border
+  const wrap = document.getElementById('reveal-card');
+  wrap.className = 'reveal-card-wrap is-'+vs;
+
+  // Flip
+  requestAnimationFrame(() => wrap.classList.add('flipped'));
+
+  // Show meta
+  document.getElementById('reveal-player').textContent  = currentCard.player;
+  document.getElementById('reveal-variant').textContent = currentCard.variant + ' · ' + currentCard.set;
+  document.getElementById('reveal-price').textContent   = '$'+fmt(currentCard.marketValue);
+  document.getElementById('reveal-note').textContent    = currentCard.isEstimated ? 'Model estimate' : '';
+  document.getElementById('reveal-meta').style.display  = 'block';
+
+  // Show action buttons
+  document.getElementById('sellback-btn').textContent = `SELL BACK — $${fmt(sellAmt)}`;
+  document.getElementById('action-row').style.display  = 'flex';
+  document.getElementById('buy-pack-btn').style.display = 'none';
+
+  deciding = true;
+}
+
+// ── Keep ──────────────────────────────────────────────────────────────────────
+function handleKeep() {
+  if (!deciding || !currentCard) return;
+  const ev = currentEV();
+  currentCard.remaining = Math.max(0, currentCard.remaining - 1);
+  sellerRevenue       += ev;
+  sellerCardCost      += currentCard.marketValue;
+  sellerCostBasisKept += currentCard.perCardCost != null ? currentCard.perCardCost : currentCard.marketValue;
+  addLedgerRow(currentCard, ev, 'KEPT', ev - currentCard.marketValue, currentCard.marketValue);
+  afterDecision();
+}
+
+// ── Sell back ─────────────────────────────────────────────────────────────────
+function handleSellBack() {
+  if (!deciding || !currentCard) return;
+  const ev = currentEV();
+  const sb = Math.round(currentCard.marketValue * 0.8);
+  buyerWallet      += sb;
+  sellerRevenue    += ev;
+  sellerSellbacks  += sb;
+  addLedgerRow(currentCard, ev, `SOLD BACK $${sb}`, ev - sb, sb);
+  afterDecision();
+}
+
+function afterDecision() {
+  deciding    = false;
+  currentCard = null;
+  updateBuyerStats();
+  updatePoolTiers();
+  updateWallet();
+
+  // Flip card back, then restore buy button
+  const wrap = document.getElementById('reveal-card');
+  setTimeout(() => {
+    wrap.classList.remove('flipped');
+    document.getElementById('reveal-meta').style.display = 'none';
+    document.getElementById('action-row').style.display  = 'none';
+    const rem  = totalRemaining();
+    const btn  = document.getElementById('buy-pack-btn');
+    btn.style.display = 'block';
+    if (rem === 0) { showPoolDone(); }
+    else {
+      btn.disabled    = false;
+      btn.textContent = `BUY A PACK — $${fmt(currentEV())}`;
+    }
+  }, 650);
+}
+
+function showPoolDone() {
+  const btn = document.getElementById('buy-pack-btn');
+  btn.disabled    = true;
+  btn.textContent = 'POOL EMPTY';
+  const note = document.getElementById('pool-done-note');
+  note.style.display = 'block';
+  note.textContent   = 'All cards have been kept — the pool is empty.';
+}
+
+// ── Ledger ────────────────────────────────────────────────────────────────────
+function addLedgerRow(card, revenue, action, net, cost) {
+  pulls.push({ card, revenue, action, net, cost });
+  const isKept = action === 'KEPT';
+
+  document.getElementById('ledger-empty').style.display = 'none';
+  const table = document.getElementById('ledger-table');
+  table.style.display = 'table';
+
+  const tbody = document.getElementById('ledger-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="color:var(--muted2);font-size:9px">${pulls.length}</td>
+    <td>
+      <div style="color:var(--text)">${card.player}</div>
+      <div style="font-size:9px;color:var(--${vSlug(card.variant)})">${card.variant}</div>
+    </td>
+    <td style="font-family:var(--display);font-size:13px;color:var(--accent)">$${fmt(card.marketValue)}</td>
+    <td style="font-size:9px;color:${isKept?'var(--red)':'var(--green)'}">${action}</td>
+    <td style="font-family:var(--display);font-size:13px;color:var(--green)">+$${fmt(revenue)}</td>
+    <td style="font-family:var(--display);font-size:13px;color:var(--red)">-$${fmt(cost)}</td>
+    <td style="font-family:var(--display);font-size:13px;color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''} $${fmt(Math.abs(net))}</td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild); // newest on top
+
+  // Totals footer
+  const totalNet  = sellerRevenue - sellerCardCost - sellerSellbacks;
+  const totalCost = sellerCardCost + sellerSellbacks;
+  document.getElementById('ledger-totals').style.display = 'table-row';
+  document.getElementById('lt-rev').textContent  = '+$'+fmt(sellerRevenue);
+  document.getElementById('lt-cost').textContent = '-$'+fmt(totalCost);
+  const ltNet = document.getElementById('lt-net');
+  ltNet.textContent = (totalNet>=0?'+':'')+'$'+fmt(Math.abs(totalNet));
+  ltNet.style.color = totalNet >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+// ── CSV Export ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!checklist.length) return;
+  const ev = poolEV();
+  const total = checklist.reduce((s,c) => s+c.qty, 0);
+  const poolVal = checklist.reduce((s,c) => s+c.qty*c.marketValue, 0);
+  const rows = [['Player','Variant','Grade','Set','Market Value','Qty','Line Value','Source']];
+  const sorted = [...checklist].sort((a,b) => b.marketValue - a.marketValue);
+  for (const c of sorted) {
+    rows.push([
+      c.player, c.variant, c.gradeLabel || '', c.set,
+      Math.round(c.marketValue), c.qty, Math.round(c.marketValue * c.qty),
+      c.source === 'market' ? 'Market' : 'Inventory'
+    ]);
+  }
+  rows.push([]);
+  rows.push(['Total Cards', total]);
+  rows.push(['Pool Value', '$' + fmt(poolVal)]);
+  rows.push(['Pack Price (EV)', '$' + fmt(ev)]);
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `repack-checklist-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
