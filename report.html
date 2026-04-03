@@ -383,7 +383,6 @@
 <!-- ── Scripts ────────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="estimate-engine.js"></script>
 <script>
 'use strict';
 
@@ -505,12 +504,12 @@ function computeSetStats(sets, cards, setMath) {
 async function loadData() {
   setDataStatus('loading', 'Loading data…');
   try {
-    // Fetch all engine_params columns so the estimate engine has every param it needs
-    const [setsData, piRows, smRows, paramsData] = await Promise.all([
+    const [setsData, piRows, smRows, paramsData, estRows] = await Promise.all([
       fetch(`${SB_URL}/rest/v1/sets?select=id,name,league,case_price,figures_per_case,hit_ratio,retail_price&active=eq.true&order=name.asc`, { headers: R_H }).then(r => r.json()),
       fetch(`${SB_URL}/rest/v1/rpc/get_price_intelligence`, { method: 'POST', headers: { ...R_H, 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()),
       fetch(`${SB_URL}/rest/v1/set_math?select=set_id,player,variant,population`, { headers: R_H }).then(r => r.json()),
-      fetch(`${SB_URL}/rest/v1/engine_params?select=*&is_active=eq.true&limit=1`, { headers: R_H }).then(r => r.json()),
+      fetch(`${SB_URL}/rest/v1/engine_params?select=version,tag&is_active=eq.true&limit=1`, { headers: R_H }).then(r => r.json()),
+      fetch(`${SB_URL}/rest/v1/live_estimates?select=set_name,player,variant,estimated_price,is_refreshed`, { headers: R_H }).then(r => r.json()),
     ]);
 
     const engineParams = (paramsData || [])[0] || null;
@@ -524,20 +523,12 @@ async function loadData() {
 
     // Price hierarchy matches sets.html default (recencyLevel=1 = 90d):
     //   use avg_90d if at least 1 sale in 90 days, otherwise fall back to all-time avg.
-    // Include all fields the estimate engine needs (camelCase, matching allData.products shape).
     const cards = (piRows || []).map(r => ({
-      set:           r.set_name,
-      player:        r.player,
-      variant:       r.variant,
-      price:         (r.avg_90d != null && r.sales_90d >= 1) ? +r.avg_90d : (+r.avg_price || null),
-      sales:         r.total_sales   ?? 0,
-      avg30d:        r.avg_30d       ?? null,
-      sales30d:      r.sales_30d     ?? 0,
-      avg90d:        r.avg_90d       ?? null,
-      sales90d:      r.sales_90d     ?? 0,
-      avgPrice:      r.avg_price     ?? null,
-      lastSaleDate:  r.last_sale_date  ?? null,
-      lastSalePrice: r.last_sale_price ?? null,
+      set:     r.set_name,
+      player:  r.player,
+      variant: r.variant,
+      price:   (r.avg_90d != null && r.sales_90d >= 1) ? +r.avg_90d : (+r.avg_price || null),
+      sales:   r.total_sales ?? 0,
     }));
 
     const setMath = (smRows || []).map(r => ({
@@ -547,69 +538,29 @@ async function loadData() {
       population: r.population,
     }));
 
-    // ── Build allData global required by estimate-engine.js ─────────────
-    // Keyed setMath and league map structures the engine expects.
-    const setLeagueMap  = {};
-    const setMathByName = {};
-    sets.forEach(s => { setLeagueMap[s.name] = s.league; setMathByName[s.name] = []; });
-    setMath.forEach(m => {
-      if (!setMathByName[m.setName]) setMathByName[m.setName] = [];
-      setMathByName[m.setName].push({ player: m.player, variant: m.variant, population: m.population });
-    });
-
-    window.allData = {
-      products:      cards,          // engine reads from this for cross-set ratio lookups
-      setMath:       setMathByName,
-      setLeagueMap:  setLeagueMap,
-      signalMap:     {},             // no price_signals needed here
-      activeWeights: engineParams,
-    };
-
-    // ── Run estimate engine for every set (model-blend mode) ─────────────
-    // This fills in estimated prices for player/variant combos that have no
-    // real sales data — matching sets.html's "Model Blend" default behaviour.
-    const estimatedCards = [];
-    if (typeof buildEstimates === 'function' && engineParams) {
-      for (const set of sets) {
-        try {
-          const setProducts = cards.filter(p => p.set === set.name);
-          const { estimates } = buildEstimates(set.name, setProducts, engineParams);
-          Object.entries(estimates).forEach(([key, est]) => {
-            if (!est || !(est.price > 0)) return;
-            const [player, variant] = key.split('|||');
-            // Only add if this combo genuinely has no real sales data
-            const hasReal = cards.some(
-              c => c.set === set.name && c.player === player && c.variant === variant
-            );
-            if (!hasReal) {
-              estimatedCards.push({
-                set: set.name, player, variant,
-                price:     Math.round(est.price),
-                sales:     0,
-                avg30d:    null,
-                sales30d:  0,
-                avg90d:    null,
-                sales90d:  0,
-                avgPrice:  null,
-                estimated: true,
-              });
-            }
-          });
-        } catch (_) { /* silently skip errors for individual sets */ }
-      }
-    }
+    // ── Build estimated cards from pre-computed live_estimates table ─────
+    const estimatedCards = (estRows || [])
+      .filter(r => r.estimated_price > 0)
+      .filter(r => !cards.some(
+        c => c.set === r.set_name && c.player === r.player && c.variant === r.variant
+      ))
+      .map(r => ({
+        set:       r.set_name,
+        player:    r.player,
+        variant:   r.variant,
+        price:     Math.round(r.estimated_price),
+        sales:     0,
+        estimated: true,
+      }));
 
     // allCards = real sales data + estimated gap-fill cards
     const allCards = [...cards, ...estimatedCards];
 
     const setStats = computeSetStats(sets, allCards, setMath);
 
-    // Trim cards to the fields Claude actually needs for analysis.
-    // The extra fields (avg30d, avg90d, sales30d, sales90d, avgPrice, lastSaleDate,
-    // lastSalePrice) were needed by the estimate engine at boot but add ~20K tokens
-    // to the payload sent to Claude on every request. Strip them here.
+    // Slim cards for the Claude payload — only the fields it needs.
     const slimCards = allCards.map(c => {
-      const s: Record<string, unknown> = {
+      const s = {
         set: c.set, player: c.player, variant: c.variant,
         price: c.price, sales: c.sales,
       };
@@ -617,7 +568,7 @@ async function loadData() {
       return s;
     });
 
-    cachedData = { sets, cards: slimCards, setMath, setStats, engineParams };
+    cachedData = { sets, cards: slimCards, setMath, setStats };
 
     const estNote = estimatedCards.length > 0 ? ` + ${estimatedCards.length.toLocaleString()} est.` : '';
     setDataStatus('ready', `${sets.length} sets · ${cards.length.toLocaleString()} cards${estNote}`);

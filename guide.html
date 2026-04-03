@@ -340,7 +340,6 @@ body { font-family: var(--body); }
 
 </div>
 
-<script src="estimate-engine.js"></script>
 <script>
 const SB_URL = 'https://sabzbyuqrondoayhwoth.supabase.co';
 const SB_KEY = 'sb_publishable_KAbUO5YvOapq_kWkHqt7BA_UTwrP60s';
@@ -448,30 +447,13 @@ let selectedProduct = null;
 // ── Boot ────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    const [pi, paramsData, setMathData, setsData, gradedSalesData] = await Promise.all([
+    const [pi, setMathData, setsData, liveEstimates] = await Promise.all([
       rpc('get_price_intelligence'),
-      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('sets', 'select=id,name,league,active&active=eq.true'),
-      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+      sbGetAll('live_estimates', 'select=set_name,player,variant,estimated_price,confidence,is_refreshed,own_price,freshness,model_estimate'),
     ]);
-    const engineParams = (paramsData || [])[0] || null;
     allProducts = pi.filter(r => r.player && r.player !== 'Unknown').map(normProduct);
-
-    // Snapshot raw PI averages before normalization — used for display only.
-    // applyGradingNorm zeros avgPrice when all sales are graded so the engine
-    // doesn't treat a graded-only price as an ungraded comp. But the guide
-    // table should still show the real (graded) average for those combos.
-    allProducts.forEach(p => {
-      p.rawAvgPrice = p.avgPrice;
-      p.rawAvg30d   = p.avg30d;
-      p.rawAvg90d   = p.avg90d;
-    });
-
-    // Normalize product averages to remove graded-sale inflation so the
-    // engine uses accurate ungraded-equivalent prices when building comps.
-    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
-    applyGradingNorm(allProducts, gradedNormMap);
 
     // Build set_id → name and league lookups
     const setIdToName = {};
@@ -488,21 +470,25 @@ window.addEventListener('DOMContentLoaded', async () => {
       setMath[setName].push({ player: row.player, variant: row.variant, population: +row.population });
     });
 
-    // Set allData for estimate-engine.js
-    allData = { products: allProducts, setMath, setLeagueMap, signalMap: {}, activeWeights: engineParams };
+    // Keep allData for variant chip population ordering
+    allData = { products: allProducts, setMath, setLeagueMap };
 
-    // Pre-compute v2 estimates for all sets at boot
-    const setNames = [...new Set(allProducts.map(p => p.set).filter(Boolean))];
-    for (const setName of setNames) {
-      const setProducts = allProducts.filter(p => p.set === setName);
-      const { estimates, refreshedEstimates } = buildEstimates(setName, setProducts, engineParams);
-      Object.assign(globalEstimates, estimates);
-      Object.assign(globalRefreshed, refreshedEstimates);
-    }
-
-    // Show engine version tag
-    const engTag = document.getElementById('engine-tag');
-    if (engTag) engTag.textContent = engineParams?.tag || (engineParams ? `v${engineParams.version}` : 'no params');
+    // Build estimate maps from pre-computed live_estimates table
+    (liveEstimates || []).forEach(row => {
+      const k = `${row.set_name}|||${row.player}|||${row.variant}`;
+      const entry = {
+        price: +row.estimated_price || 0,
+        confidence: row.confidence || '',
+        ownPrice: +row.own_price || 0,
+        freshness: +row.freshness || 0,
+        modelEstimate: +row.model_estimate || 0,
+      };
+      if (row.is_refreshed) {
+        globalRefreshed[k] = entry;
+      } else {
+        globalEstimates[k] = entry;
+      }
+    });
 
     // Use is_active=eq.true — avoids the scraped_at=eq.(latest) bug where
     // incremental runs add a small batch with a newer timestamp, making the
@@ -661,8 +647,8 @@ function renderTable(products) {
         <div class="td-set">${p.set}</div>
       </td>
       <td><span class="v-tag ${vClass}">${p.variant}</span></td>
-      <td class="td-price">${(p.rawAvgPrice || p.avgPrice) ? '$' + Math.round(p.rawAvgPrice || p.avgPrice) : '—'}</td>
-      <td class="td-price">${(p.rawAvg30d || p.avg30d) ? '$' + Math.round(p.rawAvg30d || p.avg30d) : '—'}</td>
+      <td class="td-price">${p.avgPrice ? '$' + Math.round(p.avgPrice) : '—'}</td>
+      <td class="td-price">${p.avg30d ? '$' + Math.round(p.avg30d) : '—'}</td>
       <td class="td-last">${p.lastSalePrice ? '$' + Math.round(p.lastSalePrice) : '—'}</td>
       <td class="td-sales">${p.totalSales || 0}</td>
       <td class="td-sales">${p.sales30d || 0}</td>
@@ -697,7 +683,7 @@ async function openDrawer(product) {
   document.getElementById('drawer-subtitle').textContent = product.set;
 
   document.getElementById('drawer-stats').innerHTML = `
-    <div><div class="drawer-stat-label">Avg Price</div><div class="drawer-stat-value">${(product.rawAvgPrice || product.avgPrice) ? '$' + Math.round(product.rawAvgPrice || product.avgPrice) : '—'}</div></div>
+    <div><div class="drawer-stat-label">Avg Price</div><div class="drawer-stat-value">${product.avgPrice ? '$' + Math.round(product.avgPrice) : '—'}</div></div>
     <div><div class="drawer-stat-label">Last Sale</div><div class="drawer-stat-value">${product.lastSalePrice ? '$' + Math.round(product.lastSalePrice) : '—'}</div></div>
     <div><div class="drawer-stat-label">Total Sales</div><div class="drawer-stat-value">${product.totalSales || 0}</div></div>
     <div><div class="drawer-stat-label">30d Sales</div><div class="drawer-stat-value">${product.sales30d || 0}</div></div>

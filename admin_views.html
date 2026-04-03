@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="ghostladder.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="estimate-engine.js"></script>
   <style>
     /* ── Page layout ── */
     .views-wrap {
@@ -576,7 +575,6 @@ let selectedBaseSet   = null;
 let selectedTopSalesSet = null;   // null = all sets
 let timeRangeIdx      = 1;   // 0=7D 1=30D 2=90D 3=6M 4=1Y 5=ALL
 const charts          = {};
-const estCache        = {};   // keyed by setName
 
 const RECENT_PER_PAGE = 10;
 const TIME_RANGES = [
@@ -623,10 +621,9 @@ async function sbGetAll(table, qs, pageSize = 1000) {
 async function loadData() {
   document.getElementById('main-loading').style.display = 'flex';
   document.getElementById('main-content').style.display = 'none';
-  Object.keys(estCache).forEach(k => delete estCache[k]);
 
   try {
-    const [recentSales, pi, rawSales, allListings, setsData, setMathData, paramsArr] =
+    const [recentSales, pi, rawSales, allListings, setsData, liveEstRows] =
       await Promise.all([
         rpc('get_recent_sales', { limit_rows: 200 }),
         rpc('get_price_intelligence'),
@@ -636,11 +633,16 @@ async function loadData() {
         sbGetAll('listings',
           'select=set_name,player,variant,ask_price,is_active,afa_grade'),
         sbGet('sets', 'select=id,name,league&active=eq.true&order=name.asc'),
-        sbGet('set_math', 'select=set_id,player,variant,population'),
-        sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
+        sbGetAll('live_estimates',
+          'select=set_name,player,variant,estimated_price,is_refreshed'),
       ]);
 
-    const engineParams = (paramsArr || [])[0] || null;
+    // Build live_estimates lookup map: key = "setName|||player|||variant"
+    const liveEstMap = {};
+    (liveEstRows || []).forEach(r => {
+      const k = `${r.set_name}|||${r.player}|||${r.variant}`;
+      liveEstMap[k] = { price: +r.estimated_price || 0, isRefreshed: !!r.is_refreshed };
+    });
 
     // Build PI map
     const piMap = {};
@@ -660,15 +662,9 @@ async function loadData() {
       };
     });
 
-    // Build set id map + math by set
-    const setIdMap  = {};
+    // Build set name lookup for denormalizing rawSales
     const setNameById = {};
-    (setsData || []).forEach(s => { setIdMap[s.name] = s.id; setNameById[s.id] = s.name; });
-    const mathBySet = {};
-    (setMathData || []).forEach(m => {
-      if (!mathBySet[m.set_id]) mathBySet[m.set_id] = [];
-      mathBySet[m.set_id].push(m);
-    });
+    (setsData || []).forEach(s => { setNameById[s.id] = s.name; });
 
     // Denormalize set_id → set_name on rawSales
     const rawSalesMapped = (rawSales || []).map(r => ({
@@ -681,7 +677,7 @@ async function loadData() {
       rawSales:    rawSalesMapped,
       allListings: allListings || [],
       sets:        setsData    || [],
-      piMap, mathBySet, setIdMap, setNameById, engineParams,
+      piMap, liveEstMap, setNameById,
     };
 
     // Init selected sets
@@ -816,7 +812,6 @@ function renderTopSalesStrip() {
 // ─────────────────────────────────────────────────────────────────────────────
 function setMode(mode) {
   estimateMode = mode;
-  Object.keys(estCache).forEach(k => delete estCache[k]);
   document.getElementById('mode-sales').classList.toggle('active', mode === 'sales-only');
   document.getElementById('mode-blend').classList.toggle('active', mode === 'model-blend');
   document.getElementById('mode-full').classList.toggle('active',  mode === 'full-model');
@@ -837,54 +832,19 @@ function updateAvgPriceModeNote() {
   el.textContent = notes[estimateMode] || '';
 }
 
-function getSetEstimates(setName) {
-  if (estCache[setName]) return estCache[setName];
-  if (!allData?.engineParams || typeof buildEstimates !== 'function') {
-    return { estimates: {}, refreshedEstimates: {} };
-  }
-  const setId = allData.setIdMap[setName];
-  const mathRows = allData.mathBySet[setId] || [];
-  const setProducts = mathRows.map(m => {
-    const pk = `${setName}|||${m.player}|||${m.variant}`;
-    const p  = allData.piMap[pk] || {};
-    return {
-      player: m.player, variant: m.variant, set: setName,
-      population:    m.population || 0,
-      avgPrice:      p.avgPrice  || 0,
-      avg30d:        p.avg30d    || 0,
-      avg90d:        p.avg90d    || 0,
-      lastSalePrice: p.lastSalePrice || 0,
-      lastSaleDate:  p.lastSaleDate,
-      totalSales:    p.totalSales  || 0,
-      sales30d:      p.sales30d   || 0,
-    };
-  });
-  try {
-    const res = buildEstimates(setName, setProducts, allData.engineParams);
-    estCache[setName] = res;
-    return res;
-  } catch(e) {
-    return { estimates: {}, refreshedEstimates: {} };
-  }
-}
-
 function getPriceForCell(setName, player, variant) {
   const k  = `${setName}|||${player}|||${variant}`;
   const pi = allData.piMap[k];
+  const est = allData.liveEstMap[k];
   if (estimateMode === 'sales-only') return pi?.avgPrice || null;
-  if (!allData.engineParams) return pi?.avgPrice || null;
-  const { estimates, refreshedEstimates } = getSetEstimates(setName);
-  const ek = `${player}|||${variant}`;
   if (estimateMode === 'full-model') {
-    const ref = refreshedEstimates?.[ek];
-    if (ref) return ref.price;
-    const est = estimates?.[ek];
-    if (est) return est.price;
+    // Prefer refreshed estimate, then any estimate, then raw avg
+    if (est?.isRefreshed) return est.price;
+    if (est?.price)       return est.price;
     return pi?.avgPrice || null;
   }
-  // model-blend: real first, then estimate
+  // model-blend: real sale data first, then estimate to fill gaps
   if (pi?.avgPrice > 0) return pi.avgPrice;
-  const est = estimates?.[ek];
   return est?.price || null;
 }
 
@@ -1016,16 +976,31 @@ function renderAvgPriceChart() {
   updateAvgPriceModeNote();
   if (!selectedAvgSet || !allData) return;
 
-  const setId    = allData.setIdMap[selectedAvgSet];
-  const mathRows = allData.mathBySet[setId] || [];
-
   // Group prices by variant, averaging across all players
+  // Iterate liveEstMap entries that belong to this set, plus piMap entries
+  const seen = new Set();
   const pricesByVariant = {};
-  mathRows.forEach(m => {
-    const price = getPriceForCell(selectedAvgSet, m.player, m.variant);
+  // Collect all player/variant combos from liveEstMap + piMap for this set
+  const candidates = [];
+  Object.keys(allData.liveEstMap).forEach(k => {
+    if (k.startsWith(selectedAvgSet + '|||')) {
+      const [, player, variant] = k.split('|||');
+      const ck = `${player}|||${variant}`;
+      if (!seen.has(ck)) { seen.add(ck); candidates.push({ player, variant }); }
+    }
+  });
+  Object.keys(allData.piMap).forEach(k => {
+    if (k.startsWith(selectedAvgSet + '|||')) {
+      const [, player, variant] = k.split('|||');
+      const ck = `${player}|||${variant}`;
+      if (!seen.has(ck)) { seen.add(ck); candidates.push({ player, variant }); }
+    }
+  });
+  candidates.forEach(({ player, variant }) => {
+    const price = getPriceForCell(selectedAvgSet, player, variant);
     if (!price) return;
-    if (!pricesByVariant[m.variant]) pricesByVariant[m.variant] = [];
-    pricesByVariant[m.variant].push(price);
+    if (!pricesByVariant[variant]) pricesByVariant[variant] = [];
+    pricesByVariant[variant].push(price);
   });
 
   // Sort variants by order, then compute per-variant average

@@ -499,7 +499,6 @@
   box-shadow: 0 0 6px rgba(232,255,71,0.6);
 }
 </style>
-<script src="estimate-engine.js"></script>
 </head>
 <body>
 
@@ -718,16 +717,57 @@ const CONF_CV = {
 let estimateMode = 'model-blend';
 
 // ── Load ─────────────────────────────────────────────────────────────────────
+// ── rowToEst adapter: converts a live_estimates row into the shape the drawer expects ──
+function rowToEst(row) {
+  return {
+    price: row.estimated_price,
+    confidence: row.confidence,
+    pvs: {
+      percentilePct: (row.pvs_percentile || 0) * 100,
+      rank: row.pvs_rank,
+      nPlayers: row.pvs_n_players,
+      impliedBase: row.pvs_implied_base,
+      source: row.pvs_source,
+    },
+    refDist: row.ref_dist_info ? (typeof row.ref_dist_info === 'string' ? JSON.parse(row.ref_dist_info) : row.ref_dist_info) : null,
+    rangeEstimate: row.range_estimate,
+    ratioEstimate: row.ratio_estimate,
+    anchors: row.anchors ? (typeof row.anchors === 'string' ? JSON.parse(row.anchors) : row.anchors) : [],
+    compUsed: row.comp_used,
+    compData: row.comp_data ? (typeof row.comp_data === 'string' ? JSON.parse(row.comp_data) : row.comp_data) : null,
+    evidenceWeight: (row.evidence_weight || 0) * 100,
+    ownPrice: row.own_price,
+    freshness: (row.freshness || 0) * 100,
+    modelEstimate: row.model_estimate,
+    isRefreshed: row.is_refreshed,
+  };
+}
+
+// ── Lookup pre-computed estimates from live_estimates table ───────────────────
+// Returns { estimates, refreshedEstimates } matching the old buildEstimates() shape.
+function getLiveEstimates(setName) {
+  const setMap = (allData.liveEstBySet || {})[setName] || {};
+  const estimates = {};
+  const refreshedEstimates = {};
+  Object.entries(setMap).forEach(([key, row]) => {
+    const est = rowToEst(row);
+    if (row.is_refreshed) {
+      refreshedEstimates[key] = est;
+    } else {
+      estimates[key] = est;
+    }
+  });
+  return { estimates, refreshedEstimates };
+}
+
 async function loadData() {
   try {
-    const [pi, recentSales, setsData, setMathData, paramsData, gradedSalesData, playersData] = await Promise.all([
+    const [pi, recentSales, setsData, setMathData, liveEstRows] = await Promise.all([
       rpc('get_price_intelligence'),
       rpc('get_recent_sales', {limit_rows: 500}),
       sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
-      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
-      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
-      sbGet('players', 'select=name,prior_tier'),
+      sbGet('live_estimates', 'select=*'),
     ]);
     const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
       set: r.set_name, player: r.player, variant: r.variant,
@@ -737,17 +777,13 @@ async function loadData() {
       lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
     }));
 
-    // Snapshot raw PI averages before normalization for display purposes.
+    // Snapshot raw PI averages for display (no grading norm needed — estimates are pre-computed).
     products.forEach(p => {
       p.rawAvgPrice = p.avgPrice;
       p.rawAvg30d   = p.avg30d;
       p.rawAvg90d   = p.avg90d;
     });
 
-    // Normalize product averages to remove graded-sale inflation so the
-    // engine uses accurate ungraded-equivalent prices when building comps.
-    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
-    applyGradingNorm(products, gradedNormMap);
     const allListings = recentSales.filter(r => r.player && r.player !== 'Unknown').map(r => ({
       set: r.set_name, player: r.player, variant: r.variant,
       price: +r.price || 0, date: r.date, image: r.image_url,
@@ -756,7 +792,7 @@ async function loadData() {
     // Build set_id -> name lookup
     const setIdToName = {};
     setsData.forEach(s => { setIdToName[s.id] = s.name; });
-    // Build set -> league map (used by estimate engine for same-league comp weighting)
+    // Build set -> league map (used in drawer for same-league comp display)
     const setLeagueMap = {};
     setsData.forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
     // Build set config from Supabase
@@ -772,15 +808,20 @@ async function loadData() {
       if (!setMath[setName]) setMath[setName] = [];
       setMath[setName].push({ player: row.player, variant: row.variant, population: +row.population });
     });
-    const activeWeights = (paramsData || [])[0] || null;
     // Build setName -> image_url map for the case ghost overlay
     const setImageMap = {};
     setsData.forEach(s => { if (s.image_url) setImageMap[s.name] = s.image_url; });
-    const playerPriors = {};
-    (playersData || []).forEach(p => {
-      if (p.name && p.prior_tier) playerPriors[p.name] = { tier: +p.prior_tier };
+
+    // ── Build liveEstBySet map from pre-computed live_estimates table ────────
+    // liveEstBySet[setName][player|||variant] = raw row from live_estimates
+    const liveEstBySet = {};
+    (liveEstRows || []).forEach(row => {
+      const sn = row.set_name;
+      if (!liveEstBySet[sn]) liveEstBySet[sn] = {};
+      liveEstBySet[sn][`${row.player}|||${row.variant}`] = row;
     });
-    allData = { products, allListings, sbSetConfig, setMath, signalMap: {}, activeWeights, setLeagueMap, setImageMap, playerPriors };
+
+    allData = { products, allListings, sbSetConfig, setMath, setLeagueMap, setImageMap, liveEstBySet };
     initPage();
   } catch(e) {
     document.getElementById('main-content').innerHTML =
@@ -915,7 +956,7 @@ function renderStats() {
 
   // Avg hit value — two versions using set_math as population source
   const { estimates: projections, refreshedEstimates: refreshed } = estimateMode !== 'sales-only'
-    ? buildEstimates(activeSet, products, allData.activeWeights)
+    ? getLiveEstimates(activeSet)
     : { estimates: {}, refreshedEstimates: {} };
   const mathRows = (allData.setMath && allData.setMath[activeSet]) || [];
   const nonBaseMath = mathRows.filter(r => r.variant !== 'Base' && r.population > 0);
@@ -1076,7 +1117,7 @@ function buildSplitPools(setName) {
 function buildPool(setName) {
   const products = (allData.products||[]).filter(p => p.set===setName && p.player && p.player!=='Unknown');
   const { estimates: projections, refreshedEstimates: refreshed } = estimateMode !== 'sales-only'
-    ? buildEstimates(setName, products, allData.activeWeights)
+    ? getLiveEstimates(setName)
     : { estimates: {}, refreshedEstimates: {} };
   const pool = []; const poolByVariant = {};
   // Use set_math as sole source of truth for roster + populations
@@ -1172,7 +1213,7 @@ function hideCaseGhost() {
   if (g) g.classList.add('hidden');
 }
 
-// Estimate engine is in estimate-engine.js (shared with heatmap.html and sets.html)
+// Estimates are pre-computed in the live_estimates Supabase table
 
 function bestPriceFull(p) {
   if (!p) return null;

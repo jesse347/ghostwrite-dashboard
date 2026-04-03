@@ -6,7 +6,6 @@
 <title>Slides — GhostLadder</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="ghostladder.css">
-<script src="estimate-engine.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -855,7 +854,7 @@ const R_H = { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON, 'Content-
 // ─────────────────────────────────────────────────────────────────────────────
 // State
 // ─────────────────────────────────────────────────────────────────────────────
-let allData       = null;   // populated by loadData(); also read by estimate-engine.js
+let allData       = null;   // populated by loadData()
 let scope         = null;   // { type: 'league'|'set', value: string }
 let slideMode     = 'landscape'; // 'landscape' | 'breaker'
 let brSpotlightSet  = null; // set name for Slide 3 (Set Spotlight)
@@ -952,15 +951,14 @@ function bestPrice(p) {
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [pi, rawSalesRaw, setsData, setMathData, paramsData, gradedSalesData] = await Promise.all([
+    const [pi, rawSalesRaw, setsData, setMathData, liveEstData] = await Promise.all([
       rpc('get_price_intelligence'),
       sbGetAll('sales',
         'select=player,set_id,variant,price,date,afa_grade' +
         '&or=(status.neq.invalid,status.is.null)&flagged=neq.true&order=date.desc'),
       sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true&order=name.asc'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
-      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
-      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&or=(status.neq.invalid,status.is.null)'),
+      sbGet('live_estimates', 'select=set_name,player,variant,estimated_price'),
     ]);
 
     // set_id → name/cfg
@@ -997,33 +995,17 @@ async function loadData() {
       league:   setsData.find(x => x.id === s.set_id)?.league || null,
     })).filter(s => s.set_name && s.price > 0);
 
-    // products array for estimate engine
-    const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
-      set: r.set_name, player: r.player, variant: r.variant,
-      totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
-      avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
-      avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
-      lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
-    }));
-
-    // Snapshot raw PI averages before normalization for display purposes.
-    products.forEach(p => {
-      p.rawAvgPrice = p.avgPrice;
-      p.rawAvg30d   = p.avg30d;
-      p.rawAvg90d   = p.avg90d;
+    // Build liveEstMap from pre-computed live_estimates table
+    const liveEstMap = {};
+    (liveEstData || []).forEach(r => {
+      if (r.player && r.estimated_price > 0)
+        liveEstMap[`${r.set_name}|||${r.player}|||${r.variant}`] = r.estimated_price;
     });
-
-    // Grading normalization (removes graded sale inflation from estimates)
-    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
-    applyGradingNorm(products, gradedNormMap);
 
     const setLeagueMap = {};
     setsData.forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
 
-    const activeWeights = (paramsData || [])[0] || null;
-
-    // allData is read by estimate-engine.js global functions
-    allData = { setsData, piMap, setMath, rawSales, products, activeWeights, setLeagueMap, signalMap: {} };
+    allData = { setsData, piMap, setMath, rawSales, liveEstMap, setLeagueMap, signalMap: {} };
 
     buildControls();
     buildBreakerControls();
@@ -1172,19 +1154,16 @@ function computeSetStats(setName, cfg) {
     ? Math.round(Object.values(baseVals).reduce((a,b) => a+b,0) / Object.values(baseVals).length)
     : null;
 
-  // Avg Hit — population-weighted, model-blend fills gaps
-  const setProds = allData.products.filter(p => p.set === setName && p.player && p.player !== 'Unknown');
-  const { estimates: setEst } = buildEstimates(setName, setProds, allData.activeWeights);
-
+  // Avg Hit — population-weighted, live_estimates fills gaps
   let fullGMV = 0, fullPop = 0;
   const nonBase = mathRows.filter(r => r.variant !== 'Base' && r.population > 0);
   nonBase.forEach(({ player, variant, population }) => {
     const pi       = allData.piMap[`${setName}|||${player}|||${variant}`];
     let   usePrice = pi ? bestPrice(pi) : null;
-    // model-blend: fill gap with estimate
+    // fill gap with pre-computed estimate from live_estimates
     if (!usePrice) {
-      const est = setEst[`${player}|||${variant}`];
-      if (est && est.price > 0) usePrice = est.price;
+      const estPrice = allData.liveEstMap[`${setName}|||${player}|||${variant}`];
+      if (estPrice && estPrice > 0) usePrice = estPrice;
     }
     if (usePrice && usePrice > 0) { fullGMV += population * usePrice; fullPop += population; }
   });
@@ -1670,13 +1649,11 @@ function simulateCases(setCfg, n = 1000) {
   // Hit price pool (population-weighted; fill gaps with model estimates)
   const hitPrices = [];
   const mathRows  = allData.setMath[setName] || [];
-  const setProds  = allData.products.filter(p => p.set === setName);
-  const { estimates: setEst } = buildEstimates(setName, setProds, allData.activeWeights);
 
   mathRows.filter(r => r.variant !== 'Base' && r.population > 0).forEach(({ player, variant, population }) => {
     const pi = allData.piMap[`${setName}|||${player}|||${variant}`];
     let price = pi ? bestPrice(pi) : null;
-    if (!price) { const est = setEst[`${player}|||${variant}`]; if (est?.price > 0) price = est.price; }
+    if (!price) { const estPrice = allData.liveEstMap[`${setName}|||${player}|||${variant}`]; if (estPrice > 0) price = estPrice; }
     if (!price || price <= 0) return;
     const copies = Math.min(Math.ceil(population), 6);
     for (let i = 0; i < copies; i++) hitPrices.push(price);

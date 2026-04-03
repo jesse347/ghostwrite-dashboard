@@ -385,7 +385,6 @@ input[type=range].recency-slider::-moz-range-thumb {
   .set-hits-panel { padding: 14px 12px; }
 }
 </style>
-<script src="estimate-engine.js"></script>
 </head>
 <body>
 
@@ -525,13 +524,13 @@ function bestPrice(p) {
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [pi, setsData, setMathData, paramsData, gradedSalesData, playersData] = await Promise.all([
+    const [pi, setsData, setMathData, paramsData, playersData, liveEstRows] = await Promise.all([
       rpc('get_price_intelligence'),
       sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true&order=name.asc'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
-      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
       sbGet('players', 'select=name,prior_tier'),
+      sbGet('live_estimates', 'select=set_name,player,variant,estimated_price,confidence,is_refreshed,own_price,freshness'),
     ]);
 
     // set_id → name
@@ -584,29 +583,65 @@ async function loadData() {
       lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
     }));
 
-    // Snapshot raw PI averages before normalization for display purposes.
+    // Snapshot raw PI averages for display (no grading norm needed — estimates are pre-computed).
     products.forEach(p => {
       p.rawAvgPrice = p.avgPrice;
       p.rawAvg30d   = p.avg30d;
       p.rawAvg90d   = p.avg90d;
     });
 
-    // Normalize product averages to remove graded-sale inflation so the
-    // engine uses accurate ungraded-equivalent prices when building comps.
-    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
-    applyGradingNorm(products, gradedNormMap);
+    // ── Build liveEstBySet map from pre-computed live_estimates table ────────
+    // liveEstBySet[setName][player|||variant] = { price, confidence, isRefreshed, ownPrice, freshness }
+    const liveEstBySet = {};
+    (liveEstRows || []).forEach(row => {
+      const sn = row.set_name;
+      if (!liveEstBySet[sn]) liveEstBySet[sn] = {};
+      liveEstBySet[sn][`${row.player}|||${row.variant}`] = {
+        price:       +row.estimated_price || 0,
+        confidence:  row.confidence || '',
+        isRefreshed: !!row.is_refreshed,
+        ownPrice:    +row.own_price || 0,
+        freshness:   +row.freshness || 0,
+      };
+    });
 
     const playerPriors = {};
     (playersData || []).forEach(p => {
       if (p.name && p.prior_tier) playerPriors[p.name] = { tier: +p.prior_tier };
     });
-    allData = { setsData, piMap, setMath, signalMap: {}, set30dSales, activeWeights, setLeagueMap, products, playerPriors };
+    allData = { setsData, piMap, setMath, signalMap: {}, set30dSales, activeWeights, setLeagueMap, products, playerPriors, liveEstBySet };
     render();
 
   } catch(e) {
     document.getElementById('sets-list').innerHTML =
       `<div class="loading-state" style="color:var(--red)">failed to load: ${e.message}</div>`;
   }
+}
+
+// ── Lookup pre-computed estimates from live_estimates table ───────────────────
+// Returns { estimates, refreshedEstimates } matching the old buildEstimates() shape.
+// estimates[player|||variant]          = { price, confidence }          (gap-fill rows)
+// refreshedEstimates[player|||variant] = { price, confidence, freshness, ownPrice } (refreshed rows)
+function getLiveEstimates(setName) {
+  const setMap = (allData.liveEstBySet || {})[setName] || {};
+  const estimates = {};
+  const refreshedEstimates = {};
+  Object.entries(setMap).forEach(([key, row]) => {
+    if (row.isRefreshed) {
+      refreshedEstimates[key] = {
+        price:      row.price,
+        confidence: row.confidence,
+        freshness:  row.freshness,
+        ownPrice:   row.ownPrice,
+      };
+    } else {
+      estimates[key] = {
+        price:      row.price,
+        confidence: row.confidence,
+      };
+    }
+  });
+  return { estimates, refreshedEstimates };
 }
 
 // ── Compute stats for one set ─────────────────────────────────────────────────
@@ -639,12 +674,9 @@ function computeSetStats(setName, cfg) {
 
   // ── Avg Hit Value: population-weighted across all non-base combos ─────────
   // Real mode: use actual sales prices where available
-  // Model mode: fill gaps with shared estimate engine (same as heatmap + case-sim)
-  const setProducts = (allData.products || []).filter(p =>
-    p.set === setName && p.player && p.player !== 'Unknown'
-  );
+  // Model mode: fill gaps with pre-computed estimates from live_estimates table
   const { estimates: setEstimates, refreshedEstimates: setRefreshed } = estimateMode !== 'sales-only'
-    ? buildEstimates(setName, setProducts, allData.activeWeights)
+    ? getLiveEstimates(setName)
     : { estimates: {}, refreshedEstimates: {} };
 
   let realGMV = 0, realPop = 0;
@@ -871,12 +903,9 @@ function buildMiniGrid(setName) {
   const mathRows = (allData.setMath[setName] || []);
   if (!mathRows.length) return '<div style="color:var(--muted);font-size:10px;padding:8px 0">no roster data</div>';
 
-  // Pre-compute estimates using shared engine (same logic as heatmap + case-sim)
-  const gridSetProducts = (allData.products || []).filter(p =>
-    p.set === setName && p.player && p.player !== 'Unknown'
-  );
+  // Look up pre-computed estimates from live_estimates table
   const { estimates: gridEstimates, refreshedEstimates: gridRefreshed } = estimateMode !== 'sales-only'
-    ? buildEstimates(setName, gridSetProducts, allData.activeWeights)
+    ? getLiveEstimates(setName)
     : { estimates: {}, refreshedEstimates: {} };
 
   // Variants: known ones ordered by VARIANT_ORDER, any extras (e.g. Sapphire) appended
@@ -1032,17 +1061,12 @@ function buildHitsStrip(setName) {
   const mathCombos = (allData.setMath[setName] || []);
   if (!mathCombos.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">no data</div>';
 
-  // setProds is only needed for buildEstimates (it uses PI rows internally)
-  const setProds = (allData.products || []).filter(p => p.set === setName);
-
-  // Build estimates for blend / full-model modes
+  // Look up pre-computed estimates from live_estimates table
   let ests = {}, refEsts = {};
-  if (estimateMode !== 'sales-only' && setProds.length) {
-    try {
-      const r = buildEstimates(setName, setProds, allData.activeWeights);
-      ests    = r.estimates          || {};
-      refEsts = r.refreshedEstimates || {};
-    } catch(e) {}
+  if (estimateMode !== 'sales-only') {
+    const r = getLiveEstimates(setName);
+    ests    = r.estimates;
+    refEsts = r.refreshedEstimates;
   }
 
   // Score every set_math combo (includes rare variants with no real sales)

@@ -186,7 +186,6 @@ thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
   .two-col, .three-col { grid-template-columns: 1fr; }
 }
 </style>
-<script src="estimate-engine.js"></script>
 </head>
 <body>
 
@@ -244,7 +243,7 @@ async function sbGetAll(table, qs, pageSize = 1000) {
 }
 
 let allListings = [], piData = [];
-let allData = null, estimateMap = {};
+let estimateMap = {};
 let avsSortCol = 'lowestAsk', avsSortDir = 'desc';
 let avsPage = 0;
 const AVS_PAGE_SIZE = 50;
@@ -271,14 +270,11 @@ async function loadData() {
     // in Apps Script, which deactivates rows not seen within LISTING_STALE_DAYS_.
     // We do NOT filter by scraped_at — incremental runs produce a newer timestamp,
     // which would exclude the bulk of records if we used scraped_at=eq.latest.
-    const [listings, pi, paramsData, setMathData, setsData, gradedSalesData] = await Promise.all([
+    const [listings, pi, liveEstimates] = await Promise.all([
       sbGetAll('listings',
         `select=*&is_active=eq.true&order=ask_price.desc`),
       rpc('get_price_intelligence'),
-      sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
-      sbGet('set_math', 'select=set_id,player,variant,population'),
-      sbGet('sets', 'select=id,name,league,active&active=eq.true'),
-      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+      sbGet('live_estimates', 'select=set_name,player,variant,estimated_price'),
     ]);
 
     allListings = listings;
@@ -294,51 +290,12 @@ async function loadData() {
       totalSales:    +r.total_sales || 0,
     }));
 
-    // ── Build estimate engine allData ──────────────────────────────────────
-    const products = pi.filter(r => r.player && r.player !== 'Unknown').map(r => ({
-      set: r.set_name, player: r.player, variant: r.variant,
-      totalSales: +r.total_sales || 0, avgPrice: +r.avg_price || 0,
-      avg30d: +r.avg_30d || 0, sales30d: +r.sales_30d || 0,
-      avg90d: +r.avg_90d || 0, sales90d: +r.sales_90d || 0,
-      lastSaleDate: r.last_sale_date, lastSalePrice: +r.last_sale_price || 0,
-    }));
-    products.forEach(p => {
-      p.rawAvgPrice = p.avgPrice;
-      p.rawAvg30d   = p.avg30d;
-      p.rawAvg90d   = p.avg90d;
-    });
-    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
-    applyGradingNorm(products, gradedNormMap);
-
-    const setIdToName = {};
-    (setsData || []).forEach(s => { setIdToName[s.id] = s.name; });
-    const setMath = {};
-    (setMathData || []).forEach(r => {
-      const name = setIdToName[r.set_id];
-      if (!name || !r.player || r.player === 'Unknown') return;
-      if (!setMath[name]) setMath[name] = [];
-      setMath[name].push({ player: r.player, variant: r.variant, population: r.population });
-    });
-    const setLeagueMap = {};
-    (setsData || []).forEach(s => { if (s.name) setLeagueMap[s.name] = (s.league || '').toUpperCase(); });
-    const activeWeights = (paramsData || [])[0] || null;
-    allData = { products, signalMap: {}, activeWeights, setMath, setLeagueMap };
-
-    // Pre-compute estimates for every set that has active listings
+    // ── Build estimateMap from pre-computed live_estimates table ─────────
     estimateMap = {};
-    const uniqueSets = [...new Set(allListings.map(l => l.set_name).filter(Boolean))];
-    uniqueSets.forEach(setName => {
-      const setProducts = products.filter(p => p.set === setName);
-      if (!setProducts.length) return;
-      try {
-        const { estimates, refreshedEstimates } = buildEstimates(setName, setProducts, activeWeights);
-        // refreshedEstimates covers cards with real sales (blended model+data);
-        // estimates covers cards with no sales at all. Merge both, refreshed takes priority.
-        const merged = { ...estimates, ...refreshedEstimates };
-        Object.entries(merged).forEach(([pv, est]) => {
-          if (est && est.price > 0) estimateMap[`${setName}|||${pv}`] = est.price;
-        });
-      } catch(e) {}
+    (liveEstimates || []).forEach(r => {
+      if (r.estimated_price > 0) {
+        estimateMap[`${r.set_name}|||${r.player}|||${r.variant}`] = r.estimated_price;
+      }
     });
 
     // Show scrape time

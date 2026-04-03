@@ -5194,6 +5194,192 @@ function takeEstimateSnapshots() {
 }
 
 
+// ════════════════════════════════════════════════════════════════════════════
+// 1b. refreshLiveEstimates()
+//     Run daily (e.g. 4 AM via createSnapshotTriggers).
+//
+//     For every active set, runs the full estimation engine and writes rows
+//     into live_estimates — the pre-computed table that powers all browser pages.
+//     Unlike estimate_snapshots (append-only weekly log), live_estimates always
+//     holds exactly one row per set×player×variant and is replaced on each run.
+//
+//     This eliminates browser-side estimate-engine.js computation entirely.
+//     Pages fetch live_estimates via simple REST queries instead.
+// ════════════════════════════════════════════════════════════════════════════
+
+function refreshLiveEstimates() {
+  console.log('▶ refreshLiveEstimates started');
+
+  // ── Load all reference data from Supabase ──────────────────────────────
+  // loadAllData_() already handles grading normalization via
+  // buildGradedNormMap + applyGradingNorm on the products array.
+  const loaded = loadAllData_();
+  allData = loaded.allData; // assign global so estimate-engine.gs functions see it
+
+  // ── Load player priors (tier anchoring) ────────────────────────────────
+  // loadAllData_() does not fetch these; the engine uses them for PVS
+  // tier-based percentile anchoring (Tier 1 → 95th, Tier 2 → 80th).
+  const playersRaw = sbGet_('players', 'select=name,prior_tier,league');
+  allData.playerPriors = {};
+  playersRaw.forEach(p => {
+    allData.playerPriors[p.name] = { tier: p.prior_tier, league: p.league };
+  });
+  console.log(`  Player priors: ${playersRaw.length} players loaded`);
+
+  // ── Get active engine_params ───────────────────────────────────────────
+  const engineParams = loadActiveEngineParams_();
+  console.log(`  Engine version: ${engineParams.version} (${engineParams.tag || 'no tag'})`);
+
+  const allRows    = [];
+  const computedAt = new Date().toISOString();
+
+  for (const set of loaded.activeSets) {
+    const setProducts = loaded.allData.productsBySet[set.name] || [];
+    console.log(`  Processing: ${set.name} (${setProducts.length} products)`);
+
+    let result;
+    try {
+      result = buildEstimates(set.name, setProducts, engineParams);
+    } catch (e) {
+      console.error(`  ✗ buildEstimates failed for "${set.name}": ${e.message}`);
+      continue;
+    }
+
+    const { estimates, refreshedEstimates } = result;
+    const evidenceWeightFraction = result.evidenceWeight; // already 0–1
+
+    // ── Guard: only write combos that exist in set_math ──────────────────
+    const mathRows    = allData.setMath[set.name] || [];
+    const validCombos = new Set(mathRows.map(r => `${r.player}|||${r.variant}`));
+    const smIdMap     = {};
+    mathRows.forEach(r => { smIdMap[`${r.player}|||${r.variant}`] = r.id; });
+    let phantomCount  = 0;
+
+    // ── Gap-fill estimates (cells with no real sales data) ───────────────
+    Object.entries(estimates).forEach(([key, est]) => {
+      if (!validCombos.has(key)) { phantomCount++; return; }
+      const [player, variant] = key.split('|||');
+      allRows.push(buildLiveEstimateRow_({
+        setName: set.name, player, variant, est,
+        engineVersion:  engineParams.version,
+        evidenceWeight: evidenceWeightFraction,
+        isRefreshed:    false,
+        setMathId:      smIdMap[key] || null,
+        computedAt,
+      }));
+    });
+
+    // ── Refreshed estimates (real-data cells with freshness blend) ────────
+    Object.entries(refreshedEstimates).forEach(([key, est]) => {
+      if (!validCombos.has(key)) { phantomCount++; return; }
+      const [player, variant] = key.split('|||');
+      allRows.push(buildLiveEstimateRow_({
+        setName: set.name, player, variant, est,
+        engineVersion:  engineParams.version,
+        evidenceWeight: evidenceWeightFraction,
+        isRefreshed:    true,
+        setMathId:      smIdMap[key] || null,
+        computedAt,
+      }));
+    });
+
+    if (phantomCount > 0) {
+      console.warn(`  ⚠ ${set.name}: skipped ${phantomCount} combos not in set_math`);
+    }
+  }
+
+  console.log(`  Total live_estimates rows to write: ${allRows.length}`);
+
+  // ── Delete all existing rows, then insert fresh ────────────────────────
+  // Using delete-then-insert (not upsert) for clean replacement.
+  const delRes = UrlFetchApp.fetch(`${SB_URL_}/rest/v1/live_estimates?id=not.is.null`, {
+    method: 'delete',
+    headers: {
+      apikey:          SB_KEY_,
+      Authorization:   `Bearer ${SB_KEY_}`,
+      'Content-Type':  'application/json',
+      Prefer:          'return=minimal',
+    },
+    muteHttpExceptions: true,
+  });
+  if (delRes.getResponseCode() >= 300) {
+    console.error(`  ✗ DELETE live_estimates failed: ${delRes.getContentText()}`);
+    return;
+  }
+  console.log('  Cleared live_estimates table');
+
+  // Insert in chunks
+  sbInsertChunked_('live_estimates', allRows, SNAP_CHUNK_SIZE_);
+
+  console.log(`✓ refreshLiveEstimates complete — ${allRows.length} rows written`);
+}
+
+
+// ── Build one live_estimates row ─────────────────────────────────────────────
+
+function buildLiveEstimateRow_({ setName, player, variant, est,
+                                  engineVersion, evidenceWeight, isRefreshed,
+                                  setMathId, computedAt }) {
+  const pvs     = est.pvs     || {};
+  const refDist = est.refDist || null;
+
+  return {
+    set_name:        setName,
+    player:          player,
+    variant:         variant,
+    set_math_id:     setMathId || null,
+
+    // ── Core estimate ──────────────────────────────────────────────────
+    estimated_price: est.price,
+    confidence:      est.confidence  || null,
+    method:          deriveMethod_(est),
+    is_refreshed:    isRefreshed,
+
+    // ── Refreshed-only fields ──────────────────────────────────────────
+    own_price:       isRefreshed ? (est.ownPrice     || null) : null,
+    freshness:       isRefreshed ? ((est.freshness || 0) / 100) : null, // engine returns 0–100, store 0–1
+    model_estimate:  isRefreshed ? (est.modelEstimate || null) : null,
+
+    // ── Engine reasoning ───────────────────────────────────────────────
+    evidence_weight: typeof evidenceWeight === 'number' ? evidenceWeight : null,
+
+    // PVS
+    pvs_percentile:  pvs.percentile    ?? null,
+    pvs_rank:        pvs.rank          ?? null,
+    pvs_n_players:   pvs.nPlayers      ?? null,
+    pvs_implied_base: pvs.impliedBase  ?? null,
+    pvs_source:      pvs.source        ?? null,
+
+    // Reference distribution
+    ref_dist_info:   refDist ? JSON.stringify({
+      refSets:          refDist.refSets,
+      sameLeague:       refDist.sameLeague,
+      nPoints:          refDist.nPoints,
+      rangeMin:         refDist.rangeMin,
+      rangeMax:         refDist.rangeMax,
+      extrapolated:     refDist.extrapolated,
+      extrapolatedUp:   refDist.extrapolatedUp,
+      targetPop:        refDist.targetPop,
+      exactPopMatch:    refDist.exactPopMatch,
+      scaleFactor:      refDist.scaleFactor,
+    }) : null,
+    range_estimate:  est.rangeEstimate ?? null,
+
+    // Ratio anchors
+    ratio_estimate:  est.ratioEstimate ?? null,
+    anchors:         est.anchors?.length ? JSON.stringify(est.anchors) : null,
+
+    // Direct comp
+    comp_used:       est.compUsed || false,
+    comp_data:       est.compData ? JSON.stringify(est.compData) : null,
+
+    // ── Metadata ───────────────────────────────────────────────────────
+    engine_version:  engineVersion,
+    computed_at:     computedAt,
+  };
+}
+
+
 // ── Diagnostic dry-run — run this INSTEAD of takeEstimateSnapshots to learn ───
 // which set_math products are being skipped and why.
 // Nothing is written to Supabase. Check Apps Script > Executions > Logs.
@@ -5972,10 +6158,11 @@ function sbInsertChunked_(table, rows, chunkSize) {
  * Safe to run again — removes existing snapshot triggers first to avoid duplicates.
  *
  *   takeEstimateSnapshots  →  every Monday 3–4 AM
+ *   refreshLiveEstimates   →  every day 4–5 AM
  *   resolveSnapshots       →  every day 6–7 AM
  */
 function createSnapshotTriggers() {
-  const MANAGED = ['takeEstimateSnapshots', 'resolveSnapshots'];
+  const MANAGED = ['takeEstimateSnapshots', 'refreshLiveEstimates', 'resolveSnapshots'];
 
   // Remove existing triggers for managed functions
   ScriptApp.getProjectTriggers()
@@ -5989,6 +6176,13 @@ function createSnapshotTriggers() {
     .atHour(3)
     .create();
 
+  // Daily live estimates refresh: 4–5 AM
+  ScriptApp.newTrigger('refreshLiveEstimates')
+    .timeBased()
+    .everyDays(1)
+    .atHour(4)
+    .create();
+
   // Daily resolve: 6–7 AM
   ScriptApp.newTrigger('resolveSnapshots')
     .timeBased()
@@ -5998,13 +6192,14 @@ function createSnapshotTriggers() {
 
   console.log('✓ Triggers registered:');
   console.log('  takeEstimateSnapshots — every Monday 3–4 AM');
+  console.log('  refreshLiveEstimates  — every day 4–5 AM');
   console.log('  resolveSnapshots      — every day 6–7 AM');
 }
 
 
 /** List active snapshot-related triggers. */
 function listSnapshotTriggers() {
-  const fns = ['takeEstimateSnapshots', 'resolveSnapshots', 'updateEngineAccuracy'];
+  const fns = ['takeEstimateSnapshots', 'refreshLiveEstimates', 'resolveSnapshots', 'updateEngineAccuracy'];
   const triggers = ScriptApp.getProjectTriggers()
     .filter(t => fns.includes(t.getHandlerFunction()));
   if (!triggers.length) {

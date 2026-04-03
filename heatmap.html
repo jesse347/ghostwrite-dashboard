@@ -390,7 +390,6 @@ input[type=range].recency-slider::-moz-range-thumb { width: 12px; height: 12px; 
   .proj-final-val { font-size: 26px; }
 }
 </style>
-<script src="estimate-engine.js"></script>
 </head>
 <body>
 
@@ -637,12 +636,12 @@ function snapRecency(el) {
 // ── Fetch ──────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [pi, paramsData, setMathData, setsData, gradedSalesData, playersData] = await Promise.all([
+    const [pi, paramsData, setMathData, setsData, liveEstData, playersData] = await Promise.all([
       rpc('get_price_intelligence'),
       sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('sets', 'select=id,name,league,active&active=eq.true'),
-      sbGet('sales', 'select=player,variant,price,date&afa_grade=not.is.null&status=neq.invalid'),
+      sbGet('live_estimates', 'select=*'),
       sbGet('players', 'select=name,prior_tier'),
     ]);
 
@@ -657,20 +656,31 @@ async function loadData() {
         retail: +r.retail_price || 0,
       }));
 
-    // Snapshot raw PI averages before normalization — used for cell display.
-    // applyGradingNorm zeros avgPrice for all-graded combos so the engine
-    // doesn't use graded prices as ungraded comps. rawAvgPrice preserves
-    // the actual selling price (including graded) for display purposes.
+    // Snapshot raw PI averages for display (no grading normalization needed —
+    // the live_estimates table already uses normalized prices server-side).
     products.forEach(p => {
       p.rawAvgPrice = p.avgPrice;
       p.rawAvg30d   = p.avg30d;
       p.rawAvg90d   = p.avg90d;
     });
 
-    // Normalize product averages to remove graded-sale inflation so the
-    // engine uses accurate ungraded-equivalent prices when building comps.
-    const gradedNormMap = buildGradedNormMap(gradedSalesData || []);
-    applyGradingNorm(products, gradedNormMap);
+    // ── Build live_estimates lookup: liveEstBySet[setName][player|||variant] ──
+    liveEstBySet = {};
+    (liveEstData || []).forEach(row => {
+      const sn = row.set_name;
+      if (!sn || !row.player) return;
+      if (!liveEstBySet[sn]) liveEstBySet[sn] = {};
+      liveEstBySet[sn][row.player + '|||' + row.variant] = rowToEst(row);
+    });
+
+    // ── Build byPlayerMap from PI products: byPlayerMap[setName][player][variant] = productObj ──
+    byPlayerMap = {};
+    products.forEach(p => {
+      if (!p.set || !p.player) return;
+      if (!byPlayerMap[p.set]) byPlayerMap[p.set] = {};
+      if (!byPlayerMap[p.set][p.player]) byPlayerMap[p.set][p.player] = {};
+      byPlayerMap[p.set][p.player][p.variant] = p;
+    });
 
     // set_math lookup: set_name → [{player, variant, population}]
     const setIdToName = {};
@@ -770,10 +780,36 @@ function switchSet(s) {
   renderHeatmap();
 }
 
-// Estimate engine is in estimate-engine.js (shared with case-sim.html and sets.html)
+// ── rowToEst: convert a live_estimates DB row to the shape the drawer expects ──
+function rowToEst(row) {
+  return {
+    price: row.estimated_price,
+    confidence: row.confidence,
+    method: row.method,
+    pvs: {
+      percentilePct: (row.pvs_percentile || 0) * 100,
+      rank: row.pvs_rank,
+      nPlayers: row.pvs_n_players,
+      impliedBase: row.pvs_implied_base,
+      source: row.pvs_source,
+    },
+    refDist: row.ref_dist_info ? (typeof row.ref_dist_info === 'string' ? JSON.parse(row.ref_dist_info) : row.ref_dist_info) : null,
+    rangeEstimate: row.range_estimate,
+    ratioEstimate: row.ratio_estimate,
+    anchors: row.anchors ? (typeof row.anchors === 'string' ? JSON.parse(row.anchors) : row.anchors) : [],
+    compUsed: row.comp_used,
+    compData: row.comp_data ? (typeof row.comp_data === 'string' ? JSON.parse(row.comp_data) : row.comp_data) : null,
+    evidenceWeight: (row.evidence_weight || 0) * 100,
+    ownPrice: row.own_price,
+    freshness: (row.freshness || 0) * 100,
+    modelEstimate: row.model_estimate,
+    isRefreshed: row.is_refreshed,
+  };
+}
 
-
-
+// ── Pre-computed estimates keyed by set → player|||variant ──
+let liveEstBySet = {};   // { setName: { 'player|||variant': estObj } }
+let byPlayerMap  = {};   // { setName: { player: { variant: productObj } } }
 
 // ── Render heatmap ─────────────────────────────────────────────────────────
 function renderHeatmap() {
@@ -817,7 +853,21 @@ function renderHeatmap() {
     return;
   }
 
-  const { estimates, refreshedEstimates, byPlayer, evidenceWeight } = buildEstimates(activeSet, setProducts, allData.activeWeights);
+  // ── Look up pre-computed estimates from live_estimates table ──
+  const setEstimates = liveEstBySet[activeSet] || {};
+  const estimates = {};
+  const refreshedEstimates = {};
+  let evWeightSum = 0, evWeightCount = 0;
+  Object.entries(setEstimates).forEach(([key, est]) => {
+    if (est.isRefreshed) {
+      refreshedEstimates[key] = est;
+    } else {
+      estimates[key] = est;
+    }
+    if (est.evidenceWeight != null) { evWeightSum += est.evidenceWeight; evWeightCount++; }
+  });
+  const byPlayer = byPlayerMap[activeSet] || {};
+  const evidenceWeight = evWeightCount > 0 ? evWeightSum / evWeightCount / 100 : 0;
 
   // Show evidence weight indicator
   const evPct = Math.round(evidenceWeight * 100);
@@ -978,8 +1028,15 @@ function figureUrlHm_(player, variant, setName) {
 
 // ── Estimate drawer ────────────────────────────────────────────────────────
 function openProjectionDrawer(player, variant, isRefreshed = false) {
-  const setProducts = (allData.products || []).filter(p => p.set === activeSet && p.player !== 'Unknown');
-  const { estimates, refreshedEstimates, byPlayer } = buildEstimates(activeSet, setProducts, allData.activeWeights);
+  // ── Look up pre-computed estimates from live_estimates table ──
+  const setEstimates = liveEstBySet[activeSet] || {};
+  const estimates = {};
+  const refreshedEstimates = {};
+  Object.entries(setEstimates).forEach(([key, est]) => {
+    if (est.isRefreshed) refreshedEstimates[key] = est;
+    else estimates[key] = est;
+  });
+  const byPlayer = byPlayerMap[activeSet] || {};
 
   const est = isRefreshed
     ? (refreshedEstimates?.[player + '|||' + variant] || estimates[player + '|||' + variant])
