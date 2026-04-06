@@ -5045,7 +5045,8 @@ function buildEstimates(setName, setProducts, weights) {
       var RATIO_BLEND_MAX_POP = 10;
       var targetPopForRatio = variantPop[tv] || null;
       var hasSamePopAnchor = targetPopForRatio != null && anchors.some(a => variantPop[a.sourceVariant] === targetPopForRatio);
-      var allowRatioBlend = (targetPopForRatio != null && targetPopForRatio <= RATIO_BLEND_MAX_POP) || hasSamePopAnchor;
+      var hasOwnSaleAnchor = anchors.some(a => !a.crossSet && bestSalesPrice(pvars[a.sourceVariant]) > 0);
+      var allowRatioBlend = (targetPopForRatio != null && targetPopForRatio <= RATIO_BLEND_MAX_POP) || hasSamePopAnchor || hasOwnSaleAnchor;
 
       let ratioEstimate = null;
       if (allowRatioBlend && anchors.length > 0) {
