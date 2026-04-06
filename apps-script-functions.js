@@ -3814,9 +3814,21 @@ function validateVariant_(result, playerRoster) {
 // τ = 90 days → at 90 days, own-data weight = e^(-1) ≈ 37%.
 // Used by the Full Model mode to blend real sales prices with model estimates.
 
-const STALENESS_TAU = 90; // days
-// AFA grading multiplier — matches engine_params.afa_grade_multiplier (1.5).
-const AFA_MULT = 1.5;
+let STALENESS_TAU = 55; // days — default, overridden by engine_params
+// AFA grading multiplier — population-aware curve.
+// High-pop cards get the full premium (maxPremium); rare cards approach 1.0×.
+// Curve: mult = 1 + (maxPremium - 1) × log(pop) / log(maxPop)
+// Defaults overridden by engine_params (afa_grade_multiplier, afa_grade_max_pop).
+let AFA_GRADE_MAX_PREMIUM = 1.5;
+let AFA_GRADE_MAX_POP     = 100;
+
+function afaMultiplier(pop) {
+  if (!pop || pop <= 1) return 1.0;
+  const maxPop = AFA_GRADE_MAX_POP || 100;
+  const maxPrem = AFA_GRADE_MAX_PREMIUM || 1.5;
+  if (pop >= maxPop) return maxPrem;
+  return 1 + (maxPrem - 1) * Math.log(pop) / Math.log(maxPop);
+}
 
 // Backtester sets this to the snapshot date so freshness is computed relative
 // to the simulated "now", not the real current date.
@@ -3852,33 +3864,36 @@ function buildGradedNormMap(gradedSales) {
   return map;
 }
 
-function applyGradingNorm(products, gradedNormMap) {
+function applyGradingNorm(products, gradedNormMap, popLookup) {
   if (!gradedNormMap || !products) return;
   products.forEach(prod => {
     const k = `${prod.player}|||${prod.variant}`;
     const g = gradedNormMap[k];
     if (!g || g.count === 0) return;
+    // Population-aware multiplier: high-pop → full premium, rare → ~1.0×
+    const pop  = (popLookup && prod.set && prod.variant) ? (popLookup[`${prod.set}|||${prod.variant}`] || null) : null;
+    const mult = afaMultiplier(pop);
     if (prod.totalSales > 0) {
       if (g.count >= prod.totalSales) {
-        prod.avgPrice = Math.round(g.sum / g.count / AFA_MULT * 100) / 100;
+        prod.avgPrice = Math.round(g.sum / g.count / mult * 100) / 100;
       } else if (prod.avgPrice > 0) {
-        const blended = prod.avgPrice * prod.totalSales - g.sum + g.sum / AFA_MULT;
+        const blended = prod.avgPrice * prod.totalSales - g.sum + g.sum / mult;
         prod.avgPrice = Math.round(Math.max(0, blended) / prod.totalSales * 100) / 100;
       }
     }
     if (g.count30d > 0 && prod.sales30d > 0) {
       if (g.count30d >= prod.sales30d) {
-        prod.avg30d = Math.round(g.sum30d / g.count30d / AFA_MULT * 100) / 100;
+        prod.avg30d = Math.round(g.sum30d / g.count30d / mult * 100) / 100;
       } else if (prod.avg30d > 0) {
-        const blended = prod.avg30d * prod.sales30d - g.sum30d + g.sum30d / AFA_MULT;
+        const blended = prod.avg30d * prod.sales30d - g.sum30d + g.sum30d / mult;
         prod.avg30d = Math.round(Math.max(0, blended) / prod.sales30d * 100) / 100;
       }
     }
     if (g.count90d > 0 && prod.sales90d > 0) {
       if (g.count90d >= prod.sales90d) {
-        prod.avg90d = Math.round(g.sum90d / g.count90d / AFA_MULT * 100) / 100;
+        prod.avg90d = Math.round(g.sum90d / g.count90d / mult * 100) / 100;
       } else if (prod.avg90d > 0) {
-        const blended = prod.avg90d * prod.sales90d - g.sum90d + g.sum90d / AFA_MULT;
+        const blended = prod.avg90d * prod.sales90d - g.sum90d + g.sum90d / mult;
         prod.avg90d = Math.round(Math.max(0, blended) / prod.sales90d * 100) / 100;
       }
     }
@@ -4215,20 +4230,103 @@ function buildPvsInfo(player, playerImpliedBase, playerPercentile, pvsSorted) {
 //   - Same-league sets used exclusively when available
 //   - Cross-league blend when no same-league match exists
 //
+// ── League Similarity Index ──────────────────────────────────────────────────
+//
+// Compares leagues by their variant price levels at each shared population tier.
+// Uses variant sales (not Base) because variant populations are consistent across
+// sets, so prices are directly comparable regardless of Base population differences.
+//
+// Returns: leagueSim[leagueA][leagueB] = 0.0–1.0 similarity score
+//          (1.0 = identical price levels, lower = cheaper league)
+
+function buildLeagueSimilarityIndex() {
+  const leagueMap   = allData.setLeagueMap || {};
+  const products    = allData.products || [];
+  const setMathAll  = allData.setMath || {};
+
+  // Build population lookup: "setName|||variant" → population
+  const popLookup = {};
+  Object.entries(setMathAll).forEach(([sn, rows]) => {
+    rows.forEach(r => {
+      if (r.variant && r.population != null)
+        popLookup[`${sn}|||${r.variant}`] = +r.population;
+    });
+  });
+
+  // Collect prices grouped by league + pop tier (skip Base — pop varies by set)
+  // Key: "league|||pop" → array of recency-weighted prices
+  const tierPrices = {};
+  products.forEach(p => {
+    if (!p.player || p.player === 'Unknown' || p.variant === 'Base') return;
+    const league = leagueMap[p.set] || '';
+    if (!league) return;
+    const pop = popLookup[`${p.set}|||${p.variant}`];
+    if (!pop) return;
+    const price = recencyWeightedPrice(p);
+    if (price <= 0) return;
+    const key = `${league}|||${pop}`;
+    if (!tierPrices[key]) tierPrices[key] = [];
+    tierPrices[key].push(price);
+  });
+
+  // Compute median price per league+tier
+  const tierMedians = {};
+  Object.entries(tierPrices).forEach(([key, prices]) => {
+    prices.sort((a, b) => a - b);
+    const mid = Math.floor(prices.length / 2);
+    tierMedians[key] = prices.length % 2 === 0
+      ? (prices[mid - 1] + prices[mid]) / 2
+      : prices[mid];
+  });
+
+  // Extract unique leagues and pop tiers
+  const leagues = [...new Set(Object.keys(tierMedians).map(k => k.split('|||')[0]))];
+  const pops    = [...new Set(Object.keys(tierMedians).map(k => +k.split('|||')[1]))];
+
+  // Compare every league pair across shared pop tiers
+  const sim = {};
+  leagues.forEach(a => {
+    sim[a] = {};
+    leagues.forEach(b => {
+      if (a === b) { sim[a][b] = 1.0; return; }
+      let wtSum = 0, wtTotal = 0;
+      pops.forEach(pop => {
+        const medA = tierMedians[`${a}|||${pop}`];
+        const medB = tierMedians[`${b}|||${pop}`];
+        if (!medA || !medB) return;
+        const nA = (tierPrices[`${a}|||${pop}`] || []).length;
+        const nB = (tierPrices[`${b}|||${pop}`] || []).length;
+        const sampleWeight = Math.min(nA, nB); // weight by smaller sample
+        const ratio = Math.min(medA, medB) / Math.max(medA, medB);
+        wtSum   += ratio * sampleWeight;
+        wtTotal += sampleWeight;
+      });
+      sim[a][b] = wtTotal > 0 ? wtSum / wtTotal : 0.5;
+    });
+  });
+
+  return sim;
+}
+
 // Returns: { points, sameLeague, refSets, nPoints, rangeMin, rangeMax,
 //            targetPop, exactPopMatch, scaleFactor } | null
 
-function buildReferenceDistribution(variant, targetPop, currentSetName, refSetData) {
+function buildReferenceDistribution(variant, targetPop, currentSetName, refSetData, leagueSim) {
   const thisSetLeague  = (allData.setLeagueMap || {})[currentSetName] || '';
   const allPoints      = [];
-  const sameLeagueSets = new Set();
-  const diffLeagueSets = new Set();
+  const refSetsUsed    = new Set();
   let   anyExact       = false;
   let   anyApprox      = false;
 
   Object.entries(refSetData).forEach(([refSet, { byPlayer: refByPlayer, pvs: refPVS }]) => {
     const otherLeague   = (allData.setLeagueMap || {})[refSet] || '';
     const isLeagueMatch = !!(thisSetLeague && otherLeague && thisSetLeague === otherLeague);
+
+    // League similarity weight: 1.0 for same league, data-driven for cross-league
+    const leagueWeight = isLeagueMatch ? 1.0
+      : (leagueSim && thisSetLeague && otherLeague && leagueSim[thisSetLeague])
+        ? (leagueSim[thisSetLeague][otherLeague] ?? 0.5)
+        : 0.5;
 
     // ── Find best-matching variant in this reference set by population ──────
     const refPops = {}; // variant → population for this reference set
@@ -4299,7 +4397,7 @@ function buildReferenceDistribution(variant, targetPop, currentSetName, refSetDa
         player,
         set:        refSet,
         sameLeague: isLeagueMatch,
-        weight:     (isLeagueMatch ? 1.0 : 0.7) * Math.max(0.2, str) * popProximity * freshness,
+        weight:     leagueWeight * Math.max(0.2, str) * popProximity * freshness,
         scaleFactor,
         isExact,
         matchPop,
@@ -4308,15 +4406,16 @@ function buildReferenceDistribution(variant, targetPop, currentSetName, refSetDa
 
     if (hasVariantData) {
       if (isExact) anyExact = true; else anyApprox = true;
-      if (isLeagueMatch) sameLeagueSets.add(refSet);
-      else diffLeagueSets.add(refSet);
+      refSetsUsed.add(refSet);
     }
   });
 
   if (!allPoints.length) return null;
 
-  const hasSameLeague = sameLeagueSets.size > 0;
-  const points = hasSameLeague ? allPoints.filter(p => p.sameLeague) : allPoints;
+  // All leagues contribute — similarity weights handle the blending.
+  // sameLeague flag is still set for confidence scoring downstream.
+  const hasSameLeague = allPoints.some(p => p.sameLeague);
+  const points = allPoints;
   if (!points.length) return null;
 
   // Assign percentiles by price rank (cheapest = 0, most expensive = 1).
@@ -4334,7 +4433,7 @@ function buildReferenceDistribution(variant, targetPop, currentSetName, refSetDa
   return {
     points,
     sameLeague:    hasSameLeague,
-    refSets:       hasSameLeague ? [...sameLeagueSets] : [...diffLeagueSets],
+    refSets:       [...refSetsUsed],
     nPoints:       points.length,
     rangeMin:      points[0],
     rangeMax:      points[points.length - 1],
@@ -4540,8 +4639,12 @@ function buildEstimates(setName, setProducts, weights) {
 
   // Tunable params
   const w          = weights || {};
-  const RARITY_PREMIUM = +w.rarity_premium || 1.20;
-  const EVIDENCE_K     = +w.evidence_k     || 0.0231; // 30 recency-weighted sales → 50%
+  const RARITY_PREMIUM        = +w.rarity_premium        || 1.20;
+  const EVIDENCE_K            = +w.evidence_k            || 0.0231;
+  const ANCHOR_STALE_DISCOUNT = +(w.anchor_stale_discount ?? 1.0);
+  STALENESS_TAU               = +w.staleness_tau          || 55;
+  AFA_GRADE_MAX_PREMIUM       = +w.afa_grade_multiplier   || 1.5;
+  AFA_GRADE_MAX_POP           = +w.afa_grade_max_pop      || 100; // 30 recency-weighted sales → 50%
 
   // ── 0. Index products by player ─────────────────────────────────────────
   const byPlayer = {};
@@ -4610,6 +4713,10 @@ function buildEstimates(setName, setProducts, weights) {
   // ── 2.5. Lazy-initialise global population-tier ratio table ─────────────
   if (!allData._globalRatioTable) allData._globalRatioTable = buildGlobalRatioTable();
   const globalRatios = allData._globalRatioTable;
+
+  // ── 2.6. Lazy-initialise league similarity index ───────────────────────
+  if (!allData._leagueSimilarity) allData._leagueSimilarity = buildLeagueSimilarityIndex();
+  const leagueSim = allData._leagueSimilarity;
 
   // ── 3. Cross-variant ratios from THIS set's real sales ───────────────────
   const setRatios = {};
@@ -4757,15 +4864,16 @@ function buildEstimates(setName, setProducts, weights) {
     const leagueMatch = otherLeague && thisSetLeague && otherLeague === thisSetLeague ? 0.90 : 0.70;
     const recency     = p.avg30d && p.sales30d >= 1 ? 1.0 : p.avg90d && p.sales90d >= 1 ? 0.7 : 0.4;
     const strength    = Math.min(1.0, salesStrength(p) / 10);
-    compByPlayerVariant[k].push({ price: compPrice, weight: leagueMatch * recency * Math.max(0.2, strength), set: p.set, sales: p.totalSales || 0 });
+    compByPlayerVariant[k].push({ price: compPrice, weight: leagueMatch * recency * Math.max(0.2, strength), recency, set: p.set, sales: p.totalSales || 0 });
   });
 
   Object.entries(compByPlayerVariant).forEach(([k, comps]) => {
     const totalW = comps.reduce((s, c) => s + c.weight, 0);
     if (totalW <= 0) return;
     playerCompMap[k] = {
-      price: Math.round(comps.reduce((s, c) => s + c.price * c.weight, 0) / totalW),
-      n:     comps.length,
+      price:       Math.round(comps.reduce((s, c) => s + c.price * c.weight, 0) / totalW),
+      n:           comps.length,
+      bestRecency: Math.max(...comps.map(c => c.recency)),
       comps,
     };
   });
@@ -4842,8 +4950,14 @@ function buildEstimates(setName, setProducts, weights) {
       });
 
       // ── 8b. Direct comp: same player + same variant in another set ────────
+      // Fresh comps (bestRecency = 1.0, i.e. 30d sales) are authoritative.
+      // Stale comps blend with 8c/8d/8e estimates proportional to staleness.
       const compData = playerCompMap[`${player}|||${tv}`];
-      if (compData && compData.price > 0) {
+      const compRecency = compData ? (compData.bestRecency || 0.4) : 0;
+      const compIsFresh = compData && compData.price > 0 && compRecency >= 1.0;
+
+      if (compIsFresh) {
+        // Fresh comp — authoritative, no need for 8c/8d/8e
         const sig        = (allData.signalMap || {})[`${setName}|||${player}|||${tv}`];
         const compConf   = compData.n >= 3 ? 'High' : compData.n >= 2 ? 'Medium-High' : 'Medium';
         const compFields = {
@@ -4858,9 +4972,10 @@ function buildEstimates(setName, setProducts, weights) {
           signal:         sig || null,
           compUsed:       true,
           compData,
+          compRecency:    compRecency,
+          anchorFreshness: 1.0,
         };
         if (hasRealData) {
-          // Real-data cell: comp is the model estimate — blend with own stale price
           const ownPrice   = bestSalesPrice(pvars[tv]);
           const freshness  = computeFreshness(pvars[tv]?.lastSaleDate);
           const confScores = { 'High': 0.97, 'Medium-High': 0.92, 'Medium': 0.80 };
@@ -4882,7 +4997,7 @@ function buildEstimates(setName, setProducts, weights) {
 
       // ── 8c. Reference distribution (primary fallback) ─────────────────────
       if (!refDistCache.hasOwnProperty(tv)) {
-        refDistCache[tv] = buildReferenceDistribution(tv, variantPop[tv] || null, setName, refSetData);
+        refDistCache[tv] = buildReferenceDistribution(tv, variantPop[tv] || null, setName, refSetData, leagueSim);
       }
       const refDistRaw = refDistCache[tv];
       const pct        = playerPercentile[player] ?? 0.5;
@@ -4925,9 +5040,12 @@ function buildEstimates(setName, setProducts, weights) {
       // Only compute ratio blending for rare variants (pop ≤ 10: Gold, Chrome, Fire).
       // For common variants (Victory /50, Emerald /25, etc.), ratio blending inflates
       // estimates because global pop ratios overestimate the value of common variants.
+      // Exception: always allow ratio blending when an anchor shares the same
+      // population as the target (e.g. Vides /25 → Emerald /25).
       var RATIO_BLEND_MAX_POP = 10;
       var targetPopForRatio = variantPop[tv] || null;
-      var allowRatioBlend = targetPopForRatio != null && targetPopForRatio <= RATIO_BLEND_MAX_POP;
+      var hasSamePopAnchor = targetPopForRatio != null && anchors.some(a => variantPop[a.sourceVariant] === targetPopForRatio);
+      var allowRatioBlend = (targetPopForRatio != null && targetPopForRatio <= RATIO_BLEND_MAX_POP) || hasSamePopAnchor;
 
       let ratioEstimate = null;
       if (allowRatioBlend && anchors.length > 0) {
@@ -4936,14 +5054,26 @@ function buildEstimates(setName, setProducts, weights) {
       }
 
       // ── 8e. Combine ────────────────────────────────────────────────────────
+      // Anchor freshness: weighted average of each anchor's recency score.
+      // Discounts the ratio method's share when its source sales are stale.
+      let anchorFreshness = 1.0;
+      if (ANCHOR_STALE_DISCOUNT > 0 && anchors.length > 0) {
+        const aTotalW = anchors.reduce((s, a) => s + a.weight, 0);
+        if (aTotalW > 0) {
+          const rawFreshness = anchors.reduce((s, a) => s + (a.weight / aTotalW) * (a.crossSet ? 0.7 : recencyWeight(pvars[a.sourceVariant])), 0);
+          anchorFreshness = 1 - ANCHOR_STALE_DISCOUNT * (1 - rawFreshness);
+        }
+      }
+
       let finalEstimate = null;
       if (rangeEstimate !== null) {
-        if (ratioEstimate !== null && evidenceWeight > 0.15) {
-          finalEstimate = (1 - evidenceWeight) * rangeEstimate + evidenceWeight * ratioEstimate;
-          _dbg(player, tv, 'Combine: range=$' + Math.round(rangeEstimate) + ' x ' + ((1-evidenceWeight)*100).toFixed(0) + '% + ratio=$' + Math.round(ratioEstimate) + ' x ' + (evidenceWeight*100).toFixed(0) + '% = $' + Math.round(finalEstimate));
+        const ratioShare = evidenceWeight * anchorFreshness;
+        if (ratioEstimate !== null && ratioShare > 0.15) {
+          finalEstimate = (1 - ratioShare) * rangeEstimate + ratioShare * ratioEstimate;
+          _dbg(player, tv, 'Combine: range=$' + Math.round(rangeEstimate) + ' x ' + ((1-ratioShare)*100).toFixed(0) + '% + ratio=$' + Math.round(ratioEstimate) + ' x ' + (ratioShare*100).toFixed(0) + '% (anchorFreshness=' + anchorFreshness.toFixed(2) + ') = $' + Math.round(finalEstimate));
         } else {
           finalEstimate = rangeEstimate;
-          var skipReason = !allowRatioBlend ? 'pop=' + targetPopForRatio + '>=' + (RATIO_BLEND_MAX_POP+1) : 'evidenceWeight=' + (evidenceWeight*100).toFixed(0) + '%';
+          var skipReason = !allowRatioBlend ? 'pop=' + targetPopForRatio + '>=' + (RATIO_BLEND_MAX_POP+1) : 'ratioShare=' + (ratioShare*100).toFixed(0) + '%';
           _dbg(player, tv, 'Combine: range-only=$' + Math.round(rangeEstimate) + ' (' + skipReason + ', ratioEstimate=' + (ratioEstimate !== null ? '$'+Math.round(ratioEstimate) : 'null') + ')');
         }
       } else if (ratioEstimate !== null) {
@@ -4952,6 +5082,16 @@ function buildEstimates(setName, setProducts, weights) {
       } else {
         _dbg(player, tv, 'Combine: no estimate possible');
         return;
+      }
+
+      // ── 8f. Blend stale comp with model estimate ──────────────────────────
+      // If a direct comp exists but is stale (bestRecency < 1.0), blend it in
+      // proportional to its recency: fresh-ish comps still carry weight, very
+      // stale comps defer to the model.
+      if (compData && compData.price > 0 && !compIsFresh) {
+        const compShare = compRecency; // 0.7 for 90d, 0.4 for all-time
+        finalEstimate = compShare * compData.price + (1 - compShare) * finalEstimate;
+        _dbg(player, tv, 'Stale comp blend: comp=$' + compData.price + ' x ' + (compShare*100).toFixed(0) + '% + model=$' + Math.round(finalEstimate) + ' x ' + ((1-compShare)*100).toFixed(0) + '% = $' + Math.round(finalEstimate));
       }
 
       finalEstimate = Math.round(finalEstimate);
@@ -4994,8 +5134,10 @@ function buildEstimates(setName, setProducts, weights) {
         ratioEstimate: ratioEstimate !== null ? Math.round(ratioEstimate) : null,
         anchors,
         signal:        sig || null,
-        compUsed:      false,
-        compData:      null,
+        compUsed:       !!(compData && compData.price > 0 && !compIsFresh),
+        compData:       (compData && compData.price > 0 && !compIsFresh) ? compData : null,
+        compRecency:    (compData && compData.price > 0) ? compRecency : null,
+        anchorFreshness: Math.round(anchorFreshness * 100),
       };
 
       if (hasRealData) {
@@ -5372,6 +5514,10 @@ function buildLiveEstimateRow_({ setName, player, variant, est,
     // Direct comp
     comp_used:       est.compUsed || false,
     comp_data:       est.compData ? JSON.stringify(est.compData) : null,
+    comp_recency:    est.compRecency ?? null,
+
+    // Anchor freshness (0–100, how fresh the ratio anchors are)
+    anchor_freshness: est.anchorFreshness ?? null,
 
     // ── Metadata ───────────────────────────────────────────────────────
     engine_version:  engineVersion,
@@ -6027,28 +6173,6 @@ function loadAllData_() {
     productsBySet[setName].push(product);
   });
 
-  // ── Grading premium normalization ──────────────────────────────────────
-  // AFA-graded sales inflate price_intelligence averages. Strip their
-  // contribution using buildGradedNormMap + applyGradingNorm (estimate-engine.gs).
-  // allProducts and productsBySet share the same object references, so
-  // normalising allProducts in-place also normalises productsBySet automatically.
-  try {
-    const gradedSalesNorm = sbGet_('sales',
-      'select=player,variant,price,date' +
-      '&afa_grade=not.is.null&status=neq.invalid'
-    );
-    if (gradedSalesNorm.length > 0) {
-      const gradedNormMap = buildGradedNormMap(gradedSalesNorm);
-      applyGradingNorm(allProducts, gradedNormMap);
-      console.log(
-        `  Grading norm applied — ${gradedSalesNorm.length} graded sales across ` +
-        `${Object.keys(gradedNormMap).length} player×variant combos`
-      );
-    }
-  } catch (normErr) {
-    console.log('  Grading norm skipped (non-fatal): ' + normErr.message);
-  }
-
   // ── set_math — variant populations ────────────────────────────────────
   const mathRaw = sbGet_('set_math',
     'select=id,set_id,player,variant,population,real_population' +
@@ -6068,6 +6192,39 @@ function loadAllData_() {
       real_population: row.real_population,
     });
   });
+
+  // ── Grading premium normalization ──────────────────────────────────────
+  // AFA-graded sales inflate price_intelligence averages. Strip their
+  // contribution using buildGradedNormMap + applyGradingNorm (estimate-engine.gs).
+  // allProducts and productsBySet share the same object references, so
+  // normalising allProducts in-place also normalises productsBySet automatically.
+  // Runs after setMath is built so we can look up variant populations for the
+  // population-aware grading curve.
+  try {
+    // Build "setName|||variant" → population lookup from setMath
+    const gradingPopLookup = {};
+    Object.entries(setMath).forEach(([sn, rows]) => {
+      rows.forEach(r => {
+        if (r.variant && r.population != null)
+          gradingPopLookup[`${sn}|||${r.variant}`] = +r.population;
+      });
+    });
+
+    const gradedSalesNorm = sbGet_('sales',
+      'select=player,variant,price,date' +
+      '&afa_grade=not.is.null&status=neq.invalid'
+    );
+    if (gradedSalesNorm.length > 0) {
+      const gradedNormMap = buildGradedNormMap(gradedSalesNorm);
+      applyGradingNorm(allProducts, gradedNormMap, gradingPopLookup);
+      console.log(
+        `  Grading norm applied — ${gradedSalesNorm.length} graded sales across ` +
+        `${Object.keys(gradedNormMap).length} player×variant combos`
+      );
+    }
+  } catch (normErr) {
+    console.log('  Grading norm skipped (non-fatal): ' + normErr.message);
+  }
 
   // ── price_signals — implied_price fallback + listing signals ──────────
   // Non-fatal: signals are fallback context only. If Supabase is unreachable

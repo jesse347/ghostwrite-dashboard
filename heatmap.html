@@ -787,7 +787,7 @@ function rowToEst(row) {
     confidence: row.confidence,
     method: row.method,
     pvs: {
-      percentilePct: (row.pvs_percentile || 0) * 100,
+      percentilePct: Math.round((row.pvs_percentile || 0) * 100),
       rank: row.pvs_rank,
       nPlayers: row.pvs_n_players,
       impliedBase: row.pvs_implied_base,
@@ -799,6 +799,8 @@ function rowToEst(row) {
     anchors: row.anchors ? (typeof row.anchors === 'string' ? JSON.parse(row.anchors) : row.anchors) : [],
     compUsed: row.comp_used,
     compData: row.comp_data ? (typeof row.comp_data === 'string' ? JSON.parse(row.comp_data) : row.comp_data) : null,
+    compRecency: row.comp_recency,
+    anchorFreshness: row.anchor_freshness ?? 100,
     evidenceWeight: (row.evidence_weight || 0) * 100,
     ownPrice: row.own_price,
     freshness: (row.freshness || 0) * 100,
@@ -1057,12 +1059,16 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
 
   // ── Method routing ───────────────────────────────────────────────────────
   // evPct = within-set ratio evidence weight (0–100).
-  // 100% → fully based on set-internal pricing ratios.
-  //   0% → fully based on cross-set reference range.
-  const evPct      = est.evidenceWeight ?? 0;
+  // ratioShare = effective ratio weight after anchor freshness discount.
+  const evPct      = Math.round(est.evidenceWeight ?? 0);
+  const aFresh     = Math.round(est.anchorFreshness ?? 100);
+  const ratioShare = Math.round(evPct * aFresh / 100);
   const anchors    = est.anchors || [];
   const hasAnchors = anchors.length > 0 && est.ratioEstimate != null;
   const isComp     = est.compUsed && est.compData;
+  const compRec    = est.compRecency ?? null;
+  const isFreshComp = isComp && compRec >= 1.0;
+  const isStaleComp = isComp && compRec != null && compRec < 1.0;
   const hasRef     = !!est.refDist;
 
   // ── Confidence ───────────────────────────────────────────────────────────
@@ -1190,6 +1196,14 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
       </div>`;
     }).join('');
 
+    const compRecLabel = compRec >= 1.0 ? 'recent (30d)' : compRec >= 0.7 ? 'moderately recent (90d)' : 'older than 90 days';
+    const staleNote = isStaleComp ? `
+      <div style="font-size:10px;color:#ffb347;margin-top:10px">
+        ⚠ These comp sales are ${compRecLabel}. The estimate blends
+        <strong>${Math.round(compRec * 100)}%</strong> comp price with
+        <strong>${Math.round((1 - compRec) * 100)}%</strong> model estimate to account for market drift.
+      </div>` : '';
+
     methodHtml = `
       <div class="d-section">
         <span class="method-badge direct">⚡ Direct Match</span>
@@ -1197,14 +1211,21 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
         <div class="method-sub">
           We found real sale${est.compData.n !== 1 ? 's' : ''} of this exact card in
           ${est.compData.n > 1 ? 'other sets' : 'another set'}.
-          This is the most reliable signal — no extrapolation, just actual market prices.
+          ${isFreshComp
+            ? 'This is the most reliable signal — no extrapolation, just actual market prices.'
+            : 'These sales are factored in but weighted by how recent they are.'}
         </div>
         <div class="comp-figures">${figCards}</div>
+        ${staleNote}
       </div>`;
 
   // ── B: Blend Dominant (≥60% within-set ratios) ────────────────────────────
-  } else if (hasAnchors && evPct >= 60) {
-    const rangePct = 100 - evPct;
+  } else if (hasAnchors && ratioShare >= 60) {
+    const rangePct = 100 - ratioShare;
+    const staleAnchorNote = aFresh < 100 ? `
+      <div style="font-size:10px;color:#ffb347;margin-top:8px">
+        Anchor data is aging — ratio weight reduced from ${evPct}% to ${ratioShare}%.
+      </div>` : '';
     const rangeSupplement = hasRef && est.rangeEstimate ? `
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
                   font-size:10px;color:var(--muted2)">
@@ -1236,6 +1257,7 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
         <div class="method-headline">${bHeadline}</div>
         <div class="method-sub">${bSub}</div>
         ${anchors.map(anchorRow).join('')}
+        ${staleAnchorNote}
         ${rangeSupplement}
       </div>`;
 
@@ -1271,11 +1293,11 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
   } else if (hasRef) {
     const rd        = est.refDist;
     const setList   = rd.refSets.join(', ');
-    const leagueStr = rd.sameLeague ? 'same-league' : 'cross-league';
+    const leagueStr = rd.sameLeague ? 'same-league sets' : 'comparable sets';
     const pct       = pvsInfo ? pvsInfo.percentilePct : 50;
     const rm        = rd.rangeMin, rM = rd.rangeMax;
-    const isBlended = hasAnchors && evPct > 0;
-    const rangePct  = 100 - evPct;
+    const isBlended = hasAnchors && ratioShare > 0;
+    const rangePct  = 100 - ratioShare;
 
     const extNote = rd.extrapolated
       ? `<div style="font-size:10px;color:#ffb347;margin-top:8px">
@@ -1364,12 +1386,12 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
           <div style="font-size:11px;color:var(--muted2);line-height:1.8;margin-bottom:6px">
             Variant Ratio Estimate:&nbsp;
               <strong style="color:var(--text)">${fmt(ratioEstimate)}</strong>
-              × ${evPct}%
+              × ${ratioShare}%${aFresh < 100 ? ` <span style="font-size:9px;color:#ffb347">(reduced from ${evPct}% — anchors aging)</span>` : ''}
           </div>
           <div style="border-top:1px solid var(--border);padding-top:8px;
                       display:flex;justify-content:space-between;align-items:baseline">
             <span style="font-size:10px;color:var(--muted)">
-              ${fmt(est.rangeEstimate)} × ${rangePct}% + ${fmt(ratioEstimate)} × ${evPct}%
+              ${fmt(est.rangeEstimate)} × ${rangePct}% + ${fmt(ratioEstimate)} × ${ratioShare}%
             </span>
             <span style="font-family:var(--display);font-size:16px;color:var(--accent)">${fmt(est.price)}</span>
           </div>
@@ -1394,7 +1416,7 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
           ${rangeViz}
 
           <div style="margin-top:20px">
-            <span class="method-badge blend">⚖️ Variant Ratio Method [${evPct}% Weight]</span>
+            <span class="method-badge blend">⚖️ Variant Ratio Method [${ratioShare}% Weight]</span>
             <div style="margin-top:10px">
               ${anchors.map(anchorRow).join('')}
             </div>
@@ -1460,13 +1482,15 @@ function openProjectionDrawer(player, variant, isRefreshed = false) {
 
   // ── Method note for final box ─────────────────────────────────────────────
   const methodNote = isComp
-    ? `Based on <strong>${est.compData.n}</strong> real sale${est.compData.n !== 1 ? 's' : ''} of this card in other sets.`
-    : hasAnchors && evPct >= 60
+    ? (isStaleComp
+      ? `Based on <strong>${est.compData.n}</strong> comp sale${est.compData.n !== 1 ? 's' : ''} (${Math.round(compRec * 100)}% weight) blended with model estimate.`
+      : `Based on <strong>${est.compData.n}</strong> real sale${est.compData.n !== 1 ? 's' : ''} of this card in other sets.`)
+    : hasAnchors && ratioShare >= 60
     ? `Variant ratio anchors${hasRef ? ' + price curve cross-check.' : '.'}`
-    : hasRef && !est.refDist?.extrapolated && hasAnchors && evPct > 0
-    ? `${est.refDist.sameLeague ? 'Same-league' : 'Cross-league'} price curve match + variant ratio anchors.`
+    : hasRef && !est.refDist?.extrapolated && hasAnchors && ratioShare > 0
+    ? `Comparable-set price curve match + variant ratio anchors.`
     : hasRef && !est.refDist?.extrapolated
-    ? `${est.refDist.sameLeague ? 'Same-league' : 'Cross-league'} price curve match.`
+    ? `Comparable-set price curve match.`
     : hasRef && est.refDist?.extrapolated
     ? `Extrapolated ${est.refDist.extrapolatedUp ? 'above' : 'below'} known reference range — confidence lower.`
     : hasAnchors

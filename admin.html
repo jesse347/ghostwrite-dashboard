@@ -374,18 +374,9 @@
                 <label class="form-label" for="f-source">Source</label>
                 <select id="f-source" class="form-select">
                   <option value="eBay">eBay</option>
-                  <option value="Manual">Manual</option>
-                  <option value="PWCC">PWCC</option>
-                  <option value="Heritage">Heritage Auctions</option>
+                  <option value="Private">Private</option>
+                  <option value="StockX">StockX</option>
                   <option value="Goldin">Goldin</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="f-status">Status</label>
-                <select id="f-status" class="form-select">
-                  <option value="">— none —</option>
-                  <option value="verified">Verified</option>
-                  <option value="pending">Pending</option>
                 </select>
               </div>
             </div>
@@ -405,12 +396,6 @@
               <div class="form-group span2">
                 <label class="form-label" for="f-notes">Notes</label>
                 <textarea id="f-notes" class="form-textarea" placeholder="Internal notes — not displayed publicly"></textarea>
-              </div>
-              <div class="form-group span2">
-                <div class="checkbox-row">
-                  <input type="checkbox" id="f-multi" class="form-checkbox">
-                  <label for="f-multi" class="checkbox-label">Multi-sale (lot containing multiple cards)</label>
-                </div>
               </div>
             </div>
           </div>
@@ -1038,7 +1023,7 @@ document.getElementById('add-sale-form').addEventListener('submit', async e => {
     image_url:     document.getElementById('f-image').value   || null,
     afa_grade:     document.getElementById('f-afa').value     || null,
     notes:         document.getElementById('f-notes').value   || null,
-    is_multi_sale: document.getElementById('f-multi').checked,
+    is_multi_sale: false,
     flagged:       false,
     set_math_id:   setMathId,
     multi_sale_id: 1,
