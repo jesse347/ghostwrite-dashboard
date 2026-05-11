@@ -526,7 +526,7 @@ async function loadData() {
   try {
     const [pi, setsData, setMathData, paramsData, playersData, liveEstRows] = await Promise.all([
       rpc('get_price_intelligence'),
-      sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true&order=name.asc'),
+      sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active&active=eq.true&order=name.asc'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('engine_params', 'select=*&is_active=eq.true&limit=1'),
       sbGet('players', 'select=name,prior_tier'),

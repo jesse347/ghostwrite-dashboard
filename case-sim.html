@@ -767,7 +767,7 @@ async function loadData() {
     const [pi, recentSales, setsData, setMathData, liveEstRows] = await Promise.all([
       rpc('get_price_intelligence'),
       rpc('get_recent_sales', {limit_rows: 500}),
-      sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active,image_url&active=eq.true'),
+      sbGet('sets', 'select=id,name,league,case_price,figures_per_case,hit_ratio,active&active=eq.true'),
       sbGet('set_math', 'select=set_id,player,variant,population'),
       sbGet('live_estimates', 'select=*'),
     ]);
@@ -810,10 +810,6 @@ async function loadData() {
       if (!setMath[setName]) setMath[setName] = [];
       setMath[setName].push({ player: row.player, variant: row.variant, population: +row.population });
     });
-    // Build setName -> image_url map for the case ghost overlay
-    const setImageMap = {};
-    setsData.forEach(s => { if (s.image_url) setImageMap[s.name] = s.image_url; });
-
     // ── Build liveEstBySet map from pre-computed live_estimates table ────────
     // liveEstBySet[setName][player|||variant] = raw row from live_estimates
     const liveEstBySet = {};
@@ -823,7 +819,7 @@ async function loadData() {
       liveEstBySet[sn][`${row.player}|||${row.variant}`] = row;
     });
 
-    allData = { products, allListings, sbSetConfig, setMath, setLeagueMap, setImageMap, liveEstBySet };
+    allData = { products, allListings, sbSetConfig, setMath, setLeagueMap, liveEstBySet };
     initPage();
   } catch(e) {
     document.getElementById('main-content').innerHTML =
